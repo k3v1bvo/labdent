@@ -1,12 +1,10 @@
 /* =========================================================
-   🌈 TailwindCSS + Animaciones + Modo Oscuro (LabDent)
+   🌈 TailwindCSS v4 + Animaciones + Modo Oscuro (LabDent)
    ========================================================= */
 
-/* 🔝 IMPORTACIONES: deben estar antes de TODO lo demás */
+/* ✅ Nueva importación universal para Tailwind v4 */
+@import "tailwindcss";
 @import "tw-animate-css";
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
 
 /* =========================================================
    🎨 VARIABLES - MODO CLARO
