@@ -2,11 +2,8 @@
    TailwindCSS v4 compatible base setup + Dark Mode Support
    ========================================================= */
 
-/* Importa el núcleo y utilidades de Tailwind v4 */
-@import "tailwindcss/preflight";
-@import "tailwindcss/utilities";
-
-/* Importa animaciones de Shadcn (si las usas) */
+/* ✅ Nueva forma compatible con TailwindCSS v4 */
+@import "tailwindcss";
 @import "tw-animate-css";
 
 /* Variables globales modo claro */
