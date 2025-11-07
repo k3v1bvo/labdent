@@ -1,13 +1,28 @@
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  darkMode: "class",
+import type { Config } from "tailwindcss";
+
+const config: Config = {
   content: [
-    "./app/**/*.{ts,tsx,js,jsx}",
-    "./components/**/*.{ts,tsx,js,jsx}",
-    "./pages/**/*.{ts,tsx,js,jsx}",
+    "./app/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
   ],
+  darkMode: "class",
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        border: "var(--border)",
+        input: "var(--input)",
+        ring: "var(--ring)",
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+        primary: "var(--primary)",
+        secondary: "var(--secondary)",
+        destructive: "var(--destructive)",
+        accent: "var(--accent)",
+        muted: "var(--muted)",
+        card: "var(--card)",
+      },
+    },
   },
   plugins: [],
 };
+export default config;
