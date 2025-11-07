@@ -1,9 +1,7 @@
-/**
- * ✅ Configuración PostCSS compatible con Vercel + Next 16 + Tailwind 4
- */
-module.exports = {
+  /** @type {import('postcss-load-config').Config} */
+export default {
   plugins: {
-    "tailwindcss": {},
-    "autoprefixer": {},
+    '@tailwindcss/postcss': {},
+    autoprefixer: {},
   },
 };
