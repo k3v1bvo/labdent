@@ -170,5 +170,5 @@ Copiar código
 💡 Créditos
 
 Desarrollado por [Kevin Davor Vergara Orellana / k3v1vboLabs Corp.]
-Arquitectura y asistencia técnica por ChatGPT (OpenAI)
+
 © 2025 - Proyecto académico / empresarial para laboratorios dentales
