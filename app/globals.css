@@ -1,9 +1,12 @@
 /* =========================================================
-   TailwindCSS v4 compatible base setup + Dark Mode Support
+   TailwindCSS v4 Compatible Global Styles + Dark Mode
    ========================================================= */
 
-/* ✅ Nueva forma compatible con TailwindCSS v4 */
-@import "tailwindcss";
+/* ✅ Usar directivas clásicas, no @import */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @import "tw-animate-css";
 
 /* Variables globales modo claro */
