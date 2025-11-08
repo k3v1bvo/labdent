@@ -24,7 +24,7 @@ export function Navbar() {
     router.push("/auth/login");
   };
 
-  // 🔹 LINKS FIJOS (sin roles)
+  // 🔹 Enlaces de navegación (visibles para todos por ahora)
   const links = [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/pedidos", label: "Pedidos" },
@@ -36,24 +36,28 @@ export function Navbar() {
   ];
 
   return (
-    <nav className="w-full bg-zinc-900 text-white flex items-center justify-between px-6 py-3 shadow">
+    <nav className="w-full bg-zinc-900 text-white flex items-center justify-between px-6 py-3 shadow-md border-b border-zinc-800">
+      {/* Izquierda */}
       <div className="flex items-center gap-6">
         <Link href="/" className="font-bold text-lg hover:text-blue-400 transition">
           🦷 LabDent
         </Link>
 
-        {/* 🔥 Muestra SIEMPRE todos los botones */}
-        {links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className="text-sm hover:text-blue-400 transition-colors"
-          >
-            {link.label}
-          </Link>
-        ))}
+        {/* 🔥 Aquí aparecen los botones */}
+        <div className="flex items-center gap-4">
+          {links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="text-sm font-medium hover:text-blue-400 transition-colors"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
       </div>
 
+      {/* Derecha */}
       <div className="flex items-center gap-4">
         {user && (
           <span className="text-sm text-gray-300">
@@ -65,7 +69,7 @@ export function Navbar() {
           variant="outline"
           size="sm"
           onClick={handleLogout}
-          className="flex items-center gap-1 border-gray-400 text-white hover:bg-zinc-800"
+          className="flex items-center gap-1 border-gray-500 text-white hover:bg-zinc-800"
         >
           <LogOut size={16} /> Cerrar sesión
         </Button>
