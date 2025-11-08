@@ -1,46 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
-import {
-  LayoutDashboard,
-  PackageSearch,
-  FilePlus2,
-  Users,
-  Workflow,
-  LogOut,
-} from "lucide-react";
-
-type UserRole = "admin" | "secretaria" | "doctor" | "tecnico";
-
-interface NavItem {
-  label: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
-
-const menuByRole: Record<UserRole, NavItem[]> = {
-  admin: [
-    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Pedidos", href: "/pedidos", icon: PackageSearch },
-    { label: "Nuevo Pedido", href: "/pedidos/nuevo", icon: FilePlus2 },
-    { label: "Usuarios", href: "/admin/usuarios", icon: Users }, // crea luego si quieres
-    { label: "Estaciones", href: "/admin/estaciones", icon: Workflow }, // idem
-  ],
-  secretaria: [
-    { label: "Pedidos", href: "/pedidos", icon: PackageSearch },
-    { label: "Nuevo Pedido", href: "/pedidos/nuevo", icon: FilePlus2 },
-  ],
-  doctor: [
-    { label: "Nuevo Pedido", href: "/pedidos/nuevo", icon: FilePlus2 },
-    { label: "Mis Pedidos", href: "/pedidos", icon: PackageSearch },
-  ],
-  tecnico: [
-    { label: "Pedidos en producción", href: "/pedidos", icon: PackageSearch },
-  ],
-};
+import { roleNavigation, type UserRole } from "@/lib/roleNavigation";
 
 export function Sidebar() {
   const [role, setRole] = useState<UserRole | null>(null);
@@ -48,7 +12,6 @@ export function Sidebar() {
   const [loading, setLoading] = useState(true);
 
   const pathname = usePathname();
-  const router = useRouter();
 
   useEffect(() => {
     const load = async () => {
@@ -81,15 +44,10 @@ export function Sidebar() {
     load();
   }, []);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/auth/login");
-  };
-
   // No renderizar nada si no hay sesión o está cargando
   if (loading || !role) return null;
 
-  const menu = menuByRole[role] || [];
+  const menu = roleNavigation[role] || [];
 
   return (
     <aside className="w-64 bg-[#050816] text-gray-100 flex flex-col border-r border-white/10">
@@ -127,16 +85,6 @@ export function Sidebar() {
           );
         })}
       </nav>
-
-      <div className="px-3 py-3 border-t border-white/10">
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 text-xs text-red-400 hover:text-red-300"
-        >
-          <LogOut className="w-4 h-4" />
-          Cerrar sesión
-        </button>
-      </div>
     </aside>
   );
 }
