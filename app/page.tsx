@@ -1,40 +1,45 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { Loader2 } from "lucide-react";
 
-export default function Home() {
-  const [pedidos, setPedidos] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function HomePage() {
+  const router = useRouter();
 
   useEffect(() => {
-    async function cargarPedidos() {
-      const { data, error } = await supabase.from("pedidos").select("*").limit(5);
-      if (error) console.error("❌ Error al conectar con Supabase:", error);
-      else console.log("✅ Conectado, datos:", data);
-      setPedidos(data || []);
-      setLoading(false);
-    }
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) {
+        const rol = data.user.user_metadata?.rol;
+        switch (rol) {
+          case "admin":
+            router.push("/admin");
+            break;
+          case "doctor":
+            router.push("/doctor");
+            break;
+          case "secretaria":
+            router.push("/secretaria");
+            break;
+          case "tecnico":
+            router.push("/tecnico");
+            break;
+          default:
+            router.push("/auth/login");
+        }
+      } else {
+        router.push("/auth/login");
+      }
+    };
 
-    cargarPedidos();
-  }, []);
-
-  if (loading) return <p className="p-8">Cargando conexión...</p>;
+    checkSession();
+  }, [router]);
 
   return (
-    <main className="p-8">
-      <h1 className="text-2xl font-bold mb-4">Pedidos recientes</h1>
-      {pedidos.length === 0 ? (
-        <p>No hay pedidos registrados aún.</p>
-      ) : (
-        <ul className="list-disc pl-4">
-          {pedidos.map((p) => (
-            <li key={p.id}>
-              {p.paciente_nombre} — Estado: {p.estado}
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+    <div className="flex justify-center items-center h-[80vh]">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>
   );
 }
