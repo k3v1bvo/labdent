@@ -1,23 +1,24 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+// lib/supabaseClient.ts
+"use client";
+
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// Usamos un patrón Singleton: se crea una sola vez
-let supabase: SupabaseClient;
-
-if (!globalThis.supabase) {
-  globalThis.supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-    },
-    global: {
-      headers: { apikey: supabaseAnonKey },
-    },
-  });
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    "❌ Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY. Configúralos en Vercel."
+  );
 }
 
-supabase = globalThis.supabase;
+declare global {
+  var __supabase: SupabaseClient | undefined;
+}
 
-export { supabase };
+export const supabase: SupabaseClient =
+  globalThis.__supabase ?? createClient(supabaseUrl, supabaseAnonKey);
+
+if (process.env.NODE_ENV !== "production") {
+  globalThis.__supabase = supabase;
+}
