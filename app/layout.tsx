@@ -28,11 +28,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground min-h-screen flex flex-col`}
       >
-        {/* Barra de navegación superior */}
+        {/* 🧭 Barra de navegación superior */}
         <Navbar />
 
-        {/* Contenido principal */}
-        <main className="flex-1 max-w-6xl mx-auto p-6">{children}</main>
+        {/* 🧩 Contenido principal */}
+        <main className="flex-1 max-w-7xl mx-auto w-full p-6">
+          {children}
+        </main>
+
+        {/* 🔹 Footer opcional (puedes eliminarlo si no lo necesitas) */}
+        <footer className="text-center text-sm text-gray-500 py-4 border-t border-border">
+          © {new Date().getFullYear()} LabDent. Todos los derechos reservados.
+        </footer>
       </body>
     </html>
   );
