@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
+import { ProfileDialog } from "@/components/profile/ProfileDialog";
 import {
   ClipboardList,
   FilePlus,
@@ -19,6 +20,8 @@ export default function DoctorLayout({
 }) {
   const [open, setOpen] = useState(true);
   const [profile, setProfile] = useState<{ name?: string; role?: string }>({});
+  const [profileOpen, setProfileOpen] = useState(false);
+
   const router = useRouter();
 
   useEffect(() => {
@@ -38,11 +41,12 @@ export default function DoctorLayout({
         .eq("id", user.id)
         .single();
 
-      if (profileData)
+      if (profileData) {
         setProfile({
           name: profileData.nombre,
           role: profileData.rol,
         });
+      }
     }
 
     loadProfile();
@@ -78,17 +82,9 @@ export default function DoctorLayout({
             <Button
               variant="ghost"
               className="w-full justify-start text-white hover:bg-blue-600"
-              onClick={() => router.push("/dashboard/doctors")}
-            >
-              <User className="w-4 h-4 mr-2" /> {open && "Perfil"}
-            </Button>
-
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-white hover:bg-blue-600"
               onClick={() => router.push("/dashboard/doctors/orders")}
             >
-              <ClipboardList className="w-4 h-4 mr-2" />{" "}
+              <ClipboardList className="w-4 h-4 mr-2" />
               {open && "Mis Órdenes"}
             </Button>
 
@@ -97,7 +93,18 @@ export default function DoctorLayout({
               className="w-full justify-start text-white hover:bg-blue-600"
               onClick={() => router.push("/dashboard/doctors/new-order")}
             >
-              <FilePlus className="w-4 h-4 mr-2" /> {open && "Nueva Orden"}
+              <FilePlus className="w-4 h-4 mr-2" />
+              {open && "Nueva Orden"}
+            </Button>
+
+            {/* ✅ Perfil normalizado: hasta abajo y abre Dialog */}
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-white hover:bg-blue-600"
+              onClick={() => setProfileOpen(true)}
+            >
+              <User className="w-4 h-4 mr-2" />
+              {open && "Perfil"}
             </Button>
           </nav>
         </div>
@@ -114,11 +121,8 @@ export default function DoctorLayout({
               </p>
             </div>
           )}
-          <Button
-            variant="destructive"
-            className="w-full"
-            onClick={handleLogout}
-          >
+
+          <Button variant="destructive" className="w-full" onClick={handleLogout}>
             <LogOut className="w-4 h-4 mr-2" /> {open && "Cerrar sesión"}
           </Button>
         </div>
@@ -126,6 +130,32 @@ export default function DoctorLayout({
 
       {/* Contenido */}
       <main className="flex-1 overflow-y-auto p-6">{children}</main>
+
+      {/* ✅ Dialog de perfil reutilizado */}
+      <ProfileDialog
+        open={profileOpen}
+        onOpenChange={setProfileOpen}
+        onSaved={async () => {
+          // refresca nombre/rol del sidebar si editan el perfil
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (!user) return;
+
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("nombre, rol")
+            .eq("id", user.id)
+            .single();
+
+          if (profileData) {
+            setProfile({
+              name: profileData.nombre,
+              role: profileData.rol,
+            });
+          }
+        }}
+      />
     </div>
   );
 }

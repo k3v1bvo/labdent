@@ -1,107 +1,206 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle } from "lucide-react";
-import { completeStation } from "@/lib/actions/stations";
+import { Loader2 } from "lucide-react";
+
+type Estacion = { id: string; nombre: string; orden: number };
 
 export default function TechnicianStationsPage() {
-  const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  async function fetchTasks() {
+  const [miEstacionId, setMiEstacionId] = useState<string | null>(null);
+  const [miEstacion, setMiEstacion] = useState<Estacion | null>(null);
+
+  const [pendientes, setPendientes] = useState<any[]>([]);
+  const [mias, setMias] = useState<any[]>([]);
+
+  const miEstacionLabel = useMemo(() => {
+    if (!miEstacion) return "No asignada";
+    return `${miEstacion.orden}. ${miEstacion.nombre}`;
+  }, [miEstacion]);
+
+  async function fetchAll() {
     setLoading(true);
 
-    const { data, error } = await supabase
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    setUserId(user.id);
+
+    // 1) Mi estación
+    const { data: te } = await supabase
+      .from("tecnico_estacion")
+      .select("estacion_id, estaciones(id,nombre,orden)")
+      .eq("tecnico_id", user.id)
+      .maybeSingle();
+
+    const estId = te?.estacion_id ?? null;
+    setMiEstacionId(estId);
+    setMiEstacion((te as any)?.estaciones ?? null);
+
+    // 2) Pendientes en mi estación (RLS ya filtra por técnico+estación)
+    const { data: pend } = await supabase
       .from("historial_estaciones")
-      .select(`
-        id,
-        estado,
-        fecha_inicio,
-        pedidos (
-          id,
-          paciente_nombre,
-          estado
-        ),
-        estaciones (
-          id,
-          nombre,
-          orden
-        )
-      `)
+      .select(
+        `
+        id, estado, fecha_inicio,
+        pedidos ( id, paciente_nombre, estado, fecha_creacion ),
+        estaciones ( id, nombre, orden )
+      `
+      )
+      .is("tecnico_id", null)
+      .eq("estado", "pendiente")
+      .order("fecha_inicio", { ascending: true });
+
+    setPendientes(pend || []);
+
+    // 3) Mis tareas en proceso
+    const { data: mine } = await supabase
+      .from("historial_estaciones")
+      .select(
+        `
+        id, estado, fecha_inicio,
+        pedidos ( id, paciente_nombre, estado ),
+        estaciones ( id, nombre, orden )
+      `
+      )
+      .eq("tecnico_id", user.id)
       .eq("estado", "en_proceso")
       .order("fecha_inicio", { ascending: true });
 
-    if (error) console.error("Error fetching technician tasks:", error);
-    setTasks(data || []);
+    setMias(mine || []);
     setLoading(false);
   }
 
-  async function handleCompleteTask(taskId: string, orderId: string, currentOrder: number) {
-    const confirmAction = confirm("Mark this station as completed?");
-    if (!confirmAction) return;
+  async function tomar(historialId: string) {
+    const { error } = await supabase.rpc("rpc_tomar_tarea", {
+      p_historial_id: historialId,
+    });
+    if (error) return alert(`❌ ${error.message}`);
+    await fetchAll();
+  }
 
-    await completeStation(taskId, orderId, currentOrder);
-    alert("✅ Station completed!");
-    fetchTasks();
+  async function soltar(historialId: string) {
+    const comentario = prompt("Comentario (opcional):") ?? null;
+    const { error } = await supabase.rpc("rpc_soltar_tarea", {
+      p_historial_id: historialId,
+      p_comentario: comentario,
+    });
+    if (error) return alert(`❌ ${error.message}`);
+    await fetchAll();
+  }
+
+  async function completar(historialId: string) {
+    const comentario = prompt("Comentario (opcional):") ?? null;
+    const { error } = await supabase.rpc("rpc_completar_y_avanzar", {
+      p_historial_id: historialId,
+      p_comentario: comentario,
+    });
+    if (error) return alert(`❌ ${error.message}`);
+    await fetchAll();
   }
 
   useEffect(() => {
-    fetchTasks();
+    fetchAll();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="animate-spin w-6 h-6" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>🧰 Active Station Tasks</CardTitle>
+          <CardTitle>🧑‍🔧 Mi estación</CardTitle>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="animate-spin w-6 h-6 text-green-600" />
-            </div>
-          ) : tasks.length === 0 ? (
-            <p className="text-gray-500 text-center">No active tasks.</p>
+          <p className="text-sm">
+            <span className="font-medium">Estación actual:</span>{" "}
+            {miEstacionLabel}
+          </p>
+          {!miEstacionId && (
+            <p className="text-sm text-red-600 mt-2">
+              No tienes estación asignada. Ve a tu Perfil y selecciona una.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>📥 Pendientes en mi estación</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!miEstacionId ? (
+            <p className="text-gray-500">Asigna una estación para ver la cola.</p>
+          ) : pendientes.length === 0 ? (
+            <p className="text-gray-500">No hay pendientes.</p>
           ) : (
-            <table className="w-full text-sm border-collapse">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="p-2 text-left">Patient</th>
-                  <th className="p-2 text-left">Station</th>
-                  <th className="p-2 text-left">Started</th>
-                  <th className="p-2 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tasks.map((t) => (
-                  <tr key={t.id} className="border-b">
-                    <td className="p-2">{t.pedidos?.paciente_nombre}</td>
-                    <td className="p-2">{t.estaciones?.nombre}</td>
-                    <td className="p-2">
-                      {new Date(t.fecha_inicio).toLocaleDateString()}
-                    </td>
-                    <td className="p-2 text-center">
-                      <Button
-                        size="sm"
-                        onClick={() =>
-                          handleCompleteTask(
-                            t.id,
-                            t.pedidos.id,
-                            t.estaciones.orden
-                          )
-                        }
-                        className="bg-blue-600 hover:bg-blue-700"
-                      >
-                        <CheckCircle className="w-4 h-4 mr-1" /> Complete
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="space-y-2">
+              {pendientes.map((t) => (
+                <div
+                  key={t.id}
+                  className="border rounded p-3 flex items-center justify-between"
+                >
+                  <div className="text-sm">
+                    <p className="font-medium">{t.pedidos?.paciente_nombre}</p>
+                    <p className="text-gray-500">
+                      Pedido: {t.pedidos?.id?.slice(0, 8)} • Estación: {t.estaciones?.nombre}
+                    </p>
+                  </div>
+                  <Button onClick={() => tomar(t.id)}>Tomar</Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>🧰 Mis tareas en proceso</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {mias.length === 0 ? (
+            <p className="text-gray-500">No tienes tareas en proceso.</p>
+          ) : (
+            <div className="space-y-2">
+              {mias.map((t) => (
+                <div
+                  key={t.id}
+                  className="border rounded p-3 flex items-center justify-between"
+                >
+                  <div className="text-sm">
+                    <p className="font-medium">{t.pedidos?.paciente_nombre}</p>
+                    <p className="text-gray-500">
+                      Estación: {t.estaciones?.nombre} • Estado pedido: {t.pedidos?.estado}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => soltar(t.id)}>
+                      Soltar
+                    </Button>
+                    <Button onClick={() => completar(t.id)}>
+                      Completar y avanzar
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>

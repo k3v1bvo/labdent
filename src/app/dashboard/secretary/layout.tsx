@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
   Stethoscope,
 } from "lucide-react";
 import SecretaryNotifications from "@/components/notifications/SecretaryNotifications";
+import { ProfileDialog } from "@/components/profile/ProfileDialog";
 
 export default function SecretaryLayout({
   children,
@@ -21,6 +22,8 @@ export default function SecretaryLayout({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(true);
+  const [profileOpen, setProfileOpen] = useState(false);
+
   const [profile, setProfile] = useState<{ name?: string; role?: string }>({});
   const router = useRouter();
 
@@ -35,11 +38,13 @@ export default function SecretaryLayout({
         return;
       }
 
-      const { data: profileData } = await supabase
+      const { data: profileData, error } = await supabase
         .from("profiles")
         .select("nombre, rol")
         .eq("id", user.id)
         .single();
+
+      if (error) console.error("loadProfile error:", error);
 
       if (profileData)
         setProfile({
@@ -101,11 +106,13 @@ export default function SecretaryLayout({
               open={open}
               onClick={() => router.push("/dashboard/secretary/doctors")}
             />
+
+            {/* ✅ PERFIL COMO MODAL */}
             <SidebarButton
               icon={<User className="w-4 h-4" />}
               label="Perfil"
               open={open}
-              onClick={() => router.push("/dashboard/profile")}
+              onClick={() => setProfileOpen(true)}
             />
           </nav>
         </div>
@@ -142,8 +149,12 @@ export default function SecretaryLayout({
             <SecretaryNotifications /> {/* ✅ Solo una campanita */}
           </div>
         </header>
+
         {children}
       </main>
+
+      {/* ✅ MODAL PERFIL (reusable) */}
+      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
     </div>
   );
 }

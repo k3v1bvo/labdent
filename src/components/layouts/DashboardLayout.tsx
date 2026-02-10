@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import dynamic from "next/dynamic";
 import {
   Menu,
   Home,
@@ -12,13 +13,25 @@ import {
   Package,
   Settings,
   LogOut,
-  Hammer,
   User,
   MapPin,
   FileText,
   Clipboard,
 } from "lucide-react";
 import AdminNotifications from "@/components/notifications/AdminNotifications";
+
+// ✅ Import dinámico para evitar SSR/hydration issues
+// ✅ Además soporta default export (export default) y named export (export function ProfileDialog)
+const ProfileDialog = dynamic(
+  async () => {
+    const mod: any = await import("@/components/profile/ProfileDialog");
+    return mod.default ?? mod.ProfileDialog;
+  },
+  { ssr: false }
+) as unknown as React.ComponentType<{
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}>;
 
 interface Props {
   children: React.ReactNode;
@@ -27,9 +40,10 @@ interface Props {
 export default function DashboardLayout({ children }: Props) {
   const [open, setOpen] = useState(true);
   const [profile, setProfile] = useState<{ name?: string; role?: string }>({});
+  const [profileOpen, setProfileOpen] = useState(false);
+
   const router = useRouter();
 
-  // 🔹 Cargar perfil desde Supabase
   useEffect(() => {
     async function loadProfile() {
       const {
@@ -43,14 +57,12 @@ export default function DashboardLayout({ children }: Props) {
         .eq("id", user.id)
         .single();
 
-      if (profileData)
-        setProfile({ name: profileData.nombre, role: profileData.rol });
+      if (profileData) setProfile({ name: profileData.nombre, role: profileData.rol });
     }
 
     loadProfile();
   }, []);
 
-  // 🔹 Cerrar sesión
   async function handleLogout() {
     await supabase.auth.signOut();
     router.push("/login");
@@ -64,22 +76,22 @@ export default function DashboardLayout({ children }: Props) {
           open ? "w-64" : "w-16"
         } bg-green-700 text-white transition-all duration-300 flex flex-col shadow-lg`}
       >
-        {/* Botón para expandir/colapsar */}
+        {/* Toggle */}
         <button
           onClick={() => setOpen(!open)}
           className="absolute -right-4 top-6 z-20 bg-green-700 hover:bg-green-600 border border-green-400 text-white rounded-full p-2 shadow-md"
+          aria-label={open ? "Colapsar menú" : "Expandir menú"}
+          type="button"
         >
           <Menu className="w-4 h-4" />
         </button>
 
         {/* Logo */}
         <div className="flex items-center justify-center p-4 border-b border-green-600">
-          {open && (
-            <h1 className="font-bold text-lg tracking-wide">DentalApp</h1>
-          )}
+          {open && <h1 className="font-bold text-lg tracking-wide">DentalApp</h1>}
         </div>
 
-        {/* Navegación */}
+        {/* Nav */}
         <nav className="flex-1 space-y-1 px-2 mt-4">
           <SidebarButton
             icon={<Home className="w-4 h-4" />}
@@ -123,15 +135,17 @@ export default function DashboardLayout({ children }: Props) {
             open={open}
             onClick={() => router.push("/dashboard/admin/users")}
           />
+
+          {/* ✅ Perfil en modal */}
           <SidebarButton
             icon={<User className="w-4 h-4" />}
             label="Perfil"
             open={open}
-            onClick={() => router.push("/dashboard/profile")}
+            onClick={() => setProfileOpen(true)}
           />
         </nav>
 
-        {/* Footer del sidebar */}
+        {/* Footer */}
         <div className="p-4 border-t border-green-600 mt-auto">
           {open && (
             <div className="mb-3 text-sm">
@@ -140,42 +154,43 @@ export default function DashboardLayout({ children }: Props) {
             </div>
           )}
 
-          <Button
-            variant="destructive"
-            className="w-full justify-start"
-            onClick={handleLogout}
-          >
+          <Button variant="destructive" className="w-full justify-start" onClick={handleLogout}>
             <LogOut className="w-4 h-4 mr-2" />
             {open && "Cerrar sesión"}
           </Button>
         </div>
       </aside>
 
-      {/* Contenido principal */}
+      {/* Main */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
         <header className="flex justify-between items-center px-6 py-4 bg-white shadow-sm border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-700">
-            Panel Administrativo
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-700">Panel Administrativo</h2>
 
           <div className="flex items-center gap-4">
-            {/* 🔔 Notificaciones del Admin */}
             <AdminNotifications />
 
-            {/* Avatar del usuario */}
-            <Avatar name={profile?.name || "Admin"} />
+            <button
+              type="button"
+              onClick={() => setProfileOpen(true)}
+              className="rounded-full focus:outline-none focus:ring-2 focus:ring-green-600"
+              aria-label="Abrir perfil"
+              title="Abrir perfil"
+            >
+              <Avatar name={profile?.name || "Admin"} />
+            </button>
           </div>
         </header>
 
-        {/* Contenido dinámico */}
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
+
+      {/* ✅ Modal perfil */}
+      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
     </div>
   );
 }
 
-/** 🔹 Botón genérico para el sidebar */
+/** Botón sidebar */
 function SidebarButton({
   icon,
   label,
@@ -192,6 +207,7 @@ function SidebarButton({
       variant="ghost"
       className="w-full justify-start text-white hover:bg-green-600 transition-colors"
       onClick={onClick}
+      type="button"
     >
       <span className="mr-3">{icon}</span>
       {open && <span>{label}</span>}
