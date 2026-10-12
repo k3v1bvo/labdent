@@ -19,6 +19,7 @@ import {
   Sparkles,
   Shield,
 } from "lucide-react";
+import Image from "next/image";
 import AdminNotifications from "@/components/notifications/AdminNotifications";
 
 const ProfileDialog = dynamic(
@@ -101,17 +102,24 @@ export default function DashboardLayout({ children }: Props) {
           <Menu className="w-3.5 h-3.5" />
         </button>
 
-        {/* Brand Logo */}
-        <div className="h-16 flex items-center px-5 border-b border-slate-800/80 gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center text-white shadow-md shadow-cyan-500/20 shrink-0">
-            <Sparkles className="w-5 h-5" />
+        {/* Brand Logo Oficial Guisela */}
+        <div className="h-16 flex items-center px-4 border-b border-slate-800/80 gap-3">
+          <div className="relative w-9 h-9 rounded-xl bg-purple-950/60 p-1 flex items-center justify-center border border-[#A57CFA]/30 shrink-0">
+            <Image
+              src="/images/guisela-symbol.png"
+              alt="Guisela"
+              width={32}
+              height={32}
+              className="object-contain"
+              unoptimized
+            />
           </div>
           {open && (
             <div className="flex flex-col min-w-0">
-              <span className="font-bold text-base tracking-tight text-white flex items-center gap-1.5">
-                LabDent
-                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                  PRO
+              <span className="font-black text-base tracking-tight text-white flex items-center gap-1.5">
+                Guisela
+                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-[#A57CFA]/20 text-[#D0B9FF] border border-[#A57CFA]/30">
+                  ADMIN
                 </span>
               </span>
               <span className="text-[11px] text-slate-400 truncate">
@@ -132,12 +140,12 @@ export default function DashboardLayout({ children }: Props) {
                 onClick={() => router.push(item.path)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   isActive
-                    ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 shadow-sm"
+                    ? "bg-[#3C1C6C]/50 text-[#D0B9FF] border border-[#A57CFA]/40 shadow-sm font-bold"
                     : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent"
                 }`}
                 title={!open ? item.label : undefined}
               >
-                <span className={`${isActive ? "text-cyan-400" : "text-slate-400"}`}>
+                <span className={`${isActive ? "text-[#A57CFA]" : "text-slate-400"}`}>
                   {item.icon}
                 </span>
                 {open && <span className="truncate">{item.label}</span>}

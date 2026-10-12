@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +19,7 @@ import {
   Cpu,
   ScanLine,
   Loader2,
+  ArrowLeft,
 } from "lucide-react";
 
 export default function LoginPage() {
@@ -61,7 +64,7 @@ export default function LoginPage() {
     toast.success("Inicio de sesión exitoso");
     setLoading(false);
 
-    // ✅ Redirigir según el rol (tu lógica)
+    // Redirigir según el rol
     switch (profile.rol?.toLowerCase()) {
       case "admin":
         router.push("/dashboard/admin/overview");
@@ -85,61 +88,83 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-b from-[#FDFCFE] via-purple-50/40 to-[#F5F2FA] flex items-center justify-center p-6">
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-        {/* Panel branding */}
-        <div className="hidden lg:flex flex-col justify-between rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl p-10 shadow-sm min-h-[520px]">
+        {/* Panel branding oficial Guisela */}
+        <div className="hidden lg:flex flex-col justify-between rounded-3xl border border-purple-100 bg-white/80 backdrop-blur-xl p-10 shadow-xl shadow-purple-950/5 min-h-[540px]">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 px-3.5 py-1 text-xs font-semibold text-cyan-800 dark:text-cyan-300 bg-cyan-50/70 dark:bg-cyan-950/40">
-              <Sparkles className="w-3.5 h-3.5 text-cyan-600" />
-              LabDent • Dental Intelligence & Control
+            {/* Logo Oficial Guisela */}
+            <div className="relative h-16 w-52 mb-6">
+              <Image
+                src="/images/guisela-logo.png"
+                alt="Guisela Laboratorio Dental"
+                fill
+                className="object-contain"
+                priority
+                unoptimized
+              />
             </div>
 
-            <h1 className="mt-5 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
-              Gestión moderna para prótesis y mecánica dental
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#A57CFA]/30 px-3.5 py-1 text-xs font-semibold text-[#3C1C6C] bg-purple-100/60">
+              <Sparkles className="w-3.5 h-3.5 text-[#A57CFA]" />
+              Portal Oficial de Gestión Clínica
+            </div>
+
+            <h1 className="mt-5 text-3xl font-extrabold tracking-tight text-[#3C1C6C] leading-tight">
+              Precisión, estética y flujo 100% digital
             </h1>
 
-            <p className="mt-3.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-              Controla pedidos, flujo de estaciones de producción y trazabilidad clínica
-              con accesos dedicados para doctores, secretaría, técnicos y administración.
+            <p className="mt-3.5 text-sm leading-relaxed text-slate-600">
+              Control integral de órdenes de trabajo, seguimiento por estación técnica y trazabilidad en tiempo real para clínicas dentales, secretaría y taller.
             </p>
 
             <div className="mt-8 grid grid-cols-1 gap-3.5">
               <Feature
-                icon={<Cpu className="w-4 h-4 text-cyan-600" />}
-                title="Odontología Digital + Artesanía"
-                desc="Integración de fresado, escaneo 3D y procesos protésicos manuales."
+                icon={<Cpu className="w-4 h-4 text-[#A57CFA]" />}
+                title="Crown & Bridge + Flujo Digital"
+                desc="Zirconio multicapa, E.max e integración directa con escáneres intraorales."
               />
               <Feature
-                icon={<ScanLine className="w-4 h-4 text-cyan-600" />}
-                title="Trazabilidad por Estación"
-                desc="Registro paso a paso: operador, fecha, tiempos y control de calidad."
+                icon={<ScanLine className="w-4 h-4 text-[#A57CFA]" />}
+                title="Trazabilidad en 5 Estaciones"
+                desc="Seguimiento paso a paso desde el moldeado hasta el control final de calidad."
               />
               <Feature
-                icon={<ShieldCheck className="w-4 h-4 text-cyan-600" />}
-                title="Seguridad y Control por Roles"
-                desc="Privacidad estricta y vistas enfocadas para cada área de trabajo."
+                icon={<ShieldCheck className="w-4 h-4 text-[#A57CFA]" />}
+                title="Acceso Exclusivo por Rol"
+                desc="Vistas dedicadas para Odontólogos, Secretaría, Técnicos y Administrador."
               />
             </div>
           </div>
 
-          <div className="text-xs text-slate-400 mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between">
-            <span>© {new Date().getFullYear()} LabDent • Sistema Pro</span>
-            <span className="font-semibold text-cyan-600">v2.0 Clínico</span>
+          <div className="text-xs text-slate-400 mt-6 pt-4 border-t border-purple-100 flex justify-between items-center">
+            <span>© {new Date().getFullYear()} Guisela Laboratorio Dental</span>
+            <Link href="/" className="font-semibold text-[#3C1C6C] hover:text-[#A57CFA] flex items-center gap-1">
+              <ArrowLeft className="w-3 h-3" />
+              Volver al inicio
+            </Link>
           </div>
         </div>
 
         {/* Login Card */}
-        <Card className="rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
-          <CardHeader className="space-y-1.5 pt-8 pb-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 to-teal-500 text-white flex items-center justify-center mx-auto mb-2 shadow-md shadow-cyan-600/20">
-              <Sparkles className="w-6 h-6" />
+        <Card className="rounded-3xl shadow-xl shadow-purple-950/10 border border-purple-100 bg-white overflow-hidden">
+          <CardHeader className="space-y-2 pt-8 pb-4 text-center">
+            {/* Logo Guisela en mobile y header de card */}
+            <div className="relative h-14 w-48 mx-auto mb-1">
+              <Image
+                src="/images/guisela-logo.png"
+                alt="Guisela Laboratorio Dental"
+                fill
+                className="object-contain"
+                priority
+                unoptimized
+              />
             </div>
-            <CardTitle className="text-center text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Iniciar sesión
+            <CardTitle className="text-2xl font-black tracking-tight text-[#3C1C6C]">
+              Iniciar Sesión
             </CardTitle>
-            <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-              Accede al portal de tu laboratorio dental
+            <p className="text-sm text-slate-500">
+              Ingresa tus credenciales para acceder al sistema
             </p>
           </CardHeader>
 
@@ -147,7 +172,7 @@ export default function LoginPage() {
             <form onSubmit={handleLogin} className="space-y-4">
               {/* Email */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                <label className="text-xs font-bold uppercase tracking-wider text-[#3C1C6C]">
                   Correo electrónico
                 </label>
                 <div className="relative">
@@ -157,15 +182,15 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    placeholder="usuario@laboratorio.com"
-                    className="pl-10 h-11 rounded-xl border-slate-200 dark:border-slate-800 focus-visible:ring-cyan-500 text-sm"
+                    placeholder="doctor@clinica.com"
+                    className="pl-10 h-11 rounded-xl border-purple-100 focus-visible:ring-[#3C1C6C] text-sm"
                   />
                 </div>
               </div>
 
               {/* Password */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                <label className="text-xs font-bold uppercase tracking-wider text-[#3C1C6C]">
                   Contraseña
                 </label>
                 <div className="relative">
@@ -176,55 +201,51 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     placeholder="••••••••"
-                    className="pl-10 pr-10 h-11 rounded-xl border-slate-200 dark:border-slate-800 focus-visible:ring-cyan-500 text-sm"
+                    className="pl-10 pr-10 h-11 rounded-xl border-purple-100 focus-visible:ring-[#3C1C6C] text-sm"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPass((v) => !v)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-                    aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    onClick={() => setShowPass((s) => !s)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    aria-label={showPass ? "Ocultar contraseña" : "Ver contraseña"}
                   >
-                    {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPass ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </div>
 
+              {/* Botón de Submit */}
               <Button
                 type="submit"
-                className="w-full h-11 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white font-semibold rounded-xl shadow-md shadow-cyan-600/25 transition-all text-sm mt-2"
                 disabled={!canSubmit}
+                className="w-full h-11 rounded-xl font-bold text-white bg-[#3C1C6C] hover:bg-[#2C1450] shadow-md shadow-purple-950/20 hover:shadow-lg transition-all text-sm mt-2"
               >
                 {loading ? (
-                  <span className="inline-flex items-center gap-2">
+                  <span className="flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Iniciando sesión...
+                    Verificando...
                   </span>
                 ) : (
-                  "Ingresar al sistema"
+                  "Ingresar al Portal"
                 )}
               </Button>
-
-              <div className="flex items-center justify-between text-xs pt-1">
-                <span className="text-slate-500 dark:text-slate-400">
-                  ¿No tienes una cuenta aún?
-                </span>
-                <a
-                  href="/register"
-                  className="font-semibold text-cyan-600 dark:text-cyan-400 hover:underline"
-                >
-                  Registrarse aquí
-                </a>
-              </div>
-
-              <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 p-3.5 text-xs text-slate-500 dark:text-slate-400">
-                <p className="font-semibold text-slate-700 dark:text-slate-300 mb-0.5">
-                  Asignación de Roles
-                </p>
-                <p>
-                  Si necesitas permisos de Administrador, Técnico o Secretaría, contacta al supervisor de tu laboratorio.
-                </p>
-              </div>
             </form>
+
+            <div className="mt-6 pt-5 border-t border-purple-50 text-center">
+              <p className="text-xs text-slate-500">
+                ¿Aún no tienes cuenta para tu clínica?{" "}
+                <Link
+                  href="/register"
+                  className="font-bold text-[#3C1C6C] hover:text-[#A57CFA] transition-colors"
+                >
+                  Registrar Clínica
+                </Link>
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -242,13 +263,11 @@ function Feature({
   desc: string;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-2xl border bg-white/60 dark:bg-gray-900/40 p-4">
-      <div className="mt-0.5 text-green-700">{icon}</div>
+    <div className="flex items-start gap-3 rounded-2xl border border-purple-50 bg-white/60 p-3.5">
+      <div className="mt-0.5 rounded-lg bg-purple-50 p-2 text-[#3C1C6C]">{icon}</div>
       <div>
-        <p className="text-sm font-semibold text-gray-900 dark:text-white">
-          {title}
-        </p>
-        <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{desc}</p>
+        <p className="text-xs font-bold text-[#3C1C6C]">{title}</p>
+        <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{desc}</p>
       </div>
     </div>
   );

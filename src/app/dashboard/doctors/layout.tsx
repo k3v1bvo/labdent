@@ -13,6 +13,7 @@ import {
   User,
   Sparkles,
 } from "lucide-react";
+import Image from "next/image";
 import DoctorNotifications from "@/components/notifications/DoctorNotifications";
 
 export default function DoctorLayout({
@@ -83,16 +84,23 @@ export default function DoctorLayout({
           <Menu className="w-3.5 h-3.5" />
         </button>
 
-        {/* Brand Logo */}
-        <div className="h-16 flex items-center px-5 border-b border-slate-800/80 gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-md shadow-cyan-500/20 shrink-0">
-            <Sparkles className="w-5 h-5" />
+        {/* Brand Logo Oficial Guisela */}
+        <div className="h-16 flex items-center px-4 border-b border-slate-800/80 gap-3">
+          <div className="relative w-9 h-9 rounded-xl bg-purple-950/60 p-1 flex items-center justify-center border border-[#A57CFA]/30 shrink-0">
+            <Image
+              src="/images/guisela-symbol.png"
+              alt="Guisela"
+              width={32}
+              height={32}
+              className="object-contain"
+              unoptimized
+            />
           </div>
           {open && (
             <div className="flex flex-col min-w-0">
-              <span className="font-bold text-base tracking-tight text-white flex items-center gap-1.5">
-                LabDent
-                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              <span className="font-black text-base tracking-tight text-white flex items-center gap-1.5">
+                Guisela
+                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-[#A57CFA]/20 text-[#D0B9FF] border border-[#A57CFA]/30">
                   CLÍNICA
                 </span>
               </span>
