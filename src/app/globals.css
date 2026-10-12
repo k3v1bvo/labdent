@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  @apply bg-gray-100 text-gray-800;
+  @apply bg-slate-50 text-slate-800 antialiased selection:bg-cyan-500 selection:text-white dark:bg-slate-950 dark:text-slate-100;
 }
 
 

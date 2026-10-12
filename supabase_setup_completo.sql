@@ -502,6 +502,119 @@ CREATE POLICY "notificaciones_all" ON public.notificaciones FOR ALL USING (true)
 DROP POLICY IF EXISTS "tecnico_estacion_all" ON public.tecnico_estacion;
 CREATE POLICY "tecnico_estacion_all" ON public.tecnico_estacion FOR ALL USING (true);
 
+-- ====================================================================
+-- SISTEMA AUTOMÁTICO DE NOTIFICACIONES POR ROL Y ACCIÓN
+-- ====================================================================
+
+CREATE OR REPLACE FUNCTION trg_notificar_cambios_pedido()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_dest RECORD;
+BEGIN
+  -- 1. Cuando un Doctor crea un pedido en revisión -> Notificar a Admin y Secretaria
+  IF (TG_OP = 'INSERT' AND (NEW.estado::text IN ('pendiente_revision', 'en_revision'))) THEN
+    FOR v_dest IN (SELECT id FROM public.profiles WHERE rol IN ('admin', 'secretaria')) LOOP
+      INSERT INTO public.notificaciones (tipo, receptor_id, emisor_id, pedido_id, mensaje)
+      VALUES (
+        'secretaria',
+        v_dest.id,
+        NEW.creado_por,
+        NEW.id,
+        '🔔 Nuevo pedido #' || COALESCE(NEW.numero_requerimiento, 'S/N') || ' recibido de Dr. ' || COALESCE(NEW.doctor_nombre, 'Doctor') || ' para revisión.'
+      );
+    END LOOP;
+  END IF;
+
+  -- 2. Cuando el pedido pasa de revisión a 'pendiente' (Aprobado y enviado a taller) -> Notificar al Doctor
+  IF (TG_OP = 'UPDATE' AND (OLD.estado::text IN ('pendiente_revision', 'en_revision')) AND NEW.estado::text = 'pendiente') THEN
+    IF NEW.creado_por IS NOT NULL THEN
+      INSERT INTO public.notificaciones (tipo, receptor_id, emisor_id, pedido_id, mensaje)
+      VALUES (
+        'doctor',
+        NEW.creado_por,
+        NEW.revisado_por,
+        NEW.id,
+        '✅ Su pedido #' || COALESCE(NEW.numero_requerimiento, 'S/N') || ' (Paciente: ' || NEW.paciente_nombre || ') fue aprobado e ingresó a producción en taller.'
+      );
+    END IF;
+  END IF;
+
+  -- 3. Cuando el pedido es Rechazado -> Notificar al Doctor con motivo
+  IF (TG_OP = 'UPDATE' AND NEW.estado::text = 'rechazado' AND OLD.estado::text <> 'rechazado') THEN
+    IF NEW.creado_por IS NOT NULL THEN
+      INSERT INTO public.notificaciones (tipo, receptor_id, emisor_id, pedido_id, mensaje)
+      VALUES (
+        'doctor',
+        NEW.creado_por,
+        NEW.revisado_por,
+        NEW.id,
+        '⚠️ Pedido #' || COALESCE(NEW.numero_requerimiento, 'S/N') || ' observado: ' || COALESCE(NEW.motivo_rechazo, 'Revise los detalles con el laboratorio.')
+      );
+    END IF;
+  END IF;
+
+  -- 4. Cuando el pedido finaliza -> Notificar al Doctor y a Secretaría
+  IF (TG_OP = 'UPDATE' AND NEW.estado::text = 'finalizado' AND OLD.estado::text <> 'finalizado') THEN
+    IF NEW.creado_por IS NOT NULL THEN
+      INSERT INTO public.notificaciones (tipo, receptor_id, pedido_id, mensaje)
+      VALUES (
+        'doctor',
+        NEW.creado_por,
+        NEW.id,
+        '🎉 Su trabajo #' || COALESCE(NEW.numero_requerimiento, 'S/N') || ' (' || NEW.paciente_nombre || ') ha finalizado y está listo para entrega.'
+      );
+    END IF;
+    FOR v_dest IN (SELECT id FROM public.profiles WHERE rol IN ('admin', 'secretaria')) LOOP
+      INSERT INTO public.notificaciones (tipo, receptor_id, pedido_id, mensaje)
+      VALUES (
+        'secretaria',
+        v_dest.id,
+        NEW.id,
+        '📦 Pedido #' || COALESCE(NEW.numero_requerimiento, 'S/N') || ' finalizado en taller. Listo para empaque y cobro.'
+      );
+    END LOOP;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_notificaciones_pedidos ON public.pedidos;
+CREATE TRIGGER trg_notificaciones_pedidos
+AFTER INSERT OR UPDATE ON public.pedidos
+FOR EACH ROW EXECUTE FUNCTION trg_notificar_cambios_pedido();
+
+-- Trigger para historial_estaciones: Notifica a los técnicos de la estación cuando entra trabajo
+CREATE OR REPLACE FUNCTION trg_notificar_estacion_tecnico()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_nombre_estacion text;
+  v_num_req text;
+  v_tec RECORD;
+BEGIN
+  IF (TG_OP = 'INSERT' AND NEW.estado::text = 'pendiente' AND NEW.tecnico_id IS NULL) THEN
+    SELECT nombre INTO v_nombre_estacion FROM public.estaciones WHERE id = NEW.estacion_id;
+    SELECT numero_requerimiento INTO v_num_req FROM public.pedidos WHERE id = NEW.pedido_id;
+
+    FOR v_tec IN (SELECT tecnico_id FROM public.tecnico_estacion WHERE estacion_id = NEW.estacion_id) LOOP
+      INSERT INTO public.notificaciones (tipo, receptor_id, pedido_id, mensaje)
+      VALUES (
+        'tecnico',
+        v_tec.tecnico_id,
+        NEW.pedido_id,
+        '🛠️ Orden #' || COALESCE(v_num_req, 'S/N') || ' disponible para trabajar en tu estación (' || COALESCE(v_nombre_estacion, 'Taller') || ').'
+      );
+    END LOOP;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_notificaciones_estaciones ON public.historial_estaciones;
+CREATE TRIGGER trg_notificaciones_estaciones
+AFTER INSERT ON public.historial_estaciones
+FOR EACH ROW EXECUTE FUNCTION trg_notificar_estacion_tecnico();
+
 -- Habilitar Realtime para las tablas requeridas por la aplicación
 DO $$ BEGIN
   ALTER PUBLICATION supabase_realtime ADD TABLE public.notificaciones;

@@ -85,99 +85,103 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex items-center justify-center p-6">
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-6">
+      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
         {/* Panel branding */}
-        <div className="hidden lg:flex flex-col justify-between rounded-3xl border bg-white/70 dark:bg-gray-900/50 backdrop-blur p-10 shadow-sm">
+        <div className="hidden lg:flex flex-col justify-between rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl p-10 shadow-sm min-h-[520px]">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs text-gray-700 dark:text-gray-200 bg-white/70 dark:bg-gray-900/50">
-              <Sparkles className="w-4 h-4" />
-              Laboratorio Dental • Producción y Control
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 px-3.5 py-1 text-xs font-semibold text-cyan-800 dark:text-cyan-300 bg-cyan-50/70 dark:bg-cyan-950/40">
+              <Sparkles className="w-3.5 h-3.5 text-cyan-600" />
+              LabDent • Dental Intelligence & Control
             </div>
 
-            <h1 className="mt-4 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-              Gestión moderna para prótesis dentales
+            <h1 className="mt-5 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
+              Gestión moderna para prótesis y mecánica dental
             </h1>
 
-            <p className="mt-3 text-sm leading-6 text-gray-600 dark:text-gray-300">
-              Controla pedidos, estaciones de trabajo y seguimiento de producción
-              con un flujo claro para doctor, secretaría, técnico y administración.
+            <p className="mt-3.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+              Controla pedidos, flujo de estaciones de producción y trazabilidad clínica
+              con accesos dedicados para doctores, secretaría, técnicos y administración.
             </p>
 
-            <div className="mt-6 grid grid-cols-1 gap-3">
+            <div className="mt-8 grid grid-cols-1 gap-3.5">
               <Feature
-                icon={<Cpu className="w-4 h-4" />}
-                title="Tecnología + Artesanía"
-                desc="Integración de fresado, impresión 3D y procesos manuales."
+                icon={<Cpu className="w-4 h-4 text-cyan-600" />}
+                title="Odontología Digital + Artesanía"
+                desc="Integración de fresado, escaneo 3D y procesos protésicos manuales."
               />
               <Feature
-                icon={<ScanLine className="w-4 h-4" />}
-                title="Trazabilidad por estación"
-                desc="Cada paso queda registrado: quién, cuándo y qué se hizo."
+                icon={<ScanLine className="w-4 h-4 text-cyan-600" />}
+                title="Trazabilidad por Estación"
+                desc="Registro paso a paso: operador, fecha, tiempos y control de calidad."
               />
               <Feature
-                icon={<ShieldCheck className="w-4 h-4" />}
-                title="Acceso por roles"
-                desc="Permisos y vistas enfocadas para cada área del laboratorio."
+                icon={<ShieldCheck className="w-4 h-4 text-cyan-600" />}
+                title="Seguridad y Control por Roles"
+                desc="Privacidad estricta y vistas enfocadas para cada área de trabajo."
               />
             </div>
           </div>
 
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            © {new Date().getFullYear()} DentalLab • Sistema interno
+          <div className="text-xs text-slate-400 mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between">
+            <span>© {new Date().getFullYear()} LabDent • Sistema Pro</span>
+            <span className="font-semibold text-cyan-600">v2.0 Clínico</span>
           </div>
         </div>
 
         {/* Login Card */}
-        <Card className="rounded-3xl shadow-sm border bg-white dark:bg-gray-900">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-center text-2xl font-bold text-green-700">
+        <Card className="rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+          <CardHeader className="space-y-1.5 pt-8 pb-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 to-teal-500 text-white flex items-center justify-center mx-auto mb-2 shadow-md shadow-cyan-600/20">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <CardTitle className="text-center text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
               Iniciar sesión
             </CardTitle>
-            <p className="text-center text-sm text-gray-600 dark:text-gray-300">
-              Accede al sistema del laboratorio dental
+            <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+              Accede al portal de tu laboratorio dental
             </p>
           </CardHeader>
 
-          <CardContent className="p-6">
+          <CardContent className="p-8 pt-2">
             <form onSubmit={handleLogin} className="space-y-4">
               {/* Email */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                   Correo electrónico
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <Input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    placeholder="usuario@correo.com"
-                    className="pl-10"
+                    placeholder="usuario@laboratorio.com"
+                    className="pl-10 h-11 rounded-xl border-slate-200 dark:border-slate-800 focus-visible:ring-cyan-500 text-sm"
                   />
                 </div>
               </div>
 
               {/* Password */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                   Contraseña
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <Input
                     type={showPass ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    placeholder="********"
-                    className="pl-10 pr-10"
+                    placeholder="••••••••"
+                    className="pl-10 pr-10 h-11 rounded-xl border-slate-200 dark:border-slate-800 focus-visible:ring-cyan-500 text-sm"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPass((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                     aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
                   >
                     {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -187,7 +191,7 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full bg-green-700 hover:bg-green-800 text-white rounded-xl"
+                className="w-full h-11 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white font-semibold rounded-xl shadow-md shadow-cyan-600/25 transition-all text-sm mt-2"
                 disabled={!canSubmit}
               >
                 {loading ? (
@@ -196,29 +200,28 @@ export default function LoginPage() {
                     Iniciando sesión...
                   </span>
                 ) : (
-                  "Entrar"
+                  "Ingresar al sistema"
                 )}
               </Button>
 
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-300">
-                  ¿No tienes cuenta?
+              <div className="flex items-center justify-between text-xs pt-1">
+                <span className="text-slate-500 dark:text-slate-400">
+                  ¿No tienes una cuenta aún?
                 </span>
                 <a
                   href="/register"
-                  className="font-medium text-green-700 hover:underline"
+                  className="font-semibold text-cyan-600 dark:text-cyan-400 hover:underline"
                 >
-                  Crear cuenta
+                  Registrarse aquí
                 </a>
               </div>
 
-              <div className="rounded-2xl border bg-gray-50 dark:bg-gray-950 p-4 text-xs text-gray-600 dark:text-gray-300">
-                <p className="font-semibold text-gray-700 dark:text-gray-200 mb-1">
-                  Tip rápido
+              <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 p-3.5 text-xs text-slate-500 dark:text-slate-400">
+                <p className="font-semibold text-slate-700 dark:text-slate-300 mb-0.5">
+                  Asignación de Roles
                 </p>
                 <p>
-                  Si no recuerdas tu rol o acceso, contacta al administrador del
-                  laboratorio para habilitar permisos.
+                  Si necesitas permisos de Administrador, Técnico o Secretaría, contacta al supervisor de tu laboratorio.
                 </p>
               </div>
             </form>
