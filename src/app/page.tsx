@@ -114,16 +114,16 @@ export default function LandingPage() {
       {/* 1. NAVBAR SUPERIOR — Logo Primario a Color */}
       {/* ========================================================= */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-purple-100/80 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 sm:h-24 flex items-center justify-between">
           {/* Logo Primario Oficial */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative h-13 w-52 sm:w-60 flex items-center">
+          <Link href="/" className="flex items-center gap-3 group py-1">
+            <div className="relative h-14 sm:h-16 w-56 sm:w-68 flex items-center pt-1">
               <Image
                 src="/images/brand/guisela-logo-primary.png"
                 alt="Guisela Laboratorio Dental"
                 width={280}
-                height={85}
-                className="h-13 w-auto object-contain group-hover:scale-102 transition-transform"
+                height={95}
+                className="h-14 sm:h-16 w-auto object-contain group-hover:scale-102 transition-transform"
                 priority
                 unoptimized
               />
@@ -664,7 +664,7 @@ export default function LandingPage() {
       {/* ========================================================= */}
       {/* 5. FLUJO TÉCNICO EN 5 ESTACIONES — Diseño Gráfico Conectado */}
       {/* ========================================================= */}
-      <section id="flujo" className="py-22 bg-[#1A0E2B] text-white relative overflow-hidden">
+      <section id="flujo" className="pt-24 pb-36 sm:pt-28 sm:pb-44 bg-gradient-to-b from-[#180B28] via-[#120722] to-[#0A0314] text-white relative overflow-hidden">
         {/* Trama de fondo sutil */}
         <div className="absolute inset-0 bg-[radial-gradient(#A57CFA_1px,transparent_1px)] [background-size:28px_28px] opacity-15" />
 
@@ -751,6 +751,33 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+
+          {/* Panel inferior con más cuerpo y métricas de precisión */}
+          <div className="mt-14 pt-10 border-t border-white/10 grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm hover:border-[#A57CFA]/40 transition-colors">
+              <span className="text-2xl sm:text-3xl font-black text-[#A57CFA] block mb-1">&lt; 15 µm</span>
+              <span className="text-xs font-bold text-white uppercase tracking-wider block">Ajuste Marginal Microscópico</span>
+              <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+                Sellado periférico verificado en estereoscopio para preservar el muñón y prevenir filtraciones biológicas.
+              </p>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm hover:border-[#A57CFA]/40 transition-colors">
+              <span className="text-2xl sm:text-3xl font-black text-[#A57CFA] block mb-1">5 Ejes Robóticos</span>
+              <span className="text-xs font-bold text-white uppercase tracking-wider block">Mecanizado CAM Continuo</span>
+              <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+                Fresado de alta precisión en seco y húmedo con bloques de Zirconio multicapa y Disilicato de Litio.
+              </p>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm hover:border-[#A57CFA]/40 transition-colors">
+              <span className="text-2xl sm:text-3xl font-black text-[#A57CFA] block mb-1">100% Auditado</span>
+              <span className="text-xs font-bold text-white uppercase tracking-wider block">Trazabilidad en Vivo por Estación</span>
+              <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+                Cada orden registra su técnico responsable, tiempos de ejecución y comentarios de control de calidad.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -814,12 +841,12 @@ export default function LandingPage() {
             {/* Lado Derecho: Tarjeta de Contacto Directo */}
             <div className="lg:col-span-5">
               <div className="p-8 rounded-3xl bg-gradient-to-br from-purple-50/80 via-white to-purple-100/50 border-2 border-purple-100 shadow-xl">
-                <div className="relative w-12 h-12 mb-4">
+                <div className="relative h-14 w-52 mb-4">
                   <Image
-                    src="/images/brand/guisela-symbol-primary.png"
-                    alt="Símbolo Guisela"
+                    src="/images/brand/guisela-logo-primary.png"
+                    alt="Guisela Laboratorio Dental"
                     fill
-                    className="object-contain"
+                    className="object-contain object-left"
                     unoptimized
                   />
                 </div>
@@ -905,16 +932,16 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
             {/* Columna Logo */}
             <div>
-              <div className="relative h-14 w-48 mb-3">
+              <div className="relative h-20 sm:h-24 w-60 sm:w-72 mb-4">
                 <Image
                   src="/images/brand/guisela-logo-primary.png"
                   alt="Guisela Laboratorio Dental"
                   fill
-                  className="object-contain"
+                  className="object-contain object-left"
                   unoptimized
                 />
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed">
+              <p className="text-xs text-slate-500 leading-relaxed max-w-sm">
                 Laboratorio dental de vanguardia. Prótesis fija, implantes y flujo 100% digital con tecnología robótica de 5 ejes y artesanía de caracterización cerámica.
               </p>
             </div>
