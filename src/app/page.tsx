@@ -23,108 +23,137 @@ import {
   Play,
   Award,
   BadgeCheck,
+  Activity,
+  Maximize2,
   Calendar,
   Eye,
+  Check,
 } from "lucide-react";
 
-const carouselSlides = [
+interface GalleryItem {
+  id: string;
+  tag: string;
+  title: string;
+  category: string;
+  desc: string;
+  image: string;
+  badge: string;
+}
+
+const galleryItems: GalleryItem[] = [
   {
-    title: "Fresado Robótico CAD/CAM de 5 Ejes",
-    category: "Odontología Digital",
-    desc: "Mecanizado de máxima exactitud micrométrica (< 15 µm) en zirconio multicapa y disilicato de litio para un ajuste marginal impecable.",
-    image: "/images/slide1-cadcam.jpg",
-    badge: "Tecnología CAD/CAM",
+    id: "cadcam",
+    tag: "digital",
+    title: "Diseño CAD 3D & Fresado Robótico",
+    category: "Flujo Digital Intraoral",
+    desc: "Estación de diseño digital exocad y fresadora de 5 ejes para mecanizado de zirconio multicapa con ajuste marginal inferior a 15 micras.",
+    image: "/images/gallery/digital-cadcam.jpg",
+    badge: "Centro Digital 3D",
   },
   {
-    title: "Artesanía & Estratificación Cerámica",
-    category: "Estética & Textura",
-    desc: "Maestros ceramistas que reproducen textura, mamelones, translucidez y color natural con pincel y pigmentos finos.",
-    image: "/images/slide2-ceramic.jpg",
-    badge: "Detalle Artesanal",
+    id: "zirconia",
+    tag: "zirconio",
+    title: "Coronas & Puentes en Zirconio Multicapa",
+    category: "Crown & Bridge",
+    desc: "Ajuste pasivo y anatómico sobre modelo maestro seccionado. Translucidez gradual desde el cuello hasta el borde incisal natural.",
+    image: "/images/gallery/zirconia-crowns.jpg",
+    badge: "Crown & Bridge",
   },
   {
-    title: "Prótesis sobre Implantes & Rehabilitación",
-    category: "Rehabilitación Compleja",
-    desc: "Soluciones atornilladas y cementadas con perfiles de emergencia biológicos y ajuste pasivo garantizado.",
-    image: "/images/slide3-implants.jpg",
-    badge: "Precisión Clínica",
+    id: "ceramica",
+    tag: "ceramica",
+    title: "Estratificación & Arte Cerámico Artesanal",
+    category: "Estética Biomimética",
+    desc: "Maestro ceramista aplicando micro-capas de porcelana y pigmentos finos con pincel Kolinsky para mamelones y textura superficial viva.",
+    image: "/images/gallery/ceramic-artisan.jpg",
+    badge: "Estratificación Manual",
   },
   {
-    title: "Centro de Modelado 3D & Flujo Digital",
-    category: "Diseño & Planificación",
-    desc: "Recepción de archivos digitales STL/PLY desde escáneres intraorales (Medit, 3Shape, iTero) con simulación 3D en pantalla.",
-    image: "/images/mockup-cadcam-tablet.png",
-    badge: "Flujo 100% Digital",
+    id: "implantes",
+    tag: "implantes",
+    title: "Rehabilitación Compleja sobre Implantes",
+    category: "Implant Prosthetics",
+    desc: "Estructura fresada en titanio grado médico con muñones individuales y caracterización gingival para sobredentaduras y All-on-4.",
+    image: "/images/gallery/implant-prosthetics.jpg",
+    badge: "Implantología Avanzada",
   },
 ];
 
 export default function LandingPage() {
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [activeFilter, setActiveFilter] = useState("todos");
   const [isPaused, setIsPaused] = useState(false);
 
-  // Auto-play carrusel cada 5.5 segundos
+  // Filtrado de items
+  const filteredItems = activeFilter === "todos"
+    ? galleryItems
+    : galleryItems.filter((item) => item.tag === activeFilter);
+
+  // Autoplay respetando pausa
   useEffect(() => {
     if (isPaused) return;
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % carouselSlides.length);
-    }, 5500);
-    return () => clearInterval(interval);
-  }, [isPaused]);
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % filteredItems.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [isPaused, filteredItems.length]);
+
+  const activeItem = filteredItems[currentIndex] || filteredItems[0];
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % carouselSlides.length);
+    setCurrentIndex((prev) => (prev + 1) % filteredItems.length);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + carouselSlides.length) % carouselSlides.length);
+    setCurrentIndex((prev) => (prev - 1 + filteredItems.length) % filteredItems.length);
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFCFE] text-slate-800 font-sans selection:bg-[#A57CFA] selection:text-white">
+    <div className="min-h-screen bg-[#FAF9FD] text-slate-800 font-sans selection:bg-[#A57CFA] selection:text-white">
       {/* ========================================================= */}
-      {/* 1. NAVBAR SUPERIOR CON LOGO OFICIAL GUISELA */}
+      {/* 1. NAVBAR SUPERIOR — Logo Primario a Color */}
       {/* ========================================================= */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-purple-100 shadow-xs">
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-purple-100/80 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          {/* Logo Oficial Guisela Laboratorio Dental */}
+          {/* Logo Primario Oficial */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative h-14 w-48 sm:w-56 flex items-center">
+            <div className="relative h-13 w-52 sm:w-60 flex items-center">
               <Image
-                src="/images/guisela-logo.png"
+                src="/images/brand/guisela-logo-primary.png"
                 alt="Guisela Laboratorio Dental"
-                width={260}
-                height={80}
-                className="h-14 w-auto object-contain group-hover:scale-102 transition-transform"
+                width={280}
+                height={85}
+                className="h-13 w-auto object-contain group-hover:scale-102 transition-transform"
                 priority
                 unoptimized
               />
             </div>
           </Link>
 
-          {/* Navegación Desktop */}
-          <nav className="hidden md:flex items-center gap-7 text-sm font-semibold text-slate-600">
+          {/* Menú de Navegación */}
+          <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-slate-600">
             <a href="#servicios" className="hover:text-[#3C1C6C] transition-colors">
               Servicios
             </a>
-            <a href="#flujo-digital" className="hover:text-[#3C1C6C] transition-colors">
-              Flujo Digital
-            </a>
             <a href="#galeria" className="hover:text-[#3C1C6C] transition-colors">
-              Galería de Trabajos
+              Galería Real
             </a>
-            <a href="#tecnicos" className="hover:text-[#3C1C6C] transition-colors">
-              Equipo Técnico
+            <a href="#flujo" className="hover:text-[#3C1C6C] transition-colors">
+              5 Estaciones
+            </a>
+            <a href="#alianza" className="hover:text-[#3C1C6C] transition-colors">
+              Para Clínicas
             </a>
             <a href="#contacto" className="hover:text-[#3C1C6C] transition-colors">
               Contacto
             </a>
           </nav>
 
-          {/* CTAs de Acceso al Sistema */}
+          {/* Botones de Acceso */}
           <div className="flex items-center gap-3">
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-[#3C1C6C] bg-purple-50 hover:bg-purple-100 border border-purple-200 transition-all shadow-xs"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-[#3C1C6C] bg-purple-50/80 hover:bg-purple-100 border border-purple-200/80 transition-all shadow-xs"
             >
               <LogIn className="w-4 h-4 text-[#3C1C6C]" />
               <span className="hidden sm:inline">Portal Doctores</span>
@@ -136,7 +165,7 @@ export default function LandingPage() {
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-[#3C1C6C] hover:bg-[#2C1450] shadow-md shadow-purple-950/20 hover:shadow-lg transition-all"
             >
               <UserPlus className="w-4 h-4" />
-              <span className="hidden sm:inline">Registro Clínica</span>
+              <span className="hidden sm:inline">Nueva Clínica</span>
               <span className="sm:hidden">Registro</span>
             </Link>
           </div>
@@ -144,19 +173,19 @@ export default function LandingPage() {
       </header>
 
       {/* ========================================================= */}
-      {/* 2. HERO SECTION */}
+      {/* 2. HERO SECTION — Fotografía Real CAD/CAM + Emblema Invertido */}
       {/* ========================================================= */}
       <section className="relative overflow-hidden pt-10 pb-16 lg:pt-16 lg:pb-24">
-        {/* Gradiente de fondo en paleta Deep Purple & Brand Violet */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[550px] bg-gradient-to-b from-[#D0B9FF]/35 via-[#A57CFA]/15 to-transparent blur-3xl -z-10 rounded-full" />
+        {/* Glow de fondo */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[550px] bg-gradient-to-b from-[#D0B9FF]/30 via-[#A57CFA]/10 to-transparent blur-3xl -z-10 rounded-full" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Columna Izquierda: Mensaje y Propuesta de Valor */}
+            {/* Mensaje Principal */}
             <div className="lg:col-span-7 text-left">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-100/90 border border-[#A57CFA]/40 text-[#3C1C6C] text-xs font-bold tracking-wide uppercase shadow-xs mb-5">
                 <Sparkles className="w-3.5 h-3.5 text-[#A57CFA]" />
-                Prótesis Dentales de Alta Gama • Flujo 100% Digital CAD/CAM
+                Prótesis Dentales de Alta Complejidad • Flujo 100% Digital CAD/CAM
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-[#3C1C6C] tracking-tight leading-[1.12]">
@@ -167,11 +196,10 @@ export default function LandingPage() {
               </h1>
 
               <p className="mt-5 text-base sm:text-lg text-slate-600 leading-relaxed max-w-xl">
-                Laboratorio dental especializado en <strong>Crown & Bridge (Zirconio multicapa, E.max)</strong>,{" "}
+                Especialistas en <strong>Crown & Bridge (Zirconio multicapa, E.max)</strong>,{" "}
                 <strong>Implant Prosthetics</strong> y <strong>Flujo Digital Intraoral</strong> con trazabilidad en vivo por estación para clínicas y odontólogos.
               </p>
 
-              {/* Botones de acción principales */}
               <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                 <Link
                   href="/login"
@@ -186,16 +214,16 @@ export default function LandingPage() {
                   className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-[#3C1C6C] bg-white hover:bg-purple-50 border border-purple-200 shadow-xs hover:border-purple-300 transition-all text-base"
                 >
                   <Eye className="w-4 h-4 text-[#A57CFA]" />
-                  <span>Ver Trabajos Realizados</span>
+                  <span>Ver Trabajos de Laboratorio</span>
                 </a>
               </div>
 
-              {/* Métricas de confianza */}
+              {/* Indicadores Clave */}
               <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-5 pt-8 border-t border-purple-100">
                 <div>
                   <p className="text-3xl font-black text-[#3C1C6C]">+12 Años</p>
                   <p className="text-xs font-semibold text-slate-500 uppercase mt-0.5">
-                    Experiencia Protésica
+                    Trayectoria Protésica
                   </p>
                 </div>
                 <div>
@@ -213,71 +241,75 @@ export default function LandingPage() {
                 <div>
                   <p className="text-3xl font-black text-[#3C1C6C]">Realtime</p>
                   <p className="text-xs font-semibold text-slate-500 uppercase mt-0.5">
-                    Control por Estación
+                    Tracking por Estación
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Columna Derecha: Mockup Oficial y Tarjeta de Marca (De las fotos del cliente) */}
+            {/* Showcase Visual: Fotografía de Estudio CAD/CAM + Emblema Invertido */}
             <div className="lg:col-span-5 relative">
-              <div className="relative rounded-3xl p-6 bg-gradient-to-br from-white via-purple-50/50 to-purple-100/30 border-2 border-purple-100 shadow-2xl shadow-purple-950/10">
-                {/* Logo Guisela flotante */}
-                <div className="flex items-center justify-between pb-4 border-b border-purple-100 mb-4">
-                  <div className="relative h-12 w-44">
-                    <Image
-                      src="/images/guisela-logo.png"
-                      alt="Guisela Logo"
-                      fill
-                      className="object-contain"
-                      unoptimized
-                    />
-                  </div>
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#3C1C6C] text-white">
-                    Laboratorio Certificado
-                  </span>
-                </div>
-
-                {/* Imagen del Mockup CAD/CAM y Tablet del Cliente */}
-                <div className="relative rounded-2xl overflow-hidden aspect-16/10 border border-purple-200/80 shadow-md bg-slate-900 group">
+              <div className="relative rounded-3xl overflow-hidden border-2 border-purple-200/80 shadow-2xl shadow-purple-950/15 bg-white p-3">
+                <div className="relative rounded-2xl overflow-hidden aspect-16/11 bg-slate-900 group">
                   <Image
-                    src="/images/mockup-cadcam-tablet.png"
-                    alt="Dental Laboratory Website Mockup CAD/CAM"
+                    src="/images/gallery/digital-cadcam.jpg"
+                    alt="Centro de Diseño CAD/CAM 3D y Fresado Robótico Guisela"
                     fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="object-cover object-center group-hover:scale-103 transition-transform duration-700"
+                    priority
                     unoptimized
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#3C1C6C]/80 via-transparent to-transparent flex items-end p-4">
-                    <div>
-                      <p className="text-xs font-bold text-[#D0B9FF] uppercase tracking-wider">
-                        Flujo CAD/CAM Clínico
+                  {/* Overlay gradiente muy sutil en la base */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#1F0D36]/85 via-transparent to-transparent flex items-end p-5">
+                    <div className="text-white">
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-[#A57CFA] text-white tracking-wider">
+                        Taller Central
+                      </span>
+                      <p className="text-base font-extrabold text-white mt-1.5 leading-snug">
+                        Centro de Fresado Robótico & Diseño Exocad
                       </p>
-                      <p className="text-sm font-extrabold text-white">
-                        Simulación 3D y Ajuste Virtual de Coronas
+                      <p className="text-xs text-purple-200 mt-0.5">
+                        Mecanizado en bloques de Zirconio Monolítico y E.max
                       </p>
                     </div>
+                  </div>
+
+                  {/* Sello / Emblema Invertido en la esquina superior */}
+                  <div className="absolute top-3 right-3 bg-[#3C1C6C]/85 backdrop-blur-md rounded-xl p-2 border border-[#A57CFA]/30 shadow-lg flex items-center gap-2">
+                    <div className="relative w-7 h-7">
+                      <Image
+                        src="/images/brand/guisela-emblem-inverted.png"
+                        alt="Emblema Guisela"
+                        fill
+                        className="object-contain"
+                        unoptimized
+                      />
+                    </div>
+                    <span className="text-[10px] font-bold text-white tracking-wider uppercase pr-1">
+                      Calidad Certificada
+                    </span>
                   </div>
                 </div>
 
-                {/* Tarjetas de Features Rápidos */}
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-xl bg-white border border-purple-100 shadow-xs flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-[#3C1C6C]/10 text-[#3C1C6C] flex items-center justify-center font-bold text-xs">
+                {/* 2 Badges Rápidos */}
+                <div className="mt-3 grid grid-cols-2 gap-2.5">
+                  <div className="p-2.5 rounded-xl bg-purple-50/60 border border-purple-100 flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#3C1C6C] text-[#D0B9FF] flex items-center justify-center font-bold text-xs shrink-0">
                       5E
                     </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-800 leading-tight">Fresado 5 Ejes</p>
-                      <p className="text-[10px] text-slate-500">Zirconio & E.max</p>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-[#3C1C6C] truncate">Fresado 5 Ejes</p>
+                      <p className="text-[10px] text-slate-500">Zirconio de alta pureza</p>
                     </div>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-white border border-purple-100 shadow-xs flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-[#A57CFA]/15 text-[#3C1C6C] flex items-center justify-center font-bold text-xs">
+                  <div className="p-2.5 rounded-xl bg-purple-50/60 border border-purple-100 flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#A57CFA] text-white flex items-center justify-center font-bold text-xs shrink-0">
                       🎨
                     </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-800 leading-tight">Estratificación</p>
-                      <p className="text-[10px] text-slate-500">Pincel artesanal</p>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-[#3C1C6C] truncate">Estratificación</p>
+                      <p className="text-[10px] text-slate-500">Pincel artesanal Kolinsky</p>
                     </div>
                   </div>
                 </div>
@@ -288,150 +320,197 @@ export default function LandingPage() {
       </section>
 
       {/* ========================================================= */}
-      {/* 3. CARRUSEL DE FOTOS INTERACTIVO (GALERÍA CLÍNICA) */}
+      {/* 3. GALERÍA CLÍNICA REAL — Fotos Macro en Alta Resolución */}
       {/* ========================================================= */}
       <section
         id="galeria"
-        className="py-16 bg-gradient-to-b from-white via-purple-50/50 to-white border-y border-purple-100"
+        className="py-18 bg-white border-y border-purple-100 relative"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8">
+          {/* Encabezado y Filtros */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
             <div>
               <span className="text-xs font-extrabold uppercase tracking-widest text-[#A57CFA]">
-                Muestra de Excelencia en Laboratorio
+                Fotografía Real del Taller
               </span>
               <h2 className="text-3xl font-black text-[#3C1C6C] tracking-tight mt-1">
-                Galería de Procesos y Trabajos Dentales
+                Galería de Trabajos y Casos Terminados
               </h2>
+              <p className="text-sm text-slate-500 mt-1 max-w-xl">
+                Fotos reales de nuestras prótesis, coronas estratificadas y barras sobre implantes fabricadas en el laboratorio.
+              </p>
             </div>
-            <p className="text-sm text-slate-500 max-w-md mt-2 md:mt-0">
-              Imágenes de nuestro flujo de trabajo: fresado robótico, caracterización manual con pincel y ajuste de implantes.
-            </p>
+
+            {/* Pestañas de Filtro Interactivas */}
+            <div className="flex flex-wrap gap-2">
+              {[
+                { key: "todos", label: "Ver Todas" },
+                { key: "digital", label: "CAD/CAM 3D" },
+                { key: "zirconio", label: "Zirconio" },
+                { key: "ceramica", label: "Cerámica" },
+                { key: "implantes", label: "Implantes" },
+              ].map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => {
+                    setActiveFilter(tab.key);
+                    setCurrentIndex(0);
+                  }}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    activeFilter === tab.key
+                      ? "bg-[#3C1C6C] text-white shadow-sm"
+                      : "bg-purple-50 text-slate-600 hover:bg-purple-100"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Contenedor del Carrusel Principal */}
-          <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-slate-900 aspect-16/9 md:aspect-21/9 max-h-[580px]">
-            {carouselSlides.map((slide, index) => (
-              <div
-                key={slide.title}
-                className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-                  index === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
-                }`}
-              >
-                {/* Imagen del Slide */}
-                <Image
-                  src={slide.image}
-                  alt={slide.title}
-                  fill
-                  className="object-cover object-center"
-                  priority={index === 0}
-                  unoptimized
-                />
+          {/* Visor Principal del Carrusel — Altura fija garantizada */}
+          <div
+            className="relative w-full h-[460px] sm:h-[540px] lg:h-[600px] min-h-[460px] rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-slate-950 group"
+            style={{ minHeight: "460px" }}
+          >
+            {filteredItems.map((item, idx) => {
+              const isActive = idx === currentIndex;
+              return (
+                <div
+                  key={item.id}
+                  className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                    isActive ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+                  }`}
+                >
+                  {/* Imagen en Alta Definición limpia */}
+                  <Image
+                    src={item.image}
+                    alt={item.title}
+                    fill
+                    className="object-cover object-center"
+                    priority={idx === 0}
+                    unoptimized
+                  />
 
-                {/* Overlay de gradiente */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-6 sm:p-10 lg:p-14">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#A57CFA] text-white w-fit mb-3">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    {slide.badge}
-                  </span>
-                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight drop-shadow-md">
-                    {slide.title}
-                  </h3>
-                  <p className="text-sm sm:text-base text-slate-200 mt-2 max-w-2xl drop-shadow-sm leading-relaxed">
-                    {slide.desc}
-                  </p>
+                  {/* Badge Flotante Superior */}
+                  <div className="absolute top-5 left-5 z-20">
+                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black bg-[#3C1C6C]/90 text-white backdrop-blur-md border border-white/20 shadow-lg">
+                      <Sparkles className="w-3.5 h-3.5 text-[#A57CFA]" />
+                      {item.badge}
+                    </span>
+                  </div>
+
+                  {/* Tarjeta de Información en la Esquina Inferior */}
+                  <div className="absolute bottom-6 left-6 right-6 md:right-auto md:max-w-lg z-20 p-5 rounded-2xl bg-slate-950/85 backdrop-blur-md border border-white/20 text-white shadow-2xl">
+                    <span className="text-[11px] font-extrabold text-[#A57CFA] uppercase tracking-wider">
+                      {item.category}
+                    </span>
+                    <h3 className="text-xl sm:text-2xl font-black text-white mt-1 leading-snug">
+                      {item.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-200 mt-2 leading-relaxed">
+                      {item.desc}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
-            {/* Controles de Navegación (Flechas) */}
+            {/* Flechas de Navegación Grandes y Accesibles */}
             <button
+              type="button"
               onClick={prevSlide}
-              aria-label="Anterior foto"
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white/85 hover:bg-white text-[#3C1C6C] backdrop-blur-md flex items-center justify-center shadow-lg transition-all hover:scale-110"
+              aria-label="Foto anterior"
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-13 h-13 rounded-full bg-white/95 hover:bg-white text-[#3C1C6C] shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
             >
-              <ChevronLeft className="w-6 h-6" />
+              <ChevronLeft className="w-7 h-7 stroke-[2.5]" />
             </button>
 
             <button
+              type="button"
               onClick={nextSlide}
               aria-label="Siguiente foto"
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white/85 hover:bg-white text-[#3C1C6C] backdrop-blur-md flex items-center justify-center shadow-lg transition-all hover:scale-110"
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-13 h-13 rounded-full bg-white/95 hover:bg-white text-[#3C1C6C] shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
             >
-              <ChevronRight className="w-6 h-6" />
+              <ChevronRight className="w-7 h-7 stroke-[2.5]" />
             </button>
 
-            {/* Indicadores de Puntos y Contador */}
-            <div className="absolute bottom-5 right-6 z-20 flex items-center gap-3">
-              <span className="text-xs font-bold text-white/80 bg-black/40 px-2.5 py-1 rounded-full backdrop-blur-xs">
-                {currentSlide + 1} / {carouselSlides.length}
+            {/* Contador de Fotos */}
+            <div className="absolute bottom-5 right-6 z-30 flex items-center gap-2">
+              <span className="text-xs font-black text-white bg-black/75 px-3.5 py-1.5 rounded-full backdrop-blur-md border border-white/20 shadow-md">
+                {currentIndex + 1} / {filteredItems.length}
               </span>
-              <div className="flex gap-1.5">
-                {carouselSlides.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentSlide(i)}
-                    aria-label={`Ir a foto ${i + 1}`}
-                    className={`h-2.5 rounded-full transition-all ${
-                      i === currentSlide ? "w-8 bg-[#A57CFA]" : "w-2.5 bg-white/60 hover:bg-white"
-                    }`}
-                  />
-                ))}
-              </div>
             </div>
           </div>
 
-          {/* Miniaturas de selección directa */}
-          <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {carouselSlides.map((slide, idx) => (
-              <button
-                key={slide.title}
-                onClick={() => setCurrentSlide(idx)}
-                className={`relative rounded-xl overflow-hidden aspect-16/9 border-2 transition-all p-2 flex flex-col justify-end text-left ${
-                  idx === currentSlide
-                    ? "border-[#3C1C6C] ring-2 ring-[#A57CFA]/50"
-                    : "border-purple-100 hover:border-purple-300 opacity-70 hover:opacity-100"
-                }`}
-              >
-                <Image
-                  src={slide.image}
-                  alt={slide.title}
-                  fill
-                  className="object-cover"
-                  unoptimized
-                />
-                <div className="absolute inset-0 bg-black/50" />
-                <span className="relative z-10 text-[11px] font-extrabold text-white truncate">
-                  {slide.title}
-                </span>
-              </button>
-            ))}
+          {/* Miniaturas de Acceso Rápido con Altura Explícita */}
+          <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+            {filteredItems.map((item, idx) => {
+              const isActive = idx === currentIndex;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setCurrentIndex(idx)}
+                  className={`relative w-full h-24 sm:h-28 rounded-2xl overflow-hidden border-2 transition-all p-3 flex flex-col justify-end text-left cursor-pointer group ${
+                    isActive
+                      ? "border-[#3C1C6C] ring-4 ring-[#A57CFA]/50 shadow-lg scale-101"
+                      : "border-purple-200/80 hover:border-purple-400 opacity-80 hover:opacity-100"
+                  }`}
+                  style={{ minHeight: "96px" }}
+                >
+                  <Image
+                    src={item.image}
+                    alt={item.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform"
+                    unoptimized
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
+                  <span className="relative z-10 text-xs font-black text-white leading-tight drop-shadow-md">
+                    {item.title}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* ========================================================= */}
-      {/* 4. SERVICIOS PRINCIPALES (Basados en el Mockup de la foto) */}
+      {/* 4. SERVICIOS CLÍNICOS — Con Logo Monocromo como Marca de Agua */}
       {/* ========================================================= */}
-      <section id="servicios" className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="servicios" className="py-20 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <span className="text-xs font-extrabold uppercase tracking-widest text-[#A57CFA]">
-              Soluciones Especializadas
+              Catálogo de Especialidades
             </span>
             <h2 className="text-3xl sm:text-4xl font-black text-[#3C1C6C] tracking-tight mt-1">
               Servicios Clínicos del Laboratorio
             </h2>
-            <p className="text-slate-600 mt-3 text-base">
-              Especialidades basadas en la guía técnica oficial de Guisela Laboratorio Dental.
+            <p className="text-slate-600 mt-2 text-base">
+              Estándares de confección basados en la ficha técnica oficial de Guisela Laboratorio Dental.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* 1. Crown & Bridge */}
-            <div className="group rounded-3xl p-8 bg-white border border-purple-100 hover:border-[#A57CFA]/50 shadow-md hover:shadow-xl transition-all flex flex-col justify-between">
+            <div className="group rounded-3xl p-8 bg-white border border-purple-100/90 hover:border-[#A57CFA]/60 shadow-md hover:shadow-xl transition-all flex flex-col justify-between relative overflow-hidden">
+              {/* Marca de agua monocromo en la esquina */}
+              <div className="absolute -bottom-6 -right-6 w-28 h-28 opacity-6 pointer-events-none">
+                <Image
+                  src="/images/brand/guisela-symbol-monochrome.png"
+                  alt="Watermark"
+                  fill
+                  className="object-contain"
+                  unoptimized
+                />
+              </div>
+
               <div>
                 <div className="w-14 h-14 rounded-2xl bg-purple-100/70 text-[#3C1C6C] flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                   <Award className="w-7 h-7 text-[#3C1C6C]" />
@@ -472,10 +551,22 @@ export default function LandingPage() {
             </div>
 
             {/* 2. Implant Prosthetics */}
-            <div className="group rounded-3xl p-8 bg-white border-2 border-[#A57CFA]/40 shadow-lg hover:shadow-2xl transition-all flex flex-col justify-between relative">
-              <span className="absolute -top-3 right-6 px-3 py-1 rounded-full text-[11px] font-black uppercase bg-[#3C1C6C] text-white tracking-wider shadow-xs">
+            <div className="group rounded-3xl p-8 bg-white border-2 border-[#A57CFA]/50 shadow-lg hover:shadow-2xl transition-all flex flex-col justify-between relative overflow-hidden">
+              <span className="absolute top-4 right-6 px-3 py-1 rounded-full text-[11px] font-black uppercase bg-[#3C1C6C] text-white tracking-wider shadow-xs">
                 Alta Demanda
               </span>
+
+              {/* Marca de agua monocromo en la esquina */}
+              <div className="absolute -bottom-6 -right-6 w-28 h-28 opacity-6 pointer-events-none">
+                <Image
+                  src="/images/brand/guisela-symbol-monochrome.png"
+                  alt="Watermark"
+                  fill
+                  className="object-contain"
+                  unoptimized
+                />
+              </div>
+
               <div>
                 <div className="w-14 h-14 rounded-2xl bg-[#3C1C6C] text-white flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-md shadow-purple-950/20">
                   <ShieldCheck className="w-7 h-7 text-[#D0B9FF]" />
@@ -516,7 +607,18 @@ export default function LandingPage() {
             </div>
 
             {/* 3. Digital Workflow */}
-            <div className="group rounded-3xl p-8 bg-white border border-purple-100 hover:border-[#A57CFA]/50 shadow-md hover:shadow-xl transition-all flex flex-col justify-between">
+            <div className="group rounded-3xl p-8 bg-white border border-purple-100/90 hover:border-[#A57CFA]/60 shadow-md hover:shadow-xl transition-all flex flex-col justify-between relative overflow-hidden">
+              {/* Marca de agua monocromo en la esquina */}
+              <div className="absolute -bottom-6 -right-6 w-28 h-28 opacity-6 pointer-events-none">
+                <Image
+                  src="/images/brand/guisela-symbol-monochrome.png"
+                  alt="Watermark"
+                  fill
+                  className="object-contain"
+                  unoptimized
+                />
+              </div>
+
               <div>
                 <div className="w-14 h-14 rounded-2xl bg-purple-100/70 text-[#3C1C6C] flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                   <Cpu className="w-7 h-7 text-[#3C1C6C]" />
@@ -560,68 +662,91 @@ export default function LandingPage() {
       </section>
 
       {/* ========================================================= */}
-      {/* 5. FLUJO DE TRABAJO EN 5 ESTACIONES */}
+      {/* 5. FLUJO TÉCNICO EN 5 ESTACIONES — Diseño Gráfico Conectado */}
       {/* ========================================================= */}
-      <section id="flujo-digital" className="py-20 bg-slate-900 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(#3C1C6C_1px,transparent_1px)] [background-size:24px_24px] opacity-25" />
+      <section id="flujo" className="py-22 bg-[#1A0E2B] text-white relative overflow-hidden">
+        {/* Trama de fondo sutil */}
+        <div className="absolute inset-0 bg-[radial-gradient(#A57CFA_1px,transparent_1px)] [background-size:28px_28px] opacity-15" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <span className="text-xs font-extrabold uppercase tracking-widest text-[#A57CFA]">
-              Trazabilidad en Tiempo Real
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight mt-1">
-              Flujo de Producción del Laboratorio
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 text-[#D0B9FF] text-xs font-bold uppercase mb-4">
+              <Activity className="w-3.5 h-3.5 text-[#A57CFA]" />
+              Control de Calidad Riguroso
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+              Flujo de Producción en 5 Estaciones de Taller
             </h2>
-            <p className="text-slate-400 mt-3 text-sm">
-              Cada pedido pasa por 5 estaciones de control riguroso para asegurar máxima precisión antes del despacho.
+            <p className="text-slate-300 mt-2 text-sm max-w-xl mx-auto">
+              Cada prótesis o corona viaja por un circuito técnico auditado paso a paso para garantizar que ningún trabajo salga sin control milimétrico.
             </p>
           </div>
 
+          {/* Grid de Estaciones con Conexión Visual */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             {[
               {
-                step: "01",
-                name: "Moldeado / Impresión",
-                desc: "Vaciado de yeso especial o impresión 3D en resina de alta resolución.",
+                num: "01",
+                name: "Moldeado",
+                subtitle: "Vaciado & Modelos",
+                desc: "Vaciado de yeso especial tipo IV o impresión 3D en resina para obtener el modelo maestro de trabajo.",
+                icon: "🏺",
               },
               {
-                step: "02",
+                num: "02",
                 name: "Escaneo 3D",
-                desc: "Digitalización óptica del modelo físico y delimitación de márgenes.",
+                subtitle: "Digitalización Óptica",
+                desc: "Digitalización con escáner de laboratorio para registrar la preparación y delimitar la línea de terminación.",
+                icon: "📐",
               },
               {
-                step: "03",
+                num: "03",
                 name: "Modelado Digital",
-                desc: "Diseño CAD 3D de anatomía oclusal, puntos de contacto y perfil biológico.",
+                subtitle: "Diseño CAD 3D",
+                desc: "Diseño anatómico en exocad: oclusión, puntos de contacto y perfil de emergencia biológico.",
+                icon: "🖥️",
               },
               {
-                step: "04",
+                num: "04",
                 name: "Fresado CAM",
-                desc: "Mecanizado robótico de 5 ejes en bloques de zirconio o disilicato.",
+                subtitle: "Mecanizado Robótico",
+                desc: "Fresado de 5 ejes en bloques de Zirconio o Disilicato, seguido de sinterizado en horno de alta temperatura.",
+                icon: "⚙️",
               },
               {
-                step: "05",
+                num: "05",
                 name: "Pulido & Control",
-                desc: "Estratificación, glaseado cerámico en horno y control dimensional.",
+                subtitle: "Estratificación Final",
+                desc: "Estratificación de cerámica, glaseado, caracterización de textura y control de ajuste marginal con microscopio.",
+                icon: "✨",
               },
             ].map((station) => (
               <div
-                key={station.step}
-                className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-[#A57CFA] transition-all flex flex-col justify-between"
+                key={station.num}
+                className="p-6 rounded-2xl bg-white/6 border border-white/12 hover:border-[#A57CFA] hover:bg-white/10 transition-all flex flex-col justify-between group"
               >
                 <div>
-                  <span className="text-2xl font-black text-[#A57CFA]">{station.step}</span>
-                  <h4 className="text-base font-extrabold text-white mt-2 leading-snug">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-3xl font-black text-[#A57CFA] group-hover:scale-105 transition-transform">
+                      {station.num}
+                    </span>
+                    <span className="text-2xl">{station.icon}</span>
+                  </div>
+
+                  <h4 className="text-base font-extrabold text-white leading-snug">
                     {station.name}
                   </h4>
-                  <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                  <p className="text-[11px] font-bold text-[#D0B9FF] uppercase tracking-wider mt-0.5 mb-2">
+                    {station.subtitle}
+                  </p>
+                  <p className="text-xs text-slate-300 leading-relaxed">
                     {station.desc}
                   </p>
                 </div>
-                <div className="mt-4 pt-3 border-t border-white/10 flex items-center gap-1.5 text-[11px] font-bold text-[#D0B9FF]">
-                  <BadgeCheck className="w-3.5 h-3.5" />
-                  Control de Calidad
+
+                <div className="mt-5 pt-3 border-t border-white/10 flex items-center gap-1.5 text-[11px] font-bold text-emerald-400">
+                  <Check className="w-3.5 h-3.5" />
+                  Paso Verificado
                 </div>
               </div>
             ))}
@@ -630,48 +755,13 @@ export default function LandingPage() {
       </section>
 
       {/* ========================================================= */}
-      {/* 6. EQUIPO TÉCNICO & ALIANZA CON ODONTÓLOGOS */}
+      {/* 6. ALIANZA CON CLÍNICAS & ODONTÓLOGOS */}
       {/* ========================================================= */}
-      <section id="tecnicos" className="py-20 bg-white">
+      <section id="alianza" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Lado Izquierdo: Mockup del Sistema Completo de la foto */}
-            <div className="lg:col-span-6">
-              <div className="relative rounded-3xl overflow-hidden border-2 border-purple-100 shadow-xl bg-slate-50 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <span className="text-xs font-bold text-[#A57CFA] uppercase tracking-wider">
-                      Design System & Dashboard
-                    </span>
-                    <h3 className="text-xl font-black text-[#3C1C6C]">
-                      Guisela UI Dental Kit
-                    </h3>
-                  </div>
-                  <div className="relative h-10 w-28">
-                    <Image
-                      src="/images/guisela-logo.png"
-                      alt="Guisela Logo"
-                      fill
-                      className="object-contain"
-                      unoptimized
-                    />
-                  </div>
-                </div>
-
-                <div className="relative rounded-2xl overflow-hidden aspect-4/3 border border-purple-200">
-                  <Image
-                    src="/images/guisela-ui-mockup.png"
-                    alt="Guía de Interfaz y Mockup Oficial"
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Lado Derecho: Beneficios para el Odontólogo */}
-            <div className="lg:col-span-6">
+            {/* Lado Izquierdo: Características de Confianza */}
+            <div className="lg:col-span-7">
               <span className="text-xs font-extrabold uppercase tracking-widest text-[#A57CFA]">
                 Alianza Estratégica
               </span>
@@ -679,13 +769,13 @@ export default function LandingPage() {
                 ¿Por qué confiar los casos clínicos a Guisela?
               </h2>
               <p className="mt-4 text-base text-slate-600 leading-relaxed">
-                Entendemos que el prestigio de tu clínica depende del ajuste exacto y la naturalidad estética de cada corona o prótesis entregada al paciente.
+                El éxito de tu consulta depende de no repetir impresiones ni perder citas de pacientes. Fabricamos con tolerancias microscópicas para que coloques la corona al primer intento.
               </p>
 
               <div className="mt-8 space-y-4">
-                <div className="flex items-start gap-4 p-4 rounded-2xl bg-purple-50/60 border border-purple-100">
-                  <div className="w-10 h-10 rounded-xl bg-[#3C1C6C] text-white flex items-center justify-center shrink-0">
-                    <Clock className="w-5 h-5 text-[#D0B9FF]" />
+                <div className="flex items-start gap-4 p-4.5 rounded-2xl bg-purple-50/50 border border-purple-100">
+                  <div className="w-10 h-10 rounded-xl bg-[#3C1C6C] text-[#D0B9FF] flex items-center justify-center shrink-0">
+                    <Clock className="w-5 h-5" />
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-[#3C1C6C]">Puntualidad Estricta Garantizada</h4>
@@ -695,9 +785,9 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-4 rounded-2xl bg-purple-50/60 border border-purple-100">
-                  <div className="w-10 h-10 rounded-xl bg-[#3C1C6C] text-white flex items-center justify-center shrink-0">
-                    <Microscope className="w-5 h-5 text-[#D0B9FF]" />
+                <div className="flex items-start gap-4 p-4.5 rounded-2xl bg-purple-50/50 border border-purple-100">
+                  <div className="w-10 h-10 rounded-xl bg-[#3C1C6C] text-[#D0B9FF] flex items-center justify-center shrink-0">
+                    <Microscope className="w-5 h-5" />
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-[#3C1C6C]">Comunicación Directa Técnico-Doctor</h4>
@@ -707,16 +797,55 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-4 rounded-2xl bg-purple-50/60 border border-purple-100">
-                  <div className="w-10 h-10 rounded-xl bg-[#3C1C6C] text-white flex items-center justify-center shrink-0">
-                    <ShieldCheck className="w-5 h-5 text-[#D0B9FF]" />
+                <div className="flex items-start gap-4 p-4.5 rounded-2xl bg-purple-50/50 border border-purple-100">
+                  <div className="w-10 h-10 rounded-xl bg-[#3C1C6C] text-[#D0B9FF] flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-[#3C1C6C]">Certificado de Materiales Biocompatibles</h4>
+                    <h4 className="text-sm font-bold text-[#3C1C6C]">Materiales Médicos 100% Certificados</h4>
                     <p className="text-xs text-slate-600 mt-1">
-                      Utilizamos únicamente discos de zirconio médico certificado con marcado CE y aleaciones libres de berilio/níquel.
+                      Discos de zirconio biocompatible con marcado CE y aleaciones libres de níquel/berilio para máxima salud periodontal.
                     </p>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Lado Derecho: Tarjeta de Contacto Directo */}
+            <div className="lg:col-span-5">
+              <div className="p-8 rounded-3xl bg-gradient-to-br from-purple-50/80 via-white to-purple-100/50 border-2 border-purple-100 shadow-xl">
+                <div className="relative w-12 h-12 mb-4">
+                  <Image
+                    src="/images/brand/guisela-symbol-primary.png"
+                    alt="Símbolo Guisela"
+                    fill
+                    className="object-contain"
+                    unoptimized
+                  />
+                </div>
+                <h3 className="text-2xl font-black text-[#3C1C6C]">
+                  Comienza a trabajar con nosotros
+                </h3>
+                <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                  Crea tu cuenta de odontólogo en menos de 2 minutos para registrar tus primeros casos y hacer seguimiento desde tu celular o computadora.
+                </p>
+
+                <div className="mt-6 space-y-3">
+                  <Link
+                    href="/register"
+                    className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-white bg-[#3C1C6C] hover:bg-[#2C1450] shadow-md transition-all text-sm"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>Crear Cuenta de Clínica</span>
+                  </Link>
+
+                  <Link
+                    href="/login"
+                    className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-[#3C1C6C] bg-white hover:bg-purple-50 border border-purple-200 transition-all text-sm"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    <span>Ingresar al Portal del Doctor</span>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -725,21 +854,27 @@ export default function LandingPage() {
       </section>
 
       {/* ========================================================= */}
-      {/* 7. CTA FINAL & REGISTRO */}
+      {/* 7. CTA BANNER OSCURO — Con Logo Secundario Blanco Oficial */}
       {/* ========================================================= */}
-      <section className="py-20 bg-gradient-to-br from-[#3C1C6C] via-[#2F1555] to-[#1E0D37] text-white text-center relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-br from-[#3C1C6C] via-[#2E1452] to-[#1C0B33] text-white text-center relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[#D0B9FF] text-xs font-bold uppercase mb-6">
-            <Sparkles className="w-3.5 h-3.5 text-[#A57CFA]" />
-            Empecemos a trabajar juntos
+          {/* Logo Secundario Blanco de Fondo Púrpura */}
+          <div className="relative h-18 w-56 mx-auto mb-6">
+            <Image
+              src="/images/brand/guisela-logo-secondary-dark.png"
+              alt="Guisela Laboratorio Dental"
+              fill
+              className="object-contain"
+              unoptimized
+            />
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
             Eleva el estándar protésico de tu clínica dental hoy
           </h2>
 
-          <p className="mt-5 text-base sm:text-lg text-purple-200 max-w-2xl mx-auto">
-            Ingresa a nuestro portal exclusivo para odontólogos o crea tu cuenta para enviar tu primer caso digital o analógico.
+          <p className="mt-4 text-base sm:text-lg text-purple-200 max-w-2xl mx-auto leading-relaxed">
+            Envía tu primer caso digital en formato STL o programa la recogida de tus impresiones físicas en clínica.
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -756,35 +891,35 @@ export default function LandingPage() {
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-black text-white bg-[#A57CFA] hover:bg-[#9468ED] shadow-xl transition-all text-base"
             >
               <LogIn className="w-5 h-5 text-white" />
-              <span>Ingresar al Portal del Doctor</span>
+              <span>Acceder al Portal del Doctor</span>
             </Link>
           </div>
         </div>
       </section>
 
       {/* ========================================================= */}
-      {/* 8. FOOTER COMPLETO CON MARCA OFICIAL */}
+      {/* 8. FOOTER — Logo Primario + Datos de Contacto */}
       {/* ========================================================= */}
       <footer id="contacto" className="bg-white border-t border-purple-100 py-14 text-slate-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-            {/* Columna Marca */}
-            <div className="md:col-span-1">
-              <div className="relative h-14 w-48 mb-4">
+            {/* Columna Logo */}
+            <div>
+              <div className="relative h-14 w-48 mb-3">
                 <Image
-                  src="/images/guisela-logo.png"
+                  src="/images/brand/guisela-logo-primary.png"
                   alt="Guisela Laboratorio Dental"
                   fill
                   className="object-contain"
                   unoptimized
                 />
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed mt-2">
-                Laboratorio especializado en rehabilitación oral de alta precisión, coronas sobre implantes y flujo 100% digital.
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Laboratorio dental de vanguardia. Prótesis fija, implantes y flujo 100% digital con tecnología robótica de 5 ejes y artesanía de caracterización cerámica.
               </p>
             </div>
 
-            {/* Servicios */}
+            {/* Especialidades */}
             <div>
               <p className="text-xs font-black text-[#3C1C6C] uppercase tracking-wider mb-4">
                 Especialidades
@@ -798,20 +933,20 @@ export default function LandingPage() {
               </ul>
             </div>
 
-            {/* Accesos Rápidos */}
+            {/* Accesos al Portal */}
             <div>
               <p className="text-xs font-black text-[#3C1C6C] uppercase tracking-wider mb-4">
-                Portal de Acceso
+                Accesos al Portal
               </p>
               <ul className="space-y-2 text-xs font-semibold">
-                <li><Link href="/login" className="hover:text-[#3C1C6C]">Acceso Odontólogos</Link></li>
-                <li><Link href="/login" className="hover:text-[#3C1C6C]">Acceso Secretaría</Link></li>
-                <li><Link href="/login" className="hover:text-[#3C1C6C]">Acceso Técnico de Taller</Link></li>
-                <li><Link href="/register" className="hover:text-[#3C1C6C]">Crear Nueva Cuenta</Link></li>
+                <li><Link href="/login" className="hover:text-[#3C1C6C]">Portal Odontólogos</Link></li>
+                <li><Link href="/login" className="hover:text-[#3C1C6C]">Portal Secretaría</Link></li>
+                <li><Link href="/login" className="hover:text-[#3C1C6C]">Portal Técnico de Taller</Link></li>
+                <li><Link href="/register" className="hover:text-[#3C1C6C]">Registro de Nueva Clínica</Link></li>
               </ul>
             </div>
 
-            {/* Contacto e Información */}
+            {/* Contacto Directo */}
             <div>
               <p className="text-xs font-black text-[#3C1C6C] uppercase tracking-wider mb-4">
                 Atención Clínica
@@ -831,7 +966,7 @@ export default function LandingPage() {
                 </li>
                 <li className="flex items-center gap-2">
                   <MapPin className="w-3.5 h-3.5 text-[#A57CFA]" />
-                  <span>Cobertura y despacho clínico a nivel nacional</span>
+                  <span>Despacho y logística clínica garantizada</span>
                 </li>
               </ul>
             </div>
@@ -839,9 +974,9 @@ export default function LandingPage() {
 
           <div className="mt-12 pt-6 border-t border-purple-100 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-4">
             <p>© {new Date().getFullYear()} Guisela Laboratorio Dental. Todos los derechos reservados.</p>
-            <p className="flex items-center gap-3">
+            <p className="flex items-center gap-2">
               <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <span>Servidores y Base de Datos en Línea</span>
+              <span>Sistema y Servidores en Línea</span>
             </p>
           </div>
         </div>

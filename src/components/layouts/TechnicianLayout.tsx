@@ -79,7 +79,7 @@ export default function TechnicianLayout({ children }: Props) {
         <div className="h-16 flex items-center px-4 border-b border-slate-800/80 gap-3">
           <div className="relative w-9 h-9 rounded-xl bg-purple-950/60 p-1 flex items-center justify-center border border-[#A57CFA]/30 shrink-0">
             <Image
-              src="/images/guisela-symbol.png"
+              src="/images/brand/guisela-symbol-primary.png"
               alt="Guisela"
               width={32}
               height={32}

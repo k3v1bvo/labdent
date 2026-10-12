@@ -90,13 +90,13 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#FDFCFE] via-purple-50/40 to-[#F5F2FA] flex items-center justify-center p-6">
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-        {/* Panel branding oficial Guisela */}
-        <div className="hidden lg:flex flex-col justify-between rounded-3xl border border-purple-100 bg-white/80 backdrop-blur-xl p-10 shadow-xl shadow-purple-950/5 min-h-[540px]">
-          <div>
-            {/* Logo Oficial Guisela */}
-            <div className="relative h-16 w-52 mb-6">
+        {/* Panel branding oficial Guisela con fondo Púrpura y Logo Blanco Secundario */}
+        <div className="hidden lg:flex flex-col justify-between rounded-3xl border border-purple-900/40 bg-gradient-to-br from-[#3C1C6C] via-[#2E1553] to-[#1C0B33] p-10 shadow-2xl shadow-purple-950/20 min-h-[550px] text-white relative overflow-hidden">
+          <div className="relative z-10">
+            {/* Logo Secundario Blanco para Fondo Púrpura */}
+            <div className="relative h-18 w-52 mb-6">
               <Image
-                src="/images/guisela-logo.png"
+                src="/images/brand/guisela-logo-secondary-dark.png"
                 alt="Guisela Laboratorio Dental"
                 fill
                 className="object-contain"
@@ -105,54 +105,68 @@ export default function LoginPage() {
               />
             </div>
 
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#A57CFA]/30 px-3.5 py-1 text-xs font-semibold text-[#3C1C6C] bg-purple-100/60">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 px-3.5 py-1 text-xs font-semibold text-[#D0B9FF] bg-white/10 backdrop-blur-md">
               <Sparkles className="w-3.5 h-3.5 text-[#A57CFA]" />
               Portal Oficial de Gestión Clínica
             </div>
 
-            <h1 className="mt-5 text-3xl font-extrabold tracking-tight text-[#3C1C6C] leading-tight">
+            <h1 className="mt-5 text-3xl font-extrabold tracking-tight text-white leading-tight">
               Precisión, estética y flujo 100% digital
             </h1>
 
-            <p className="mt-3.5 text-sm leading-relaxed text-slate-600">
+            <p className="mt-3.5 text-sm leading-relaxed text-purple-200">
               Control integral de órdenes de trabajo, seguimiento por estación técnica y trazabilidad en tiempo real para clínicas dentales, secretaría y taller.
             </p>
 
             <div className="mt-8 grid grid-cols-1 gap-3.5">
-              <Feature
-                icon={<Cpu className="w-4 h-4 text-[#A57CFA]" />}
-                title="Crown & Bridge + Flujo Digital"
-                desc="Zirconio multicapa, E.max e integración directa con escáneres intraorales."
-              />
-              <Feature
-                icon={<ScanLine className="w-4 h-4 text-[#A57CFA]" />}
-                title="Trazabilidad en 5 Estaciones"
-                desc="Seguimiento paso a paso desde el moldeado hasta el control final de calidad."
-              />
-              <Feature
-                icon={<ShieldCheck className="w-4 h-4 text-[#A57CFA]" />}
-                title="Acceso Exclusivo por Rol"
-                desc="Vistas dedicadas para Odontólogos, Secretaría, Técnicos y Administrador."
-              />
+              <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-3.5">
+                <div className="mt-0.5 rounded-lg bg-white/10 p-2 text-[#D0B9FF]">
+                  <Cpu className="w-4 h-4 text-[#A57CFA]" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">Crown & Bridge + Flujo Digital</p>
+                  <p className="text-xs text-purple-200 mt-0.5 leading-relaxed">Zirconio multicapa, E.max e integración directa con escáneres intraorales.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-3.5">
+                <div className="mt-0.5 rounded-lg bg-white/10 p-2 text-[#D0B9FF]">
+                  <ScanLine className="w-4 h-4 text-[#A57CFA]" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">Trazabilidad en 5 Estaciones</p>
+                  <p className="text-xs text-purple-200 mt-0.5 leading-relaxed">Seguimiento paso a paso desde el moldeado hasta el control final de calidad.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-3.5">
+                <div className="mt-0.5 rounded-lg bg-white/10 p-2 text-[#D0B9FF]">
+                  <ShieldCheck className="w-4 h-4 text-[#A57CFA]" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">Acceso Exclusivo por Rol</p>
+                  <p className="text-xs text-purple-200 mt-0.5 leading-relaxed">Vistas dedicadas para Odontólogos, Secretaría, Técnicos y Administrador.</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="text-xs text-slate-400 mt-6 pt-4 border-t border-purple-100 flex justify-between items-center">
+          <div className="text-xs text-purple-300 mt-6 pt-4 border-t border-white/10 flex justify-between items-center relative z-10">
             <span>© {new Date().getFullYear()} Guisela Laboratorio Dental</span>
-            <Link href="/" className="font-semibold text-[#3C1C6C] hover:text-[#A57CFA] flex items-center gap-1">
+            <Link href="/" className="font-semibold text-white hover:text-[#A57CFA] flex items-center gap-1 transition-colors">
               <ArrowLeft className="w-3 h-3" />
               Volver al inicio
             </Link>
           </div>
         </div>
 
-        {/* Login Card */}
+        {/* Login Card con Logo Primario a Color */}
         <Card className="rounded-3xl shadow-xl shadow-purple-950/10 border border-purple-100 bg-white overflow-hidden">
           <CardHeader className="space-y-2 pt-8 pb-4 text-center">
-            {/* Logo Guisela en mobile y header de card */}
-            <div className="relative h-14 w-48 mx-auto mb-1">
+            {/* Logo Guisela Primario en tarjeta de login */}
+            <div className="relative h-15 w-52 mx-auto mb-1">
               <Image
-                src="/images/guisela-logo.png"
+                src="/images/brand/guisela-logo-primary.png"
                 alt="Guisela Laboratorio Dental"
                 fill
                 className="object-contain"

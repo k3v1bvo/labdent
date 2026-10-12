@@ -216,8 +216,9 @@ WHERE NOT EXISTS (SELECT 1 FROM public.estaciones WHERE nombre = 'Pulido y Contr
 -- VISTAS (VIEWS)
 -- ====================================================================
 
--- 1. Resumen de Dashboard
-CREATE OR REPLACE VIEW public.vw_dashboard_resumen AS
+-- 1. Resumen de Dashboard (Drop primero para evitar error 42P16 de Postgres)
+DROP VIEW IF EXISTS public.vw_dashboard_resumen CASCADE;
+CREATE VIEW public.vw_dashboard_resumen AS
 SELECT 
   COUNT(*) FILTER (WHERE estado = 'pendiente') AS pedidos_pendientes,
   COUNT(*) FILTER (WHERE estado = 'en_proceso') AS pedidos_en_proceso,
@@ -230,8 +231,9 @@ FROM public.pedidos
 GROUP BY fecha
 ORDER BY fecha DESC;
 
--- 2. Vista de Seguimiento / Tracking
-CREATE OR REPLACE VIEW public.vw_tracking_pedidos AS
+-- 2. Vista de Seguimiento / Tracking (Drop primero para evitar error 42P16 de Postgres)
+DROP VIEW IF EXISTS public.vw_tracking_pedidos CASCADE;
+CREATE VIEW public.vw_tracking_pedidos AS
 WITH ult_historial AS (
   SELECT DISTINCT ON (pedido_id)
     h.id AS historial_id,
@@ -268,6 +270,15 @@ LEFT JOIN ult_historial uh ON uh.pedido_id = p.id;
 -- ====================================================================
 -- FUNCIONES RPC
 -- ====================================================================
+
+DROP FUNCTION IF EXISTS rpc_cambiar_estacion(uuid) CASCADE;
+DROP FUNCTION IF EXISTS rpc_tomar_tarea(uuid) CASCADE;
+DROP FUNCTION IF EXISTS rpc_soltar_tarea(uuid, text) CASCADE;
+DROP FUNCTION IF EXISTS rpc_soltar_tarea(uuid) CASCADE;
+DROP FUNCTION IF EXISTS rpc_completar_y_avanzar(uuid, text) CASCADE;
+DROP FUNCTION IF EXISTS rpc_completar_y_avanzar(uuid) CASCADE;
+DROP FUNCTION IF EXISTS avanzar_estacion(uuid, uuid, uuid, text) CASCADE;
+DROP FUNCTION IF EXISTS avanzar_estacion(uuid, uuid, uuid) CASCADE;
 
 -- 1. Cambiar estación activa del técnico
 CREATE OR REPLACE FUNCTION rpc_cambiar_estacion(p_nueva_estacion_id uuid)
