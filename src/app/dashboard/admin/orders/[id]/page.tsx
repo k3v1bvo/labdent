@@ -2,7 +2,30 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  ArrowLeft,
+  Printer,
+  Calendar,
+  Hash,
+  User,
+  Stethoscope,
+  Phone,
+  Palette,
+  Ruler,
+  Box,
+  DollarSign,
+  FileText,
+  Clock,
+  Hammer,
+  CheckCircle2,
+  AlertTriangle,
+  ExternalLink,
+  ShieldAlert,
+} from "lucide-react";
 
 export default function OrderDetailPage() {
   const { id } = useParams();
@@ -19,30 +42,35 @@ export default function OrderDetailPage() {
         .from("pedidos")
         .select(`
           id,
+          numero_requerimiento,
           paciente_nombre,
-          paciente_genero,
-          piezas,
+          paciente_telefono,
+          doctor_nombre,
+          doctor_telefono,
+          trabajo_realizar,
+          pieza_numero,
+          color_pieza,
+          colimetro,
+          numero_caja,
           observaciones,
           estado,
           modelo_3d_link,
           anticipo,
           total,
+          fecha_ingreso,
+          hora_ingreso,
           fecha_creacion,
           fecha_entrega,
-          doctores (
-            id,
-            clinica,
-            especialidad,
-            profiles (nombre)
-          ),
+          numero_nota_entrega,
+          motivo_rechazo,
           historial_estaciones (
             id,
             fecha_inicio,
             fecha_fin,
             estado,
             comentarios,
-            estaciones (nombre),
-            perfiles:tecnico_id (nombre)
+            estaciones (nombre, orden),
+            tecnico:tecnico_id (nombre)
           ),
           archivos (id, tipo, url_archivo, descripcion, fecha_subida)
         `)
@@ -60,180 +88,278 @@ export default function OrderDetailPage() {
     fetchOrder();
   }, [id]);
 
-  if (loading) return <p className="p-10">Cargando detalles del pedido...</p>;
-  if (!order)
-    return <p className="p-10 text-red-600">No se encontró el pedido.</p>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-10">
+        <div className="flex items-center gap-3 text-[#3C1C6C] font-semibold">
+          <div className="w-5 h-5 border-2 border-[#3C1C6C] border-t-transparent rounded-full animate-spin" />
+          Cargando detalles de la orden clínica...
+        </div>
+      </div>
+    );
+  }
 
-  const estadoColors: Record<string, string> = {
-    pendiente: "bg-yellow-100 text-yellow-700",
-    en_proceso: "bg-blue-100 text-blue-700",
-    finalizado: "bg-green-100 text-green-700",
-    entregado: "bg-purple-100 text-purple-700",
-    devuelto: "bg-red-100 text-red-700",
+  if (!order) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-10">
+        <p className="text-red-600 font-bold mb-4">No se encontró el requerimiento dental solicitado.</p>
+        <Button onClick={() => router.back()} variant="outline">
+          ⬅ Volver
+        </Button>
+      </div>
+    );
+  }
+
+  const estadoBadges: Record<string, { label: string; cls: string }> = {
+    pendiente_revision: { label: "En Revisión Inicial", cls: "bg-amber-100 text-amber-800 border-amber-200" },
+    rechazado: { label: "Rechazado", cls: "bg-red-100 text-red-800 border-red-200" },
+    pendiente: { label: "En Espera / Cola", cls: "bg-yellow-100 text-yellow-800 border-yellow-200" },
+    en_proceso: { label: "En Fabricación", cls: "bg-blue-100 text-blue-800 border-blue-200" },
+    finalizado: { label: "Finalizado / Listo", cls: "bg-green-100 text-green-800 border-green-200" },
+    entregado: { label: "Entregado a Clínica", cls: "bg-purple-100 text-purple-800 border-purple-200" },
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 p-10">
-      <button
-        onClick={() => router.back()}
-        className="mb-6 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
-      >
-        ⬅ Volver
-      </button>
+  const badge = estadoBadges[order.estado] || { label: order.estado, cls: "bg-slate-100 text-slate-800 border-slate-200" };
+  const total = Number(order.total || 0);
+  const anticipo = Number(order.anticipo || 0);
+  const saldoPendiente = Math.max(0, total - anticipo);
 
-      <div className="bg-white shadow rounded-2xl p-8 border border-gray-100">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-2xl font-bold text-green-800">
-              Pedido #{order.id.slice(0, 8).toUpperCase()}
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Paciente: <strong>{order.paciente_nombre}</strong> ({order.paciente_genero})
-            </p>
-            <p className="text-gray-600">
-              Doctor:{" "}
-              <strong>{order.doctores?.profiles?.nombre || "Sin asignar"}</strong>
-            </p>
+  return (
+    <div className="min-h-screen bg-slate-50/70 p-4 sm:p-8 space-y-6">
+      {/* Botones de Cabecera (Ocultos en impresión) */}
+      <div className="flex items-center justify-between print:hidden">
+        <Button
+          onClick={() => router.back()}
+          variant="outline"
+          className="rounded-xl border-slate-200 gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" /> Volver al listado
+        </Button>
+
+        <Button
+          onClick={() => window.print()}
+          className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl gap-2 font-medium shadow-md shadow-purple-950/10"
+        >
+          <Printer className="w-4 h-4" /> Imprimir Hoja de Ruta / Remisión
+        </Button>
+      </div>
+
+      {/* Contenedor Principal (Hoja de Trabajo Clínica) */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 sm:p-10 space-y-8 max-w-5xl mx-auto print:shadow-none print:border-none print:p-0">
+        {/* Encabezado con logo Guisela */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-200 gap-4">
+          <div className="flex items-center gap-4">
+            <div className="relative w-14 h-14 rounded-2xl bg-purple-50 p-2 flex items-center justify-center border border-purple-200 shrink-0">
+              <Image
+                src="/images/brand/guisela-symbol-primary.png"
+                alt="Guisela"
+                width={48}
+                height={48}
+                className="object-contain"
+                unoptimized
+              />
+            </div>
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#A57CFA]">
+                Hoja de Ruta & Control Dental
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#3C1C6C] tracking-tight">
+                Requerimiento #{order.numero_requerimiento || order.id.slice(0, 8).toUpperCase()}
+              </h1>
+              <p className="text-xs text-slate-500">
+                Guisela Laboratorio Dental · Sistema CAD/CAM & Estética Biomimética
+              </p>
+            </div>
           </div>
 
-          <span
-            className={`px-4 py-2 rounded-full text-sm font-semibold ${estadoColors[order.estado]}`}
-          >
-            {order.estado}
-          </span>
+          <div className="flex flex-col sm:items-end gap-2">
+            <span className={`inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-bold border ${badge.cls}`}>
+              {badge.label}
+            </span>
+            <span className="text-xs text-slate-400 font-mono">
+              Registrado: {order.fecha_creacion ? new Date(order.fecha_creacion).toLocaleDateString() : "—"}
+            </span>
+          </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <InfoBox label="Piezas" value={order.piezas || "—"} />
-          <InfoBox label="Observaciones" value={order.observaciones || "—"} />
-          <InfoBox label="Anticipo" value={`$${order.anticipo || 0}`} />
-          <InfoBox label="Total" value={`$${order.total || 0}`} />
-          <InfoBox
-            label="Fecha creación"
-            value={new Date(order.fecha_creacion).toLocaleString()}
-          />
-          <InfoBox
-            label="Fecha entrega"
-            value={
-              order.fecha_entrega
-                ? new Date(order.fecha_entrega).toLocaleString()
-                : "—"
-            }
-          />
-        </div>
-
-        {order.modelo_3d_link && (
-          <div className="mt-6">
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">
-              Modelo 3D o enlace adjunto:
-            </h2>
-            <a
-              href={order.modelo_3d_link}
-              target="_blank"
-              className="text-blue-600 hover:underline"
-            >
-              {order.modelo_3d_link}
-            </a>
+        {/* Motivo de rechazo (si existe) */}
+        {order.motivo_rechazo && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs text-red-800 flex items-start gap-3">
+            <ShieldAlert className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold">Observación / Motivo de Rechazo:</p>
+              <p className="mt-0.5">{order.motivo_rechazo}</p>
+            </div>
           </div>
         )}
 
-        {/* HISTORIAL DE ESTACIONES */}
-        <div className="mt-10">
-          <h2 className="text-xl font-bold text-green-700 mb-4">
-            🔧 Historial de Estaciones
+        {/* Datos Principales en Grilla */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Card Paciente */}
+          <div className="rounded-2xl border border-slate-200/80 p-5 bg-slate-50/50 space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <User className="w-4 h-4 text-[#3C1C6C]" /> Paciente
+            </div>
+            <div>
+              <p className="text-lg font-bold text-slate-800">{order.paciente_nombre || "—"}</p>
+              <p className="text-xs text-slate-500 mt-1">
+                Teléfono: <span className="font-semibold text-slate-700">{order.paciente_telefono || "Sin registrar"}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Card Doctor / Clínica */}
+          <div className="rounded-2xl border border-slate-200/80 p-5 bg-slate-50/50 space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <Stethoscope className="w-4 h-4 text-[#3C1C6C]" /> Odontólogo / Clínica
+            </div>
+            <div>
+              <p className="text-lg font-bold text-slate-800">{order.doctor_nombre || "—"}</p>
+              <p className="text-xs text-slate-500 mt-1">
+                Contacto: <span className="font-semibold text-slate-700">{order.doctor_telefono || "Sin registrar"}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Card Control Financiero & Caja */}
+          <div className="rounded-2xl border border-purple-200 p-5 bg-purple-50/40 space-y-3">
+            <div className="flex items-center justify-between text-xs font-bold text-[#3C1C6C] uppercase tracking-wider">
+              <span className="flex items-center gap-1.5"><Box className="w-4 h-4" /> Caja #{order.numero_caja || "00"}</span>
+              <span>Finanzas</span>
+            </div>
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between text-slate-600">
+                <span>Total:</span>
+                <span className="font-bold text-slate-800">${total.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Anticipo:</span>
+                <span className="font-bold text-green-700">${anticipo.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between pt-1 border-t border-purple-200/60 font-bold text-[#3C1C6C]">
+                <span>Saldo Pendiente:</span>
+                <span>${saldoPendiente.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Ficha Técnica Odontológica */}
+        <div className="rounded-2xl border border-slate-200/80 p-6 space-y-4">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-[#3C1C6C] flex items-center gap-2">
+            <Hammer className="w-4 h-4 text-[#A57CFA]" /> Especificaciones Técnicas del Caso
           </h2>
-          {order.historial_estaciones?.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm border border-gray-200 rounded-lg">
-                <thead className="bg-gray-100 text-gray-800">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+              <span className="text-slate-400 block mb-1">Trabajo a Realizar</span>
+              <span className="font-bold text-slate-800 text-sm">{order.trabajo_realizar || "—"}</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+              <span className="text-slate-400 block mb-1">Pieza(s) Dental</span>
+              <span className="font-bold text-slate-800 text-sm">{order.pieza_numero || "—"}</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+              <span className="text-slate-400 block mb-1">Guía de Color</span>
+              <span className="font-bold text-[#3C1C6C] text-sm">{order.color_pieza || "—"}</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+              <span className="text-slate-400 block mb-1">Colímetro / Ajuste</span>
+              <span className="font-bold text-slate-800 text-sm">{order.colimetro || "—"}</span>
+            </div>
+          </div>
+
+          {order.observaciones && (
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+              <span className="text-slate-400 block mb-1 font-semibold">Instrucciones & Observaciones Clínicas:</span>
+              <p className="text-slate-700 leading-relaxed">{order.observaciones}</p>
+            </div>
+          )}
+
+          {order.modelo_3d_link && (
+            <div className="flex items-center gap-2 text-xs pt-2">
+              <span className="text-slate-500">Modelo Digital 3D (STL/PLY):</span>
+              <a
+                href={order.modelo_3d_link}
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold text-[#3C1C6C] hover:underline inline-flex items-center gap-1"
+              >
+                Abrir archivo digital <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          )}
+        </div>
+
+        {/* Trazabilidad por Estaciones */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-[#3C1C6C] flex items-center gap-2">
+            <Clock className="w-4 h-4 text-[#A57CFA]" /> Trazabilidad & Registro de Estaciones
+          </h2>
+
+          {order.historial_estaciones && order.historial_estaciones.length > 0 ? (
+            <div className="overflow-x-auto rounded-2xl border border-slate-200">
+              <table className="min-w-full text-xs text-left">
+                <thead className="bg-[#3C1C6C] text-white uppercase font-semibold">
                   <tr>
-                    <th className="px-4 py-2">Estación</th>
-                    <th className="px-4 py-2">Técnico</th>
-                    <th className="px-4 py-2">Estado</th>
-                    <th className="px-4 py-2">Inicio</th>
-                    <th className="px-4 py-2">Fin</th>
-                    <th className="px-4 py-2">Comentarios</th>
+                    <th className="px-4 py-3">Estación</th>
+                    <th className="px-4 py-3">Técnico Asignado</th>
+                    <th className="px-4 py-3">Estado</th>
+                    <th className="px-4 py-3">Inicio</th>
+                    <th className="px-4 py-3">Finalización</th>
+                    <th className="px-4 py-3">Notas</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100 bg-white">
                   {order.historial_estaciones.map((h: any) => (
-                    <tr key={h.id} className="border-t hover:bg-gray-50">
-                      <td className="px-4 py-2">{h.estaciones?.nombre}</td>
-                      <td className="px-4 py-2">{h.perfiles?.nombre}</td>
-                      <td className="px-4 py-2">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            estadoColors[h.estado]
-                          }`}
-                        >
+                    <tr key={h.id} className="hover:bg-slate-50/50">
+                      <td className="px-4 py-3 font-semibold text-slate-800">
+                        {h.estaciones?.nombre || "Estación"}
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {h.tecnico?.nombre || "En cola de estación"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          h.estado === "completado" ? "bg-green-100 text-green-800" :
+                          h.estado === "en_proceso" ? "bg-blue-100 text-blue-800" : "bg-yellow-100 text-yellow-800"
+                        }`}>
                           {h.estado}
                         </span>
                       </td>
-                      <td className="px-4 py-2">
-                        {h.fecha_inicio
-                          ? new Date(h.fecha_inicio).toLocaleString()
-                          : "—"}
+                      <td className="px-4 py-3 text-slate-500 font-mono text-[11px]">
+                        {h.fecha_inicio ? new Date(h.fecha_inicio).toLocaleString() : "—"}
                       </td>
-                      <td className="px-4 py-2">
-                        {h.fecha_fin
-                          ? new Date(h.fecha_fin).toLocaleString()
-                          : "—"}
+                      <td className="px-4 py-3 text-slate-500 font-mono text-[11px]">
+                        {h.fecha_fin ? new Date(h.fecha_fin).toLocaleString() : "—"}
                       </td>
-                      <td className="px-4 py-2">{h.comentarios || "—"}</td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {h.comentarios || "—"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
-            <p className="text-gray-600">Sin historial de estaciones aún.</p>
+            <p className="text-xs text-slate-400 italic">No hay historial registrado para esta orden todavía.</p>
           )}
         </div>
 
-        {/* ARCHIVOS ADJUNTOS */}
-        <div className="mt-10">
-          <h2 className="text-xl font-bold text-green-700 mb-4">
-            📁 Archivos adjuntos
-          </h2>
-          {order.archivos?.length > 0 ? (
-            <ul className="space-y-3">
-              {order.archivos.map((a: any) => (
-                <li
-                  key={a.id}
-                  className="border border-gray-200 rounded-lg p-4 bg-gray-50 flex justify-between"
-                >
-                  <div>
-                    <p className="font-medium text-gray-800">
-                      {a.descripcion || "Archivo sin descripción"}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Tipo: {a.tipo} | {new Date(a.fecha_subida).toLocaleString()}
-                    </p>
-                  </div>
-                  <a
-                    href={a.url_archivo}
-                    target="_blank"
-                    className="text-blue-600 hover:underline"
-                  >
-                    Ver archivo
-                  </a>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-600">No hay archivos adjuntos registrados.</p>
-          )}
+        {/* Firmas de Entrega para Impresión */}
+        <div className="pt-8 border-t border-slate-200 hidden print:grid grid-cols-2 gap-12 text-center text-xs text-slate-600">
+          <div>
+            <div className="border-b border-slate-400 h-16 mb-2" />
+            <p className="font-bold">Firma del Maestro Ceramista / Técnico</p>
+            <p className="text-[10px] text-slate-400">Guisela Laboratorio Dental</p>
+          </div>
+          <div>
+            <div className="border-b border-slate-400 h-16 mb-2" />
+            <p className="font-bold">Recibido Conforme por la Clínica</p>
+            <p className="text-[10px] text-slate-400">Dr(a) / Firma & Sello</p>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function InfoBox({ label, value }: { label: string; value: any }) {
-  return (
-    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-      <p className="text-sm text-gray-500">{label}</p>
-      <p className="text-gray-800 font-semibold mt-1">{value}</p>
     </div>
   );
 }

@@ -65,14 +65,44 @@ EXECUTE FUNCTION update_timestamp();
 -- Trigger para auto-crear perfil al registrarse en auth.users
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  v_nombre text;
+  v_rol user_role;
+  v_telefono text;
+  v_clinica text;
+  v_especialidad text;
 BEGIN
-  INSERT INTO public.profiles (id, nombre, rol)
+  v_nombre := COALESCE(NEW.raw_user_meta_data->>'nombre', split_part(NEW.email, '@', 1));
+  v_telefono := NEW.raw_user_meta_data->>'telefono';
+  v_clinica := COALESCE(NEW.raw_user_meta_data->>'clinica', 'Clínica ' || v_nombre);
+  v_especialidad := COALESCE(NEW.raw_user_meta_data->>'especialidad', 'Rehabilitación Oral');
+
+  -- Extraer rol con fallback a 'doctor' si no viene definido
+  BEGIN
+    v_rol := COALESCE((NEW.raw_user_meta_data->>'rol')::user_role, 'doctor');
+  EXCEPTION WHEN OTHERS THEN
+    v_rol := 'doctor';
+  END;
+
+  INSERT INTO public.profiles (id, nombre, telefono, rol)
   VALUES (
     NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'nombre', split_part(NEW.email, '@', 1)),
-    COALESCE((NEW.raw_user_meta_data->>'rol')::user_role, 'tecnico')
+    v_nombre,
+    v_telefono,
+    v_rol
   )
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET
+    nombre = EXCLUDED.nombre,
+    telefono = COALESCE(EXCLUDED.telefono, profiles.telefono),
+    rol = EXCLUDED.rol;
+
+  -- Si es doctor, auto-crear registro en doctores si no existe
+  IF v_rol = 'doctor' THEN
+    INSERT INTO public.doctores (profile_id, clinica, especialidad)
+    VALUES (NEW.id, v_clinica, v_especialidad)
+    ON CONFLICT DO NOTHING;
+  END IF;
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

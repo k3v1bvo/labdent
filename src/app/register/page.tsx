@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,13 +16,20 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  BadgeCheck,
+  Building2,
+  Phone,
+  Stethoscope,
+  ShieldCheck,
+  ArrowRight,
 } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
 
   const [nombre, setNombre] = useState("");
+  const [clinica, setClinica] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [especialidad, setEspecialidad] = useState("Rehabilitación Oral");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -39,138 +48,281 @@ export default function RegisterPage() {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-      options: {
-        data: { nombre: nombre.trim() }, // raw_user_meta_data
-      },
-    });
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: {
+            nombre: nombre.trim(),
+            rol: "doctor",
+            clinica: clinica.trim() || `Clínica Dr(a). ${nombre.trim()}`,
+            telefono: telefono.trim() || null,
+            especialidad: especialidad.trim(),
+          },
+        },
+      });
 
-    setLoading(false);
+      if (error) {
+        toast.error(`Error en registro: ${error.message}`);
+        setLoading(false);
+        return;
+      }
 
-    if (error) {
-      toast.error(error.message);
-      return;
+      // Si el usuario se creó exitosamente, asegurar que exista su perfil y registro en doctores
+      if (data?.user) {
+        // Intentar inserción o actualización de perfil
+        await supabase
+          .from("profiles")
+          .upsert({
+            id: data.user.id,
+            nombre: nombre.trim(),
+            telefono: telefono.trim() || null,
+            rol: "doctor",
+          });
+
+        // Registrar en doctores
+        await supabase
+          .from("doctores")
+          .insert({
+            profile_id: data.user.id,
+            clinica: clinica.trim() || `Clínica Dr(a). ${nombre.trim()}`,
+            especialidad: especialidad.trim(),
+          });
+      }
+
+      toast.success("✅ Cuenta de clínica registrada con éxito.");
+      router.push("/login");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Ocurrió un error inesperado al registrarse");
+    } finally {
+      setLoading(false);
     }
-
-    toast.success("✅ Usuario registrado. Revisa tu correo para confirmar.");
-    router.push("/login");
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex items-center justify-center p-6">
-      <Card className="w-full max-w-xl rounded-3xl shadow-sm border bg-white dark:bg-gray-900">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-center text-2xl font-bold text-green-700">
-            Crear cuenta
-          </CardTitle>
-          <p className="text-center text-sm text-gray-600 dark:text-gray-300">
-            Registro para el sistema interno del laboratorio
-          </p>
-        </CardHeader>
+    <div className="min-h-screen bg-gradient-to-b from-[#FDFCFE] via-[#F8F5FC] to-[#F1ECF8] flex items-center justify-center p-4 sm:p-6">
+      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        {/* Panel lateral branding Guisela */}
+        <div className="hidden lg:flex flex-col justify-between rounded-3xl border border-purple-900/40 bg-gradient-to-br from-[#3C1C6C] via-[#2E1553] to-[#1C0B33] p-10 shadow-2xl shadow-purple-950/20 min-h-[580px] text-white relative overflow-hidden">
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs text-[#D0B9FF] mb-6">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#A57CFA]" /> Portal de Clínicas Odontológicas
+            </div>
 
-        <CardContent className="p-6">
-          <form onSubmit={handleRegister} className="space-y-4">
-            {/* Nombre */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                Nombre completo
-              </label>
-              <div className="relative">
-                <User className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <Input
-                  type="text"
-                  placeholder="Ej: Juan Pérez"
-                  value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
-                  className="pl-10"
-                  required
-                />
+            <div className="mb-8">
+              <Image
+                src="/images/brand/guisela-logo-secondary-dark.png"
+                alt="Guisela Laboratorio Dental"
+                width={260}
+                height={80}
+                className="h-16 w-auto object-contain"
+                priority
+              />
+            </div>
+
+            <h2 className="text-2xl font-bold tracking-tight mb-3 text-white">
+              Únete a nuestra red de clínicas aliadas
+            </h2>
+            <p className="text-sm text-purple-200/80 leading-relaxed max-w-md">
+              Envía tus órdenes digitales, adjunta archivos STL y sigue la fabricación de tus prótesis y coronas en tiempo real desde cualquier dispositivo.
+            </p>
+
+            <div className="mt-8 space-y-3 text-xs text-purple-200/90">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#A57CFA]" />
+                <span>Recepción y validación de órdenes en menos de 2 horas.</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#A57CFA]" />
+                <span>Trazabilidad paso a paso por escaneo, fresado y cerámica.</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#A57CFA]" />
+                <span>Historial clínico de piezas, colores y remisiones.</span>
               </div>
             </div>
+          </div>
 
-            {/* Email */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                Correo electrónico
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <Input
-                  type="email"
-                  placeholder="usuario@correo.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
-                  required
-                />
+          <div className="relative z-10 pt-6 border-t border-purple-800/40 text-xs text-purple-300/70 flex justify-between items-center">
+            <span>Guisela Laboratorio Dental © 2026</span>
+            <Link href="/" className="hover:text-white transition-colors underline">
+              Volver al inicio
+            </Link>
+          </div>
+        </div>
+
+        {/* Tarjeta de Registro */}
+        <Card className="w-full rounded-3xl shadow-xl shadow-purple-900/5 border border-purple-100 bg-white dark:bg-gray-900 overflow-hidden">
+          <CardHeader className="space-y-2 pt-8 pb-4 px-6 sm:px-8 text-center">
+            <div className="flex justify-center mb-2 lg:hidden">
+              <Image
+                src="/images/brand/guisela-logo-primary.png"
+                alt="Guisela Laboratorio Dental"
+                width={200}
+                height={60}
+                className="h-12 w-auto object-contain"
+                priority
+              />
+            </div>
+            <CardTitle className="text-2xl font-bold text-[#3C1C6C] tracking-tight">
+              Crear Cuenta de Clínica
+            </CardTitle>
+            <p className="text-xs sm:text-sm text-slate-500">
+              Ingresa los datos del doctor u odontólogo para iniciar
+            </p>
+          </CardHeader>
+
+          <CardContent className="px-6 sm:px-8 pb-8 pt-2">
+            <form onSubmit={handleRegister} className="space-y-4">
+              {/* Nombre y Clínica */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700">
+                    Nombre del Doctor(a) *
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-purple-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Input
+                      type="text"
+                      placeholder="Ej: Dr. Roberto Gómez"
+                      value={nombre}
+                      onChange={(e) => setNombre(e.target.value)}
+                      className="pl-9 rounded-xl border-slate-200 focus:border-[#3C1C6C] focus:ring-[#3C1C6C] text-sm"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700">
+                    Clínica / Consultorio
+                  </label>
+                  <div className="relative">
+                    <Building2 className="w-4 h-4 text-purple-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Input
+                      type="text"
+                      placeholder="Ej: Dental Premium Care"
+                      value={clinica}
+                      onChange={(e) => setClinica(e.target.value)}
+                      className="pl-9 rounded-xl border-slate-200 focus:border-[#3C1C6C] focus:ring-[#3C1C6C] text-sm"
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Password */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                Contraseña
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <Input
-                  type={showPass ? "text" : "password"}
-                  placeholder="Mínimo 6 caracteres"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
-                  aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
-                >
-                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+              {/* Teléfono y Especialidad */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700">
+                    Teléfono / WhatsApp
+                  </label>
+                  <div className="relative">
+                    <Phone className="w-4 h-4 text-purple-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Input
+                      type="tel"
+                      placeholder="Ej: 71234567"
+                      value={telefono}
+                      onChange={(e) => setTelefono(e.target.value)}
+                      className="pl-9 rounded-xl border-slate-200 focus:border-[#3C1C6C] focus:ring-[#3C1C6C] text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700">
+                    Especialidad
+                  </label>
+                  <div className="relative">
+                    <Stethoscope className="w-4 h-4 text-purple-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <select
+                      value={especialidad}
+                      onChange={(e) => setEspecialidad(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-[#3C1C6C] text-slate-800"
+                    >
+                      <option value="Rehabilitación Oral">Rehabilitación Oral</option>
+                      <option value="Prótesis Fija & Removible">Prótesis Fija & Removible</option>
+                      <option value="Implantología">Implantología</option>
+                      <option value="Ortodoncia">Ortodoncia</option>
+                      <option value="Estética Dental">Estética Dental</option>
+                      <option value="Odontología General">Odontología General</option>
+                    </select>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <Button
-              type="submit"
-              className="w-full bg-green-700 hover:bg-green-800 text-white rounded-xl"
-              disabled={!canSubmit}
-            >
-              {loading ? (
-                <span className="inline-flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Registrando...
-                </span>
-              ) : (
-                "Registrarse"
-              )}
-            </Button>
+              {/* Email */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700">
+                  Correo Electrónico *
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-purple-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Input
+                    type="email"
+                    placeholder="doctor@clinica.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-9 rounded-xl border-slate-200 focus:border-[#3C1C6C] focus:ring-[#3C1C6C] text-sm"
+                    required
+                  />
+                </div>
+              </div>
 
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-300">
-                ¿Ya tienes cuenta?
-              </span>
-              <a href="/login" className="font-medium text-green-700 hover:underline">
-                Iniciar sesión
-              </a>
-            </div>
+              {/* Password */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700">
+                  Contraseña (mínimo 6 caracteres) *
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-purple-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Input
+                    type={showPass ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-9 pr-10 rounded-xl border-slate-200 focus:border-[#3C1C6C] focus:ring-[#3C1C6C] text-sm"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                    aria-label={showPass ? "Ocultar" : "Mostrar"}
+                  >
+                    {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
 
-            <div className="rounded-2xl border bg-gray-50 dark:bg-gray-950 p-4 text-xs text-gray-600 dark:text-gray-300">
-              <p className="font-semibold text-gray-700 dark:text-gray-200 mb-1 inline-flex items-center gap-2">
-                <BadgeCheck className="w-4 h-4 text-green-700" />
-                Nota
-              </p>
-              <p>
-                Después del registro, revisa tu correo para confirmar (si está habilitado).
-                El administrador asignará el rol adecuado dentro del sistema.
-              </p>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+              <Button
+                type="submit"
+                className="w-full bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl py-2.5 font-medium shadow-md shadow-purple-900/20 transition-all hover:scale-[1.01]"
+                disabled={!canSubmit}
+              >
+                {loading ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Registrando clínica...
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-2">
+                    Completar Registro <ArrowRight className="w-4 h-4" />
+                  </span>
+                )}
+              </Button>
+
+              <div className="flex items-center justify-between text-xs pt-1">
+                <span className="text-slate-500">¿Ya tienes cuenta de doctor?</span>
+                <Link href="/login" className="font-semibold text-[#3C1C6C] hover:text-[#52298F] hover:underline">
+                  Iniciar sesión
+                </Link>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

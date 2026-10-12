@@ -2,10 +2,25 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Bell, RefreshCcw, CheckCircle2, ClipboardList, Search, Clock } from "lucide-react";
+import {
+  Loader2,
+  Bell,
+  RefreshCcw,
+  CheckCircle2,
+  ClipboardList,
+  Search,
+  Clock,
+  PlusCircle,
+  FileCheck,
+  PackageCheck,
+  Stethoscope,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
 
 type Notificacion = {
@@ -15,11 +30,15 @@ type Notificacion = {
   leido: boolean | null;
 };
 
-type PedidoPendiente = {
+type PedidoRow = {
   id: string;
   paciente_nombre: string | null;
+  doctor_nombre: string | null;
+  numero_requerimiento: string | null;
   estado: string | null;
   fecha_creacion: string | null;
+  total: number | null;
+  anticipo: number | null;
 };
 
 function timeAgo(ts?: string | null) {
@@ -45,11 +64,10 @@ function formatDateTime(ts?: string | null) {
 
 export default function SecretariaDashboard() {
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
-  const [pedidos, setPedidos] = useState<PedidoPendiente[]>([]);
+  const [pedidos, setPedidos] = useState<PedidoRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // UI extras
   const [qNotif, setQNotif] = useState("");
   const [qPedidos, setQPedidos] = useState("");
 
@@ -57,6 +75,7 @@ export default function SecretariaDashboard() {
     try {
       setRefreshing(true);
 
+      // Notificaciones secretaría
       const { data: notifData, error: notifErr } = await supabase
         .from("notificaciones")
         .select("id, mensaje, created_at, leido")
@@ -66,14 +85,14 @@ export default function SecretariaDashboard() {
 
       if (notifErr) {
         console.error("notifErr:", notifErr);
-        toast.error("No se pudieron cargar notificaciones");
       }
 
+      // Pedidos activos (revisión y producción)
       const { data: pedidosData, error: pedidosErr } = await supabase
         .from("pedidos")
-        .select("id, paciente_nombre, estado, fecha_creacion")
-        .eq("estado", "pendiente")
-        .order("fecha_creacion", { ascending: false });
+        .select("id, paciente_nombre, doctor_nombre, numero_requerimiento, estado, fecha_creacion, total, anticipo")
+        .order("fecha_creacion", { ascending: false })
+        .limit(100);
 
       if (pedidosErr) {
         console.error("pedidosErr:", pedidosErr);
@@ -81,9 +100,9 @@ export default function SecretariaDashboard() {
       }
 
       setNotificaciones((notifData || []) as Notificacion[]);
-      setPedidos((pedidosData || []) as PedidoPendiente[]);
+      setPedidos((pedidosData || []) as PedidoRow[]);
 
-      if (showToast) toast.success("Actualizado ✅");
+      if (showToast) toast.success("Panel actualizado ✅");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -92,8 +111,6 @@ export default function SecretariaDashboard() {
 
   useEffect(() => {
     fetchData(false);
-
-    // auto-refresh suave
     const interval = setInterval(() => fetchData(false), 30000);
     return () => clearInterval(interval);
   }, []);
@@ -106,7 +123,6 @@ export default function SecretariaDashboard() {
       .eq("leido", false);
 
     if (error) {
-      console.error("marcarLeidas error:", error);
       toast.error("No se pudieron marcar como leídas");
       return;
     }
@@ -116,19 +132,17 @@ export default function SecretariaDashboard() {
   };
 
   const stats = useMemo(() => {
-    const pendientes = pedidos.length;
-    const notif = notificaciones.length;
+    let rev = 0;
+    let prod = 0;
+    let fin = 0;
 
-    // “Más antiguo” para sensación de urgencia
-    let oldestMs: number | null = null;
     for (const p of pedidos) {
-      const t = p.fecha_creacion ? new Date(p.fecha_creacion).getTime() : NaN;
-      if (!Number.isFinite(t)) continue;
-      if (oldestMs == null || t < oldestMs) oldestMs = t;
+      if (p.estado === "pendiente_revision") rev++;
+      else if (p.estado === "pendiente" || p.estado === "en_proceso") prod++;
+      else if (p.estado === "finalizado") fin++;
     }
-    const oldestText = oldestMs ? timeAgo(new Date(oldestMs).toISOString()) : "—";
 
-    return { pendientes, notif, oldestText };
+    return { rev, prod, fin, notif: notificaciones.length };
   }, [pedidos, notificaciones]);
 
   const notificacionesFiltradas = useMemo(() => {
@@ -137,249 +151,223 @@ export default function SecretariaDashboard() {
     return notificaciones.filter((n) => (n.mensaje || "").toLowerCase().includes(s));
   }, [notificaciones, qNotif]);
 
-  const pedidosFiltrados = useMemo(() => {
+  const pedidosRevision = useMemo(() => {
     const s = qPedidos.trim().toLowerCase();
-    if (!s) return pedidos;
-    return pedidos.filter((p) => (p.paciente_nombre || "").toLowerCase().includes(s));
+    const list = pedidos.filter((p) => p.estado === "pendiente_revision");
+    if (!s) return list;
+    return list.filter((p) =>
+      [p.paciente_nombre, p.doctor_nombre, p.numero_requerimiento]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(s)
+    );
   }, [pedidos, qPedidos]);
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* HEADER */}
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-          <div>
-            <h1 className="text-3xl font-bold text-green-700 flex items-center gap-2">
-              <CheckCircle2 className="w-7 h-7" />
-              Panel Secretaría
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Control rápido: notificaciones, pedidos pendientes y acciones frecuentes.
-            </p>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#3C1C6C] flex items-center gap-2">
+            <ClipboardList className="w-7 h-7 text-[#A57CFA]" /> Panel de Recepción & Secretaría
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Guisela Laboratorio Dental · Revisión de requerimientos, cotizaciones y entregas.
+          </p>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => fetchData(true)}
-              className="gap-2"
-              disabled={refreshing}
-            >
-              {refreshing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <RefreshCcw className="w-4 h-4" />
-              )}
-              Actualizar
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => fetchData(true)}
+            className="gap-2 rounded-xl border-slate-200"
+            disabled={refreshing}
+          >
+            {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
+            Actualizar
+          </Button>
+
+          <Link href="/dashboard/secretary/new-order">
+            <Button className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white gap-2 rounded-xl shadow-md">
+              <PlusCircle className="w-4 h-4" /> Nuevo Pedido
             </Button>
-          </div>
+          </Link>
         </div>
+      </div>
 
-        {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card className="shadow-sm border-l-4 border-green-600">
-            <CardHeader className="py-4">
-              <CardTitle className="text-sm text-gray-700 flex items-center gap-2">
-                <ClipboardList className="w-4 h-4" /> Pendientes
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Link href="/dashboard/secretary/orders">
+          <Card className="rounded-2xl border-l-4 border-amber-500 shadow-sm hover:shadow-md transition cursor-pointer">
+            <CardHeader className="py-4 px-5">
+              <CardTitle className="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center justify-between">
+                <span>Por Revisar</span>
+                <Clock className="w-4 h-4 text-amber-500" />
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-0 pb-4">
-              <div className="text-3xl font-bold">{stats.pendientes}</div>
-              <div className="text-xs text-gray-500 mt-1">Pedidos en estado “pendiente”</div>
+            <CardContent className="pt-0 px-5 pb-4">
+              <div className="text-3xl font-extrabold text-amber-600">{stats.rev}</div>
+              <div className="text-xs text-slate-500 mt-1">Nuevos pedidos de clínicas</div>
             </CardContent>
           </Card>
+        </Link>
 
-          <Card className="shadow-sm border-l-4 border-amber-500">
-            <CardHeader className="py-4">
-              <CardTitle className="text-sm text-gray-700 flex items-center gap-2">
-                <Bell className="w-4 h-4" /> Notificaciones
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0 pb-4">
-              <div className="text-3xl font-bold">{stats.notif}</div>
-              <div className="text-xs text-gray-500 mt-1">No leídas (Secretaría)</div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm border-l-4 border-blue-500">
-            <CardHeader className="py-4">
-              <CardTitle className="text-sm text-gray-700 flex items-center gap-2">
-                <Clock className="w-4 h-4" /> Antigüedad
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0 pb-4">
-              <div className="text-2xl font-bold">{stats.oldestText}</div>
-              <div className="text-xs text-gray-500 mt-1">Del pedido pendiente más antiguo</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* GRID PRINCIPAL */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* NOTIFICACIONES */}
-          <Card className="shadow-sm">
-            <CardHeader className="flex flex-row items-start justify-between gap-3">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="w-5 h-5 text-green-700" />
-                  Notificaciones
-                </CardTitle>
-                <p className="text-xs text-gray-500 mt-1">
-                  Solo las no leídas para el rol “secretaria”.
-                </p>
-              </div>
-
-              <Button
-                onClick={marcarLeidas}
-                className="bg-green-700 hover:bg-green-800 text-white"
-                disabled={loading || notificaciones.length === 0}
-              >
-                Marcar como leídas
-              </Button>
-            </CardHeader>
-
-            <CardContent>
-              {loading ? (
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Loader2 className="animate-spin w-5 h-5" />
-                  Cargando notificaciones...
-                </div>
-              ) : notificaciones.length === 0 ? (
-                <div className="text-sm text-gray-500">Sin notificaciones nuevas.</div>
-              ) : (
-                <>
-                  <div className="mb-3">
-                    <label className="text-xs text-gray-600 flex items-center gap-2 mb-2">
-                      <Search className="w-4 h-4" /> Buscar en notificaciones
-                    </label>
-                    <Input
-                      value={qNotif}
-                      onChange={(e) => setQNotif(e.target.value)}
-                      placeholder="Ej: entrega, atraso, pago..."
-                    />
-                  </div>
-
-                  <div className="space-y-2 max-h-[340px] overflow-auto overflow-x-hidden pr-1">
-                    {notificacionesFiltradas.map((n) => (
-                      <div
-                        key={n.id}
-                        className="border rounded-xl p-3 bg-white hover:shadow-sm transition"
-                      >
-                        <div className="text-sm text-gray-900">
-                          {n.mensaje || "—"}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-2 flex items-center justify-between">
-                          <span>{formatDateTime(n.created_at)}</span>
-                          <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-800">
-                            {timeAgo(n.created_at)}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {notificacionesFiltradas.length === 0 && (
-                    <p className="text-sm text-gray-500 mt-2">No hay resultados con ese filtro.</p>
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* PEDIDOS PENDIENTES */}
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ClipboardList className="w-5 h-5 text-green-700" />
-                Pedidos Pendientes
-              </CardTitle>
-              <p className="text-xs text-gray-500 mt-1">
-                Lista rápida para priorizar atención y seguimiento.
-              </p>
-            </CardHeader>
-
-            <CardContent>
-              {loading ? (
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Loader2 className="animate-spin w-5 h-5" />
-                  Cargando pedidos...
-                </div>
-              ) : pedidos.length === 0 ? (
-                <div className="text-sm text-gray-500">No hay pedidos pendientes.</div>
-              ) : (
-                <>
-                  <div className="mb-3">
-                    <label className="text-xs text-gray-600 flex items-center gap-2 mb-2">
-                      <Search className="w-4 h-4" /> Buscar por paciente
-                    </label>
-                    <Input
-                      value={qPedidos}
-                      onChange={(e) => setQPedidos(e.target.value)}
-                      placeholder="Ej: Juan Pérez"
-                    />
-                  </div>
-
-                  <div className="divide-y rounded-xl border bg-white max-h-[340px] overflow-auto overflow-x-hidden">
-                    {pedidosFiltrados.map((p) => (
-                      <div
-                        key={p.id}
-                        className="px-3 py-3 flex items-start justify-between gap-3 hover:bg-gray-50 transition"
-                      >
-                        <div className="min-w-0">
-                          <div className="font-semibold text-gray-900 truncate">
-                            {p.paciente_nombre || "—"}
-                          </div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            Creado:{" "}
-                            <span className="font-medium">
-                              {p.fecha_creacion ? formatDateTime(p.fecha_creacion) : "—"}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="text-right">
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
-                            {p.estado || "pendiente"}
-                          </span>
-                          <div className="text-xs text-gray-500 mt-2">
-                            {timeAgo(p.fecha_creacion)}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {pedidosFiltrados.length === 0 && (
-                    <p className="text-sm text-gray-500 mt-2">No hay resultados con ese filtro.</p>
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* FOOTER ACCIONES */}
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base">Acciones rápidas</CardTitle>
+        <Card className="rounded-2xl border-l-4 border-purple-500 shadow-sm">
+          <CardHeader className="py-4 px-5">
+            <CardTitle className="text-xs font-bold text-[#3C1C6C] uppercase tracking-wider flex items-center justify-between">
+              <span>En Producción</span>
+              <FileCheck className="w-4 h-4 text-[#A57CFA]" />
+            </CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col sm:flex-row gap-2">
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto gap-2"
-              onClick={() => fetchData(true)}
-              disabled={refreshing}
-            >
-              {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
-              Refrescar panel
-            </Button>
+          <CardContent className="pt-0 px-5 pb-4">
+            <div className="text-3xl font-extrabold text-[#3C1C6C]">{stats.prod}</div>
+            <div className="text-xs text-slate-500 mt-1">Aprobados en estaciones</div>
+          </CardContent>
+        </Card>
 
-            <Button
-              className="w-full sm:w-auto bg-green-700 hover:bg-green-800 text-white"
-              onClick={() => toast.message("Tip", { description: "Podemos agregar acceso rápido a: Crear pedido, Buscar pedido, Ver pagos, etc." })}
-            >
-              Sugerir mejoras
-            </Button>
+        <Link href="/dashboard/secretary/orders">
+          <Card className="rounded-2xl border-l-4 border-green-500 shadow-sm hover:shadow-md transition cursor-pointer">
+            <CardHeader className="py-4 px-5">
+              <CardTitle className="text-xs font-bold text-green-700 uppercase tracking-wider flex items-center justify-between">
+                <span>Listos para Entrega</span>
+                <PackageCheck className="w-4 h-4 text-green-500" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 px-5 pb-4">
+              <div className="text-3xl font-extrabold text-green-600">{stats.fin}</div>
+              <div className="text-xs text-slate-500 mt-1">Generar remisión & despachar</div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Card className="rounded-2xl border-l-4 border-blue-500 shadow-sm">
+          <CardHeader className="py-4 px-5">
+            <CardTitle className="text-xs font-bold text-blue-700 uppercase tracking-wider flex items-center justify-between">
+              <span>Notificaciones</span>
+              <Bell className="w-4 h-4 text-blue-500" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 px-5 pb-4">
+            <div className="text-3xl font-extrabold text-blue-600">{stats.notif}</div>
+            <div className="text-xs text-slate-500 mt-1">Alertas no leídas</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Grid Principal */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* PEDIDOS PENDIENTES DE REVISIÓN */}
+        <Card className="rounded-3xl border-slate-200 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <div>
+              <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <Clock className="w-5 h-5 text-amber-500" /> Pedidos por Cotizar / Revisar
+              </CardTitle>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Ingresados por doctores esperando validación de precio y caja.
+              </p>
+            </div>
+            <Link href="/dashboard/secretary/orders">
+              <Button variant="ghost" size="sm" className="text-xs text-[#3C1C6C] font-semibold">
+                Ver todos <ArrowRight className="w-3.5 h-3.5 ml-1" />
+              </Button>
+            </Link>
+          </CardHeader>
+
+          <CardContent>
+            {loading ? (
+              <div className="py-8 text-center text-slate-500 flex items-center justify-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin text-[#3C1C6C]" /> Cargando pedidos...
+              </div>
+            ) : pedidosRevision.length === 0 ? (
+              <div className="py-8 text-center text-slate-400 text-xs">
+                ✅ No hay pedidos pendientes de revisión en este momento.
+              </div>
+            ) : (
+              <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                {pedidosRevision.map((p) => (
+                  <div
+                    key={p.id}
+                    className="p-3.5 rounded-2xl border border-slate-200 bg-white hover:border-[#A57CFA] transition-colors flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-800 text-sm truncate">
+                          {p.paciente_nombre || "Paciente"}
+                        </span>
+                        {p.numero_requerimiento && (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-purple-100 text-[#3C1C6C] font-bold">
+                            #{p.numero_requerimiento}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5 truncate">
+                        Doctor: <span className="font-medium text-slate-700">{p.doctor_nombre || "Clínica"}</span> · {timeAgo(p.fecha_creacion)}
+                      </p>
+                    </div>
+
+                    <Link href="/dashboard/secretary/orders">
+                      <Button size="sm" className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white text-xs rounded-xl h-8 px-3">
+                        Revisar
+                      </Button>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* NOTIFICACIONES */}
+        <Card className="rounded-3xl border-slate-200 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <div>
+              <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <Bell className="w-5 h-5 text-[#3C1C6C]" /> Notificaciones en Vivo
+              </CardTitle>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Cambios de estación, nuevos pedidos y alertas del taller.
+              </p>
+            </div>
+
+            {notificaciones.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={marcarLeidas}
+                className="text-xs text-slate-600 rounded-xl"
+              >
+                Marcar leídas
+              </Button>
+            )}
+          </CardHeader>
+
+          <CardContent>
+            {loading ? (
+              <div className="py-8 text-center text-slate-500 flex items-center justify-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin text-[#3C1C6C]" /> Cargando notificaciones...
+              </div>
+            ) : notificaciones.length === 0 ? (
+              <div className="py-8 text-center text-slate-400 text-xs">
+                No tienes notificaciones pendientes.
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                {notificacionesFiltradas.map((n) => (
+                  <div
+                    key={n.id}
+                    className="p-3 rounded-2xl border border-slate-100 bg-purple-50/30 text-xs space-y-1"
+                  >
+                    <p className="font-medium text-slate-800 leading-snug">{n.mensaje || "—"}</p>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400">
+                      <span>{formatDateTime(n.created_at)}</span>
+                      <span>{timeAgo(n.created_at)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
