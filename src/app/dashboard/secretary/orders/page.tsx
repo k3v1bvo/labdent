@@ -49,8 +49,8 @@ type TabKey = "revision" | "produccion" | "finalizados" | "entregados" | "todos"
 
 function cnTab(active: boolean) {
   return active
-    ? "bg-amber-700 hover:bg-amber-800 text-white"
-    : "";
+    ? "bg-[#3C1C6C] hover:bg-[#2E1553] text-white font-bold rounded-xl shadow-sm"
+    : "rounded-xl border-slate-200 text-slate-700";
 }
 
 export default function SecretaryOrdersPage() {
@@ -273,31 +273,36 @@ export default function SecretaryOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-10">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-        <h1 className="text-3xl font-bold text-amber-700">
-          📋 Pedidos (Secretaría)
-        </h1>
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#3C1C6C] flex items-center gap-2">
+            📋 Gestión de Pedidos (Secretaría)
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Revisión, cotización, aprobación y entrega de trabajos protésicos.
+          </p>
+        </div>
 
-        <div className="flex gap-2 w-full md:w-[520px]">
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-[480px]">
           <div className="relative w-full">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <Input
               placeholder="Buscar por paciente, doctor, estado, nota, motivo..."
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              className="pl-9"
+              className="pl-9 rounded-xl border-slate-200 text-sm"
             />
           </div>
 
-          <Button variant="outline" onClick={fetchOrders}>
+          <Button variant="outline" onClick={fetchOrders} className="rounded-xl border-slate-200 shrink-0">
             Refrescar
           </Button>
         </div>
       </div>
 
       {/* TABS */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap gap-2">
         <TabButton k="revision" label="En revisión" count={counters.revision} />
         <TabButton
           k="produccion"
@@ -317,18 +322,18 @@ export default function SecretaryOrdersPage() {
         <TabButton k="todos" label="Todos" count={counters.todos} />
       </div>
 
-      <div className="overflow-x-auto bg-white rounded-2xl shadow border border-gray-100">
+      <div className="overflow-x-auto bg-white rounded-3xl shadow-sm border border-slate-100">
         <table className="min-w-full text-sm text-left">
-          <thead className="bg-amber-700 text-white">
+          <thead className="bg-[#3C1C6C] text-white uppercase text-xs font-semibold">
             <tr>
-              <th className="px-6 py-3">Paciente</th>
-              <th className="px-6 py-3">Doctor</th>
-              <th className="px-6 py-3">N° Req</th>
-              <th className="px-6 py-3">Estado</th>
-              <th className="px-6 py-3">Creado</th>
-              <th className="px-6 py-3">Entrega</th>
-              <th className="px-6 py-3">Nota</th>
-              <th className="px-6 py-3">Acciones</th>
+              <th className="px-6 py-4">Paciente</th>
+              <th className="px-6 py-4">Doctor</th>
+              <th className="px-6 py-4">N° Req</th>
+              <th className="px-6 py-4">Estado</th>
+              <th className="px-6 py-4">Creado</th>
+              <th className="px-6 py-4">Entrega</th>
+              <th className="px-6 py-4">Nota</th>
+              <th className="px-6 py-4 text-right">Acciones</th>
             </tr>
           </thead>
 
@@ -364,10 +369,11 @@ export default function SecretaryOrdersPage() {
 
                 <td className="px-6 py-3">{o.numero_nota_entrega || "—"}</td>
 
-                <td className="px-6 py-3">
+                <td className="px-6 py-4 text-right">
                   {o.estado === "pendiente_revision" && (
                     <Button
-                      className="bg-blue-700 hover:bg-blue-800 text-white"
+                      size="sm"
+                      className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold shadow-sm"
                       onClick={() => openReviewModal(o)}
                     >
                       Revisar / Completar
@@ -376,10 +382,11 @@ export default function SecretaryOrdersPage() {
 
                   {o.estado === "finalizado" && (
                     <Button
-                      className="bg-amber-700 hover:bg-amber-800 text-white"
+                      size="sm"
+                      className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold shadow-sm"
                       onClick={() => openEntregaModal(o)}
                     >
-                      Registrar entrega
+                      Registrar Entrega
                     </Button>
                   )}
 
@@ -387,7 +394,7 @@ export default function SecretaryOrdersPage() {
                     o.estado === "en_proceso" ||
                     o.estado === "pendiente" ||
                     o.estado === "rechazado") && (
-                    <span className="text-xs text-gray-500">—</span>
+                    <span className="text-xs text-slate-400 font-mono">—</span>
                   )}
                 </td>
               </tr>
@@ -395,8 +402,8 @@ export default function SecretaryOrdersPage() {
 
             {filteredOrders.length === 0 && (
               <tr>
-                <td className="px-6 py-6 text-sm text-gray-600" colSpan={8}>
-                  No hay pedidos para mostrar.
+                <td className="px-6 py-12 text-center text-sm text-slate-500" colSpan={8}>
+                  No hay pedidos para mostrar en esta categoría.
                 </td>
               </tr>
             )}
@@ -414,34 +421,40 @@ export default function SecretaryOrdersPage() {
 
       {/* MODAL ENTREGA */}
       <Dialog open={modalEntregaOpen} onOpenChange={setModalEntregaOpen}>
-        <DialogContent className="sm:max-w-md text-center">
+        <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl text-center">
           <AnimatePresence>
             {!successEntregaAnim ? (
               <>
                 <DialogHeader>
-                  <DialogTitle className="text-amber-700">
-                    Confirmar Entrega
+                  <DialogTitle className="text-[#3C1C6C] font-bold text-lg sm:text-xl">
+                    Confirmar Entrega de Pedido
                   </DialogTitle>
                 </DialogHeader>
+
+                <p className="text-xs text-slate-500 mb-3 text-left">
+                  Ingresa el número o código de remisión / nota de entrega física:
+                </p>
 
                 <Input
                   placeholder="Número de nota de entrega"
                   value={notaEntrega}
                   onChange={(e) => setNotaEntrega(e.target.value)}
+                  className="rounded-xl border-slate-200 text-center font-mono font-bold text-lg h-12"
                 />
 
-                <DialogFooter className="mt-4 flex justify-end gap-2">
+                <DialogFooter className="mt-5 flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-100">
                   <Button
                     variant="outline"
                     onClick={() => setModalEntregaOpen(false)}
+                    className="rounded-xl border-slate-200 h-11 w-full sm:w-auto"
                   >
                     Cancelar
                   </Button>
                   <Button
-                    className="bg-amber-700 hover:bg-amber-800 text-white"
+                    className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold h-11 w-full sm:w-auto shadow-md"
                     onClick={handleConfirmEntrega}
                   >
-                    Confirmar
+                    Confirmar Entrega
                   </Button>
                 </DialogFooter>
               </>

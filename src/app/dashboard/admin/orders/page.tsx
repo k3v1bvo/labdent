@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -322,39 +323,45 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-10">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 mb-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <h1 className="text-3xl font-bold text-green-800">
-            📦 Control de Pedidos (Admin)
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#3C1C6C] flex items-center gap-2">
+            📦 Control y Seguimiento de Pedidos
           </h1>
-
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={fetchOrders}>
-              <RefreshCcw className="w-4 h-4 mr-2" /> Refrescar
-            </Button>
-            <Button
-              onClick={() => router.push("/dashboard/admin/new-order")}
-              className="bg-green-700 hover:bg-green-800 text-white"
-            >
-              ➕ Agregar Pedido
-            </Button>
-          </div>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Recepción, producción, facturación y despacho final de trabajos dentales.
+          </p>
         </div>
 
-        {/* ✅ BARRA DE FILTROS (como tu screenshot) */}
-        <div className="bg-white border rounded-2xl p-4 shadow-sm">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={fetchOrders} className="rounded-xl border-slate-200">
+            <RefreshCcw className="w-4 h-4 mr-2" /> Refrescar
+          </Button>
+          <Button
+            onClick={() => router.push("/dashboard/admin/new-order")}
+            className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold shadow-md"
+          >
+            ➕ Nuevo Pedido
+          </Button>
+        </div>
+      </div>
+
+      {/* ✅ BARRA DE FILTROS */}
+      <Card className="rounded-2xl border-slate-200 shadow-sm">
+        <div className="p-4 sm:p-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
             {/* Buscar */}
-            <div className="md:col-span-2">
-              <label className="text-xs text-gray-600 flex items-center gap-2 mb-1">
-                <Search className="w-4 h-4" /> Buscar
+            <div className="sm:col-span-2">
+              <label className="text-xs font-semibold text-slate-600 flex items-center gap-2 mb-1.5">
+                <Search className="w-4 h-4 text-slate-400" /> Buscar
               </label>
               <Input
                 placeholder="Req, paciente, doctor, nota, trabajo, caja..."
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
+                className="rounded-xl border-slate-200 text-sm"
               />
             </div>
 
@@ -445,7 +452,7 @@ export default function AdminOrdersPage() {
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Content */}
       {loading ? (
@@ -650,7 +657,7 @@ export default function AdminOrdersPage() {
 
                       {o.estado === "finalizado" && (
                         <Button
-                          className="bg-green-700 hover:bg-green-800 text-white"
+                          className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl text-xs font-bold"
                           onClick={() => openEntregaModal(o)}
                         >
                           Registrar entrega
@@ -667,31 +674,36 @@ export default function AdminOrdersPage() {
 
       {/* MODAL ENTREGA */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="sm:max-w-md text-center">
+        <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl text-center">
           <AnimatePresence>
             {!successAnim ? (
               <>
                 <DialogHeader>
-                  <DialogTitle className="text-green-700">
-                    Registrar nota de entrega
+                  <DialogTitle className="text-[#3C1C6C] font-bold text-lg sm:text-xl">
+                    Registrar Nota de Entrega
                   </DialogTitle>
                 </DialogHeader>
 
+                <p className="text-xs text-slate-500 mb-3 text-left">
+                  Ingresa el número o código de remisión/nota entregada a la clínica o transportista:
+                </p>
+
                 <Input
-                  placeholder="Ej: 00045"
+                  placeholder="Ej: NE-00045"
                   value={notaEntrega}
                   onChange={(e) => setNotaEntrega(e.target.value)}
+                  className="rounded-xl border-slate-200 text-center font-mono font-bold text-lg h-12"
                 />
 
-                <DialogFooter className="mt-4 flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setModalOpen(false)}>
+                <DialogFooter className="mt-5 flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-100">
+                  <Button variant="outline" onClick={() => setModalOpen(false)} className="rounded-xl border-slate-200 h-11 w-full sm:w-auto">
                     Cancelar
                   </Button>
                   <Button
-                    className="bg-green-700 hover:bg-green-800 text-white"
+                    className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold h-11 w-full sm:w-auto shadow-md"
                     onClick={handleConfirmEntrega}
                   >
-                    Confirmar
+                    Confirmar Entrega
                   </Button>
                 </DialogFooter>
               </>
@@ -707,12 +719,12 @@ export default function AdminOrdersPage() {
                   initial={{ rotate: -90 }}
                   animate={{ rotate: 0 }}
                   transition={{ duration: 0.5 }}
-                  className="bg-green-100 text-green-700 rounded-full p-4 mb-3"
+                  className="bg-purple-100 text-[#3C1C6C] rounded-full p-4 mb-3 border border-purple-200"
                 >
                   <CheckCircle className="w-10 h-10" />
                 </motion.div>
-                <p className="text-green-700 font-semibold text-lg">
-                  Pedido actualizado con éxito
+                <p className="text-[#3C1C6C] font-bold text-lg">
+                  Pedido entregado con éxito
                 </p>
               </motion.div>
             )}

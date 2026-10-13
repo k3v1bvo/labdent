@@ -21,6 +21,7 @@ import {
   Stethoscope,
   ShieldCheck,
   ArrowRight,
+  ArrowLeft,
 } from "lucide-react";
 
 export default function RegisterPage() {
@@ -154,25 +155,32 @@ export default function RegisterPage() {
         </div>
 
         {/* Tarjeta de Registro */}
-        <Card className="w-full rounded-3xl shadow-xl shadow-purple-900/5 border border-purple-100 bg-white dark:bg-gray-900 overflow-hidden">
-          <CardHeader className="space-y-2 pt-8 pb-4 px-6 sm:px-8 text-center">
-            <div className="flex justify-center mb-2 lg:hidden">
-              <Image
-                src="/images/brand/guisela-logo-primary.png"
-                alt="Guisela Laboratorio Dental"
-                width={200}
-                height={60}
-                className="h-12 w-auto object-contain"
-                priority
-              />
-            </div>
-            <CardTitle className="text-2xl font-bold text-[#3C1C6C] tracking-tight">
-              Crear Cuenta de Clínica
-            </CardTitle>
-            <p className="text-xs sm:text-sm text-slate-500">
-              Ingresa los datos del doctor u odontólogo para iniciar
-            </p>
-          </CardHeader>
+        <div className="w-full">
+          <div className="lg:hidden mb-2 text-left">
+            <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#3C1C6C] hover:text-[#A57CFA] p-1">
+              <ArrowLeft className="w-3.5 h-3.5" /> Volver al inicio
+            </Link>
+          </div>
+
+          <Card className="w-full rounded-3xl shadow-xl shadow-purple-900/5 border border-purple-100 bg-white dark:bg-gray-900 overflow-hidden">
+            <CardHeader className="space-y-2 pt-6 sm:pt-8 pb-3 sm:pb-4 px-4 sm:px-8 text-center">
+              <div className="flex justify-center mb-2 lg:hidden">
+                <Image
+                  src="/images/brand/guisela-logo-primary.png"
+                  alt="Guisela Laboratorio Dental"
+                  width={200}
+                  height={60}
+                  className="h-12 w-auto object-contain"
+                  priority
+                />
+              </div>
+              <CardTitle className="text-xl sm:text-2xl font-black text-[#3C1C6C] tracking-tight">
+                Crear Cuenta de Clínica
+              </CardTitle>
+              <p className="text-xs sm:text-sm text-slate-500">
+                Ingresa los datos del doctor u odontólogo para iniciar
+              </p>
+            </CardHeader>
 
           <CardContent className="px-6 sm:px-8 pb-8 pt-2">
             <form onSubmit={handleRegister} className="space-y-4">
@@ -324,5 +332,6 @@ export default function RegisterPage() {
         </Card>
       </div>
     </div>
+  </div>
   );
 }

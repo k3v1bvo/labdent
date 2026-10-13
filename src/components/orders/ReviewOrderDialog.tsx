@@ -182,40 +182,42 @@ export function ReviewOrderDialog({ open, onOpenChange, order, onUpdated }: Prop
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
         <AnimatePresence>
           {!successAnim ? (
             <>
               <DialogHeader>
-                <DialogTitle className="text-blue-700">Revisar / Completar pedido</DialogTitle>
+                <DialogTitle className="text-[#3C1C6C] font-bold text-lg sm:text-xl">
+                  Revisar / Completar Pedido
+                </DialogTitle>
               </DialogHeader>
 
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-4 text-slate-700">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-gray-700">Paciente</label>
-                    <Input value={order?.paciente_nombre || ""} readOnly className="bg-gray-100" />
+                    <label className="text-xs font-semibold text-slate-600">Paciente</label>
+                    <Input value={order?.paciente_nombre || ""} readOnly className="bg-slate-50 border-slate-200 text-slate-800" />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-700">Doctor</label>
-                    <Input value={order?.doctor_nombre || ""} readOnly className="bg-gray-100" />
+                    <label className="text-xs font-semibold text-slate-600">Doctor</label>
+                    <Input value={order?.doctor_nombre || ""} readOnly className="bg-slate-50 border-slate-200 text-slate-800" />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-700">N° Requerimiento</label>
-                    <Input value={order?.numero_requerimiento || ""} readOnly className="bg-gray-100" />
+                    <label className="text-xs font-semibold text-slate-600">N° Requerimiento</label>
+                    <Input value={order?.numero_requerimiento || ""} readOnly className="bg-slate-50 border-slate-200 text-slate-800" />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-700">Estado</label>
-                    <Input value={order?.estado || ""} readOnly className="bg-gray-100" />
+                    <label className="text-xs font-semibold text-slate-600">Estado</label>
+                    <Input value={order?.estado || ""} readOnly className="bg-slate-50 border-slate-200 text-slate-800 capitalize" />
                   </div>
                 </div>
 
-                <div className="border-t pt-4">
-                  <p className="text-sm font-semibold text-gray-800 mb-2">Completar datos administrativos</p>
+                <div className="border-t border-slate-100 pt-4">
+                  <p className="text-sm font-bold text-[#3C1C6C] mb-3">Completar datos administrativos</p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="text-xs text-gray-700">Total *</label>
+                      <label className="text-xs font-semibold text-slate-600">Total ($) *</label>
                       <Input
                         type="number"
                         step="0.01"
@@ -223,10 +225,11 @@ export function ReviewOrderDialog({ open, onOpenChange, order, onUpdated }: Prop
                         value={total}
                         onChange={(e) => setTotal(e.target.value)}
                         placeholder="Ej: 120.00"
+                        className="rounded-xl border-slate-200 font-semibold"
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-gray-700">Anticipo</label>
+                      <label className="text-xs font-semibold text-slate-600">Anticipo ($)</label>
                       <Input
                         type="number"
                         step="0.01"
@@ -234,52 +237,75 @@ export function ReviewOrderDialog({ open, onOpenChange, order, onUpdated }: Prop
                         value={anticipo}
                         onChange={(e) => setAnticipo(e.target.value)}
                         placeholder="Ej: 50.00"
+                        className="rounded-xl border-slate-200 font-semibold"
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-gray-700">Caja</label>
-                      <Input value={caja} onChange={(e) => setCaja(e.target.value)} placeholder="00" maxLength={2} />
+                      <label className="text-xs font-semibold text-slate-600">Caja N°</label>
+                      <Input
+                        value={caja}
+                        onChange={(e) => setCaja(e.target.value)}
+                        placeholder="00"
+                        maxLength={2}
+                        className="rounded-xl border-slate-200 font-mono text-center font-bold"
+                      />
                     </div>
                   </div>
 
-                  <p className="text-sm text-gray-700 mt-2">
-                    💰 Saldo restante:{" "}
-                    <span className="font-semibold text-green-700">
+                  <div className="mt-3 p-3 bg-purple-50/70 border border-purple-100 rounded-xl flex items-center justify-between">
+                    <span className="text-xs sm:text-sm font-medium text-slate-700">💰 Saldo restante:</span>
+                    <span className="font-extrabold text-[#3C1C6C] text-sm sm:text-base">
                       ${Number.isFinite(saldo) ? saldo.toFixed(2) : "0.00"}
                     </span>
-                  </p>
+                  </div>
 
                   <div className="mt-3">
-                    <label className="text-xs text-gray-700">Observaciones</label>
+                    <label className="text-xs font-semibold text-slate-600">Observaciones</label>
                     <Input
                       value={obs}
                       onChange={(e) => setObs(e.target.value)}
                       placeholder="Notas internas / correcciones..."
+                      className="rounded-xl border-slate-200"
                     />
                   </div>
                 </div>
 
-                <div className="border-t pt-4">
-                  <p className="text-sm font-semibold text-red-700 mb-2">Rechazar pedido</p>
+                <div className="border-t border-slate-100 pt-4">
+                  <p className="text-sm font-bold text-red-600 mb-2">Rechazar pedido</p>
                   <Input
                     value={motivoRechazo}
                     onChange={(e) => setMotivoRechazo(e.target.value)}
-                    placeholder="Ej: Rechazado por falta de pago inicial"
+                    placeholder="Ej: Rechazado por falta de pago inicial o falta de datos"
+                    className="rounded-xl border-red-200 text-red-800 placeholder:text-red-300"
                   />
                 </div>
               </div>
 
-              <DialogFooter className="mt-4 flex flex-col md:flex-row md:justify-end gap-2">
-                <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+              <DialogFooter className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2 border-t border-slate-100">
+                <Button
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={saving}
+                  className="w-full sm:w-auto rounded-xl border-slate-200 h-11"
+                >
                   Cancelar
                 </Button>
 
-                <Button variant="destructive" onClick={reject} disabled={saving}>
+                <Button
+                  variant="destructive"
+                  onClick={reject}
+                  disabled={saving}
+                  className="w-full sm:w-auto rounded-xl h-11"
+                >
                   ❌ Rechazar
                 </Button>
 
-                <Button className="bg-blue-700 hover:bg-blue-800 text-white" onClick={approve} disabled={saving}>
-                  {saving ? "Guardando..." : "✅ Aprobar (guardar y enviar)"}
+                <Button
+                  className="w-full sm:w-auto bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold h-11 shadow-md"
+                  onClick={approve}
+                  disabled={saving}
+                >
+                  {saving ? "Guardando..." : "✅ Aprobar & Enviar"}
                 </Button>
               </DialogFooter>
             </>

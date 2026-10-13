@@ -540,60 +540,60 @@ export default function DoctorNewOrderPage() {
       )}
 
       {/* ✅ Header sticky pro */}
-      <div className="sticky top-0 z-40 bg-gray-50/80 backdrop-blur-md border-b py-4 mb-6">
+      <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 py-4 mb-6 rounded-2xl px-4 sm:px-6 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-bold text-green-700 flex items-center gap-2">
-              <Sparkles className="w-6 h-6" /> Nuevo Pedido del Doctor
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-[#3C1C6C] dark:text-white flex items-center gap-2">
+              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-[#A57CFA]" /> Nuevo Pedido del Doctor
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Completa lo esencial y guarda. El pedido queda <span className="font-semibold">en revisión</span>.
+            <p className="text-xs sm:text-sm text-slate-500">
+              Completa los detalles de tu paciente y trabajo. El pedido entrará a <span className="font-semibold text-[#3C1C6C] dark:text-[#D0B9FF]">revisión técnica</span>.
             </p>
 
-            {/* mini progreso de completitud (solo UI, no afecta backend) */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1">
-                <ClipboardCheck className="w-4 h-4" /> Completitud
+            {/* mini progreso de completitud */}
+            <div className="flex items-center gap-2 text-xs text-slate-500 pt-1">
+              <span className="inline-flex items-center gap-1 font-medium">
+                <ClipboardCheck className="w-4 h-4 text-[#A57CFA]" /> Completitud
               </span>
-              <div className="h-2 w-44 bg-white border rounded-full overflow-hidden">
-                <div className="h-full bg-green-600" style={{ width: `${completion}%` }} />
+              <div className="h-2 w-36 sm:w-48 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-[#3C1C6C] via-[#6329B7] to-[#A57CFA] transition-all duration-300" style={{ width: `${completion}%` }} />
               </div>
-              <span className="font-medium">{completion}%</span>
+              <span className="font-bold text-[#3C1C6C] dark:text-[#A57CFA]">{completion}%</span>
               {dirty && (
-                <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-                  <Wand2 className="w-3.5 h-3.5" /> Cambios sin guardar
+                <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 text-[#3C1C6C] font-semibold text-[10px]">
+                  <Wand2 className="w-3 h-3" /> Cambios sin guardar
                 </span>
               )}
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 pt-2 md:pt-0">
             <Button
               type="button"
               variant="outline"
               onClick={quickFillExample}
-              className="flex items-center gap-2"
+              className="text-xs h-9 sm:h-10 flex items-center gap-1.5 border-slate-200 hover:bg-purple-50"
               disabled={loading}
               title="Relleno rápido (solo ejemplo)"
             >
-              <Wand2 className="w-4 h-4" /> Relleno rápido
+              <Wand2 className="w-3.5 h-3.5 text-[#A57CFA]" /> Relleno rápido
             </Button>
 
             <Button
               type="button"
               variant="outline"
               onClick={clearFormKeepDoctor}
-              className="flex items-center gap-2"
+              className="text-xs h-9 sm:h-10 flex items-center gap-1.5 border-slate-200 hover:bg-rose-50 hover:text-rose-600"
               disabled={loading}
               title="Limpiar campos (mantiene datos del doctor)"
             >
-              <X className="w-4 h-4" /> Limpiar
+              <X className="w-3.5 h-3.5" /> Limpiar
             </Button>
 
             <Button
               type="submit"
               form="doctor-new-order-form"
-              className="bg-green-700 hover:bg-green-800 text-white flex items-center gap-2"
+              className="bg-[#3C1C6C] hover:bg-[#2C1550] text-white text-xs sm:text-sm h-9 sm:h-10 px-4 sm:px-5 rounded-xl font-bold flex items-center gap-2 shadow-md shadow-purple-950/20"
               disabled={loading || !requiredOk}
               title={!requiredOk ? "Completa los campos obligatorios (*)" : "Guardar pedido (en revisión)"}
             >
@@ -611,10 +611,10 @@ export default function DoctorNewOrderPage() {
         </div>
       </div>
 
-      <Card className="shadow-md rounded-3xl">
+      <Card className="shadow-sm rounded-3xl border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900">
         <CardHeader className="pb-2">
-          <CardTitle className="text-green-700 text-xl font-bold flex items-center gap-2">
-            🩺 Formulario de Pedido
+          <CardTitle className="text-[#3C1C6C] dark:text-white text-lg sm:text-xl font-black flex items-center gap-2">
+            🩺 Formulario de Pedido Clínico
           </CardTitle>
         </CardHeader>
 
@@ -884,7 +884,7 @@ export default function DoctorNewOrderPage() {
 
               <Button
                 type="submit"
-                className="bg-green-700 hover:bg-green-800 text-white flex items-center gap-2"
+                className="bg-[#3C1C6C] hover:bg-[#2C1550] text-white font-bold px-6 h-11 rounded-xl shadow-md shadow-purple-950/20 flex items-center gap-2"
                 disabled={loading || !requiredOk}
               >
                 {loading ? (

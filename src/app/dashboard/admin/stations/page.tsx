@@ -267,7 +267,7 @@ export default function AdminStationsPage() {
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-green-700">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#3C1C6C]">
             ⚙️ Gestión de Estaciones
           </h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -276,14 +276,14 @@ export default function AdminStationsPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={refreshAll}>
+          <Button variant="outline" onClick={refreshAll} className="h-10">
             <RefreshCcw className="w-4 h-4 mr-2" />
             Actualizar
           </Button>
 
           <Button
             onClick={openNew}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-[#3C1C6C] hover:bg-[#2D1452] text-white shadow-sm h-10"
           >
             <Plus className="w-4 h-4 mr-2" />
             Nueva estación
@@ -382,11 +382,12 @@ export default function AdminStationsPage() {
         <CardContent>
           {loading ? (
             <div className="flex justify-center py-10">
-              <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+              <Loader2 className="w-8 h-8 animate-spin text-[#3C1C6C]" />
             </div>
           ) : estaciones.length === 0 ? (
             <p className="text-gray-500">No hay estaciones registradas.</p>
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -508,6 +509,7 @@ export default function AdminStationsPage() {
                 })}
               </TableBody>
             </Table>
+            </div>
           )}
 
           <div className="mt-4 text-xs text-gray-500">
@@ -519,18 +521,17 @@ export default function AdminStationsPage() {
 
       {/* MODAL */}
       {open && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b">
-              <h2 className="font-semibold text-lg">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white w-[95vw] sm:max-w-lg rounded-2xl shadow-xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
+              <h2 className="font-semibold text-lg text-slate-900">
                 {editing ? "Editar estación" : "Nueva estación"}
               </h2>
 
-              {/* ⬇️ aquí también quitamos size="icon" */}
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-9 w-9 p-0"
+                className="h-9 w-9 p-0 rounded-full"
                 onClick={() => setOpen(false)}
                 aria-label="Cerrar"
                 title="Cerrar"
@@ -539,34 +540,36 @@ export default function AdminStationsPage() {
               </Button>
             </div>
 
-            <div className="p-5 space-y-4">
+            <div className="p-5 space-y-4 overflow-y-auto">
               <div>
-                <label className="text-sm font-medium">Nombre *</label>
+                <label className="text-sm font-medium text-slate-700">Nombre *</label>
                 <Input
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
                   placeholder="Ej: Diseño CAD"
+                  className="mt-1 h-11"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium">Descripción</label>
+                <label className="text-sm font-medium text-slate-700">Descripción</label>
                 <Textarea
                   value={descripcion}
                   onChange={(e) => setDescripcion(e.target.value)}
                   placeholder="Opcional"
+                  className="mt-1 min-h-[90px]"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 px-5 py-4 border-t">
-              <Button variant="outline" onClick={() => setOpen(false)}>
+            <div className="flex justify-end gap-2 px-5 py-4 border-t shrink-0 bg-slate-50">
+              <Button variant="outline" onClick={() => setOpen(false)} className="h-11 px-5">
                 Cancelar
               </Button>
               <Button
                 onClick={saveStation}
                 disabled={saving}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-[#3C1C6C] hover:bg-[#2D1452] text-white shadow-sm h-11 px-5"
               >
                 {saving ? (
                   <>

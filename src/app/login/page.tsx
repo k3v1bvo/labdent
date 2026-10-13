@@ -88,8 +88,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FDFCFE] via-purple-50/40 to-[#F5F2FA] flex items-center justify-center p-6">
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+    <div className="min-h-screen bg-gradient-to-b from-[#FDFCFE] via-purple-50/40 to-[#F5F2FA] flex items-center justify-center p-3 sm:p-6 lg:p-8">
+      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-center">
         {/* Panel branding oficial Guisela con fondo Púrpura y Logo Blanco Secundario */}
         <div className="hidden lg:flex flex-col justify-between rounded-3xl border border-purple-900/40 bg-gradient-to-br from-[#3C1C6C] via-[#2E1553] to-[#1C0B33] p-10 shadow-2xl shadow-purple-950/20 min-h-[550px] text-white relative overflow-hidden">
           <div className="relative z-10">
@@ -161,28 +161,35 @@ export default function LoginPage() {
         </div>
 
         {/* Login Card con Logo Primario a Color */}
-        <Card className="rounded-3xl shadow-xl shadow-purple-950/10 border border-purple-100 bg-white overflow-hidden">
-          <CardHeader className="space-y-2 pt-8 pb-4 text-center">
-            {/* Logo Guisela Primario en tarjeta de login */}
-            <div className="relative h-15 w-52 mx-auto mb-1">
-              <Image
-                src="/images/brand/guisela-logo-primary.png"
-                alt="Guisela Laboratorio Dental"
-                fill
-                className="object-contain"
-                priority
-                unoptimized
-              />
-            </div>
-            <CardTitle className="text-2xl font-black tracking-tight text-[#3C1C6C]">
-              Iniciar Sesión
-            </CardTitle>
-            <p className="text-sm text-slate-500">
-              Ingresa tus credenciales para acceder al sistema
-            </p>
-          </CardHeader>
+        <div className="w-full">
+          <div className="lg:hidden mb-2 text-left">
+            <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#3C1C6C] hover:text-[#A57CFA] p-1">
+              <ArrowLeft className="w-3.5 h-3.5" /> Volver al inicio
+            </Link>
+          </div>
 
-          <CardContent className="p-8 pt-2">
+          <Card className="rounded-3xl shadow-xl shadow-purple-950/10 border border-purple-100 bg-white overflow-hidden">
+            <CardHeader className="space-y-2 pt-6 sm:pt-8 pb-3 sm:pb-4 text-center px-4 sm:px-8">
+              {/* Logo Guisela Primario en tarjeta de login */}
+              <div className="relative h-14 sm:h-16 w-48 sm:w-52 mx-auto mb-1">
+                <Image
+                  src="/images/brand/guisela-logo-primary.png"
+                  alt="Guisela Laboratorio Dental"
+                  fill
+                  className="object-contain"
+                  priority
+                  unoptimized
+                />
+              </div>
+              <CardTitle className="text-xl sm:text-2xl font-black tracking-tight text-[#3C1C6C]">
+                Iniciar Sesión
+              </CardTitle>
+              <p className="text-xs sm:text-sm text-slate-500">
+                Ingresa tus credenciales para acceder al sistema
+              </p>
+            </CardHeader>
+
+            <CardContent className="p-4 sm:p-8 pt-2">
             <form onSubmit={handleLogin} className="space-y-4">
               {/* Email */}
               <div className="space-y-1.5">
@@ -264,6 +271,7 @@ export default function LoginPage() {
         </Card>
       </div>
     </div>
+  </div>
   );
 }
 

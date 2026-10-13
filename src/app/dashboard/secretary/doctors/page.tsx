@@ -164,128 +164,171 @@ export default function SecretaryDoctorsFromPedidosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-10 space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h1 className="text-3xl font-bold text-green-700">🧑‍⚕️ Doctores (del historial de pedidos)</h1>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#3C1C6C] flex items-center gap-2">
+            🧑‍⚕️ Catálogo de Doctores
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Generado automáticamente desde el historial de pedidos y fichas clínicas.
+          </p>
+        </div>
 
-        <div className="flex gap-2 w-full md:w-[520px]">
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-[500px]">
           <div className="relative w-full">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <Input
               placeholder="Buscar por nombre o teléfono…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              className="pl-9"
+              className="pl-9 rounded-xl border-slate-200 text-sm"
             />
           </div>
 
-          <Button variant="outline" onClick={fetchDoctors}>
+          <Button variant="outline" onClick={fetchDoctors} className="rounded-xl border-slate-200 shrink-0">
             <RefreshCw className="w-4 h-4 mr-2" />
             Refrescar
           </Button>
         </div>
       </div>
 
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-base text-gray-700">
-            Catálogo automático (se genera desde los pedidos existentes)
+      <Card className="rounded-3xl border-slate-200 shadow-sm overflow-hidden">
+        <CardHeader className="bg-slate-50/60 border-b border-slate-100 py-4 px-6">
+          <CardTitle className="text-sm font-bold text-slate-700">
+            Doctores registrados en órdenes activas e históricas ({filtered.length})
           </CardTitle>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="p-0 sm:p-6">
           {loading ? (
-            <p className="text-sm text-gray-600">Cargando doctores…</p>
-          ) : filtered.length === 0 ? (
-            <p className="text-sm text-gray-700">No hay doctores para mostrar.</p>
-          ) : (
-            <div className="overflow-x-auto bg-white rounded-2xl border border-gray-100">
-              <table className="min-w-full text-sm text-left">
-                <thead className="bg-green-700 text-white">
-                  <tr>
-                    <th className="px-6 py-3">Doctor</th>
-                    <th className="px-6 py-3">Teléfono</th>
-                    <th className="px-6 py-3">Pedidos</th>
-                    <th className="px-6 py-3">Acciones</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filtered.map((r, idx) => (
-                    <tr key={`${r.doctor_nombre}-${r.doctor_telefono}-${idx}`} className="border-t hover:bg-gray-50">
-                      <td className="px-6 py-3 font-medium text-gray-800">{r.doctor_nombre}</td>
-                      <td className="px-6 py-3">{r.doctor_telefono || "—"}</td>
-                      <td className="px-6 py-3">
-                        <span className="inline-flex items-center gap-2 text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700">
-                          <Users className="w-4 h-4" />
-                          {r.pedidos_count}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3">
-                        <Button size="sm" variant="outline" onClick={() => openEdit(r)}>
-                          <Pencil className="w-4 h-4 mr-2" />
-                          Corregir
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="py-12 text-center text-slate-500">
+              <p className="text-sm">Cargando doctores…</p>
             </div>
+          ) : filtered.length === 0 ? (
+            <div className="py-12 text-center text-slate-500">
+              <p className="text-sm">No hay doctores que coincidan con la búsqueda.</p>
+            </div>
+          ) : (
+            <>
+              {/* Vista Móvil: Tarjetas */}
+              <div className="md:hidden divide-y divide-slate-100">
+                {filtered.map((r, idx) => (
+                  <div key={`${r.doctor_nombre}-${r.doctor_telefono}-${idx}`} className="p-4 space-y-3 bg-white">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-bold text-slate-800 text-sm">{r.doctor_nombre}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {r.doctor_telefono ? `📞 ${r.doctor_telefono}` : "Sin teléfono registrado"}
+                        </p>
+                      </div>
+
+                      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-purple-50 text-[#3C1C6C] font-semibold border border-purple-100 shrink-0">
+                        <Users className="w-3.5 h-3.5 text-[#A57CFA]" />
+                        {r.pedidos_count} pedidos
+                      </span>
+                    </div>
+
+                    <div className="pt-1 flex justify-end">
+                      <Button size="sm" variant="outline" onClick={() => openEdit(r)} className="rounded-xl border-slate-200 text-xs w-full sm:w-auto h-9">
+                        <Pencil className="w-3.5 h-3.5 mr-1.5 text-[#3C1C6C]" />
+                        Corregir Datos
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Vista Desktop: Tabla */}
+              <div className="hidden md:block overflow-x-auto rounded-2xl border border-slate-100">
+                <table className="min-w-full text-sm text-left">
+                  <thead className="bg-[#3C1C6C] text-white uppercase text-xs font-semibold">
+                    <tr>
+                      <th className="px-6 py-4">Doctor</th>
+                      <th className="px-6 py-4">Teléfono</th>
+                      <th className="px-6 py-4">Pedidos Vinculados</th>
+                      <th className="px-6 py-4 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {filtered.map((r, idx) => (
+                      <tr key={`${r.doctor_nombre}-${r.doctor_telefono}-${idx}`} className="hover:bg-purple-50/20 transition-colors">
+                        <td className="px-6 py-4 font-semibold text-slate-800">{r.doctor_nombre}</td>
+                        <td className="px-6 py-4 text-slate-600">{r.doctor_telefono || "—"}</td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center gap-2 text-xs px-2.5 py-1 rounded-full bg-purple-50 text-[#3C1C6C] font-semibold border border-purple-100">
+                            <Users className="w-3.5 h-3.5 text-[#A57CFA]" />
+                            {r.pedidos_count} pedidos
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <Button size="sm" variant="outline" onClick={() => openEdit(r)} className="rounded-xl border-slate-200 text-xs">
+                            <Pencil className="w-3.5 h-3.5 mr-1.5 text-[#3C1C6C]" />
+                            Corregir
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
 
-          <p className="text-xs text-gray-500 mt-3">
-            * Esta lista se basa en datos históricos. Si quieres un catálogo real (para seleccionar doctores al crear pedido),
-            lo mejor es crear una tabla <b>doctores_catalogo</b> y usarla desde los formularios.
+          <p className="text-xs text-slate-400 p-4 sm:p-0 sm:mt-3">
+            * Al corregir el nombre o teléfono de un doctor, se actualizarán automáticamente todos sus pedidos históricos y en curso.
           </p>
         </CardContent>
       </Card>
 
       {/* MODAL EDITAR */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-green-700">Corregir doctor</DialogTitle>
+            <DialogTitle className="text-[#3C1C6C] font-bold text-lg">Corregir datos del doctor</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="text-sm text-gray-600">
-              Esto actualizará <b>todos los pedidos</b> que coinciden con:
-              <div className="mt-1 font-medium text-gray-800">
+            <div className="text-xs sm:text-sm text-slate-600 p-3 bg-purple-50/70 rounded-xl border border-purple-100">
+              Esto actualizará <b>todos los pedidos</b> asociados a:
+              <div className="mt-1 font-bold text-[#3C1C6C]">
                 {selected?.doctor_nombre} {selected?.doctor_telefono ? `(${selected.doctor_telefono})` : ""}
               </div>
             </div>
 
             <div>
-              <label className="text-sm text-gray-600">Nombre</label>
+              <label className="text-xs font-semibold text-slate-600">Nombre del Doctor</label>
               <Input
                 id="doctorNombreEdit"
                 value={newNombre}
                 onChange={(e) => setNewNombre(e.target.value)}
                 placeholder="Nombre del doctor"
+                className="rounded-xl border-slate-200 mt-1"
               />
             </div>
 
             <div>
-              <label className="text-sm text-gray-600">Teléfono</label>
+              <label className="text-xs font-semibold text-slate-600">Teléfono</label>
               <Input
                 value={newTelefono}
                 onChange={(e) => setNewTelefono(e.target.value)}
                 placeholder="Ej: 70000000"
+                className="rounded-xl border-slate-200 mt-1"
               />
             </div>
           </div>
 
-          <DialogFooter className="mt-4 flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+          <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button variant="outline" onClick={() => setOpen(false)} className="rounded-xl border-slate-200 h-10 w-full sm:w-auto">
               Cancelar
             </Button>
             <Button
-              className="bg-green-700 hover:bg-green-800 text-white"
+              className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold h-10 w-full sm:w-auto shadow-md"
               onClick={saveEdit}
               disabled={saving}
             >
-              {saving ? "Guardando…" : "Guardar cambios"}
+              {saving ? "Guardando…" : "Guardar Cambios"}
             </Button>
           </DialogFooter>
         </DialogContent>

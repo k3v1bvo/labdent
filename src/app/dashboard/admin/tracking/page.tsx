@@ -362,44 +362,44 @@ export default function TrackingPage() {
   }, [rows, q, estadoEstacion, doctor, estacion, desde, hasta]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-10">
-      {/* Header (como tu imagen) */}
-      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-green-700 flex items-center gap-2">
-            📦 Seguimiento de Pedidos
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#3C1C6C] flex items-center gap-2">
+            📦 Seguimiento de Producción en Vivo
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Vista general del flujo de producción por estación, con avance manual y filtros.
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Flujo de órdenes por estación técnica, avance porcentual y control operativo.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={fetchTracking} className="flex items-center gap-2">
-            <RefreshCcw className="w-4 h-4" /> Actualizar
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" onClick={fetchTracking} className="rounded-xl border-slate-200">
+            <RefreshCcw className="w-4 h-4 mr-2" /> Actualizar
           </Button>
 
-          {/* Toggle Tarjetas/Tabla (como la imagen) */}
-          <div className="inline-flex items-center rounded-xl border bg-white p-1 shadow-sm">
+          {/* Toggle Tarjetas/Tabla */}
+          <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
             <button
               type="button"
               onClick={() => setViewMode("cards")}
-              className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition ${
-                viewMode === "cards" ? "bg-green-700 text-white" : "text-gray-700 hover:bg-gray-50"
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                viewMode === "cards" ? "bg-[#3C1C6C] text-white" : "text-slate-600 hover:bg-slate-50"
               }`}
               aria-pressed={viewMode === "cards"}
             >
-              <LayoutGrid className="w-4 h-4" /> Tarjetas
+              <LayoutGrid className="w-3.5 h-3.5" /> Tarjetas
             </button>
             <button
               type="button"
               onClick={() => setViewMode("table")}
-              className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition ${
-                viewMode === "table" ? "bg-green-700 text-white" : "text-gray-700 hover:bg-gray-50"
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                viewMode === "table" ? "bg-[#3C1C6C] text-white" : "text-slate-600 hover:bg-slate-50"
               }`}
               aria-pressed={viewMode === "table"}
             >
-              <Table2 className="w-4 h-4" /> Tabla
+              <Table2 className="w-3.5 h-3.5" /> Tabla
             </button>
           </div>
         </div>
@@ -486,7 +486,7 @@ export default function TrackingPage() {
             <Button variant="outline" onClick={setSemana}>
               Semana
             </Button>
-            <Button className="bg-green-700 hover:bg-green-800 text-white" onClick={setMes}>
+            <Button className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white font-bold rounded-xl" onClick={setMes}>
               Mes
             </Button>
             <Button variant="outline" onClick={setAnio}>
