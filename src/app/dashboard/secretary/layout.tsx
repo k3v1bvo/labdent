@@ -14,6 +14,7 @@ import {
   LogOut,
   User,
   Sparkles,
+  Clock,
 } from "lucide-react";
 import Image from "next/image";
 import SecretaryNotifications from "@/components/notifications/SecretaryNotifications";
@@ -88,6 +89,7 @@ export default function SecretaryLayout({
     { label: "Pedidos", path: "/dashboard/secretary/orders", icon: <ClipboardList className="w-4 h-4" /> },
     { label: "Nuevo Pedido", path: "/dashboard/secretary/new-order", icon: <FilePlus className="w-4 h-4" /> },
     { label: "Doctores", path: "/dashboard/secretary/doctors", icon: <Stethoscope className="w-4 h-4" /> },
+    { label: "Mi Asistencia", path: "/dashboard/attendance", icon: <Clock className="w-4 h-4 text-emerald-400" /> },
   ];
 
   return (

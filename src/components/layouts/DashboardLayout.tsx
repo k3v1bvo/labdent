@@ -19,6 +19,8 @@ import {
   ClipboardList,
   Sparkles,
   Shield,
+  ShieldAlert,
+  UserCheck,
 } from "lucide-react";
 import Image from "next/image";
 import AdminNotifications from "@/components/notifications/AdminNotifications";
@@ -88,6 +90,8 @@ export default function DashboardLayout({ children }: Props) {
     { label: "Estaciones", path: "/dashboard/admin/stations", icon: <Layers className="w-4 h-4" /> },
     { label: "Taller Técnico", path: "/dashboard/technician", icon: <ClipboardList className="w-4 h-4" /> },
     { label: "Seguimiento", path: "/dashboard/admin/tracking", icon: <MapPin className="w-4 h-4" /> },
+    { label: "Auditoría & Anti-Fraude", path: "/dashboard/admin/audit", icon: <ShieldAlert className="w-4 h-4 text-amber-500" /> },
+    { label: "Control de Asistencia", path: "/dashboard/admin/attendance", icon: <UserCheck className="w-4 h-4 text-emerald-500" /> },
     { label: "Usuarios", path: "/dashboard/admin/users", icon: <Shield className="w-4 h-4" /> },
   ];
 

@@ -66,9 +66,9 @@ export default function TechnicianNotifications() {
     setLoading(true);
     const { data, error } = await supabase
       .from("notificaciones")
-      .select("id, mensaje, leida, created_at")
+      .select("id, mensaje, leida, creada_en, created_at")
       .eq("receptor_id", uid)
-      .order("created_at", { ascending: false })
+      .order("creada_en", { ascending: false })
       .limit(10);
 
     if (!error && data) setNotifications(data);
@@ -143,7 +143,7 @@ export default function TechnicianNotifications() {
                 >
                   <p className="text-sm text-gray-800">{n.mensaje}</p>
                   <span className="text-xs text-gray-400">
-                    {new Date(n.created_at).toLocaleString()}
+                    {new Date(n.creada_en || n.created_at || Date.now()).toLocaleString()}
                   </span>
                 </div>
               ))

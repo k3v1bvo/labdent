@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { logAudit } from "@/lib/auditLogger";
 import {
   Dialog,
   DialogContent,
@@ -146,6 +147,28 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     fetchOrders();
+
+    const channel = supabase
+      .channel("admin-orders-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "pedidos" },
+        () => {
+          fetchOrders();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "historial_estaciones" },
+        () => {
+          fetchOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estado, doctor, desde, hasta]);
 
@@ -305,6 +328,19 @@ export default function AdminOrdersPage() {
       toast.error("❌ Error al actualizar estado");
       return;
     }
+
+    // REGISTRO DE AUDITORÍA FORENSE INMUTABLE
+    const currentOrder = orders.find((o) => o.id === id);
+    await logAudit({
+      pedidoId: id,
+      accion: newStatus === "entregado" ? "REGISTRO_ENTREGA" : "CAMBIO_ESTADO",
+      campoModificado: "estado",
+      valorAnterior: currentOrder?.estado,
+      valorNuevo: newStatus,
+      motivo: newStatus === "entregado" 
+        ? `Entrega física registrada por Admin bajo Nota N°: ${nota?.trim() || "—"}` 
+        : `Cambio de estado administrativo a: ${newStatus}`,
+    });
 
     setSuccessAnim(true);
     await fetchOrders();
@@ -572,21 +608,21 @@ export default function AdminOrdersPage() {
                             <DollarSign className="w-3.5 h-3.5 text-gray-500" />{" "}
                             Total
                           </span>
-                          <span className="font-semibold">${money(total)}</span>
+                          <span className="font-semibold">Bs {money(total)}</span>
                         </p>
                         <p className="flex items-center justify-between">
                           <span className="inline-flex items-center gap-2">
                             <DollarSign className="w-3.5 h-3.5 text-gray-500" />{" "}
                             Anticipo
                           </span>
-                          <span className="font-semibold">${money(anticipo)}</span>
+                          <span className="font-semibold">Bs {money(anticipo)}</span>
                         </p>
                         <p className="flex items-center justify-between">
                           <span className="inline-flex items-center gap-2">
                             <DollarSign className="w-3.5 h-3.5 text-gray-500" />{" "}
                             Saldo
                           </span>
-                          <span className="font-semibold">${money(saldo)}</span>
+                          <span className="font-semibold">Bs {money(saldo)}</span>
                         </p>
                       </div>
                     </div>

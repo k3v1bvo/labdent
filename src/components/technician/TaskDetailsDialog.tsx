@@ -131,10 +131,6 @@ export default function TaskDetailsDialog({
   const end = row?.fecha_fin ? new Date(row.fecha_fin).getTime() : null;
   const duration = start && end ? msToHuman(end - start) : "—";
 
-  const total = Number(p?.total ?? 0);
-  const anticipo = Number(p?.anticipo ?? 0);
-  const saldo = total - anticipo;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[88vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
@@ -285,45 +281,6 @@ export default function TaskDetailsDialog({
                 </span>
               </div>
             </div>
-
-            {/* Pago (si viene) */}
-            {(p?.total != null || p?.anticipo != null) && (
-              <div className="border rounded-2xl p-4 bg-white">
-                <p className="text-xs text-muted-foreground font-semibold mb-3 flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-slate-600" />
-                  Pago
-                </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                  <div className="rounded-xl border bg-slate-50 p-3">
-                    <p className="text-xs text-muted-foreground flex items-center gap-2">
-                      <DollarSign className="w-4 h-4" /> Total
-                    </p>
-                    <p className="font-bold text-slate-900">
-                      ${Number(total).toFixed(2)}
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl border bg-slate-50 p-3">
-                    <p className="text-xs text-muted-foreground flex items-center gap-2">
-                      <DollarSign className="w-4 h-4" /> Anticipo
-                    </p>
-                    <p className="font-bold text-slate-900">
-                      ${Number(anticipo).toFixed(2)}
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl border bg-slate-50 p-3">
-                    <p className="text-xs text-muted-foreground flex items-center gap-2">
-                      <DollarSign className="w-4 h-4" /> Saldo
-                    </p>
-                    <p className="font-bold text-slate-900">
-                      ${Number(saldo).toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Observaciones + Comentario */}
             {(p?.observaciones || row.comentarios) && (

@@ -26,6 +26,7 @@ import {
   ReviewOrderDialog,
   type ReviewOrder,
 } from "@/components/orders/ReviewOrderDialog";
+import { logAudit } from "@/lib/auditLogger";
 
 type PedidoRow = {
   id: string;
@@ -71,6 +72,28 @@ export default function SecretaryOrdersPage() {
 
   useEffect(() => {
     fetchOrders();
+
+    const channel = supabase
+      .channel("secretary-orders-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "pedidos" },
+        () => {
+          fetchOrders();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "historial_estaciones" },
+        () => {
+          fetchOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   async function fetchOrders() {
@@ -209,6 +232,16 @@ export default function SecretaryOrdersPage() {
       toast.error("Error al registrar entrega");
       return;
     }
+
+    // REGISTRO DE AUDITORÍA FORENSE INMUTABLE
+    await logAudit({
+      pedidoId: selectedOrder.id,
+      accion: "REGISTRO_ENTREGA",
+      campoModificado: "estado, numero_nota_entrega, fecha_entrega",
+      valorAnterior: selectedOrder.estado,
+      valorNuevo: "entregado",
+      motivo: `Entrega física registrada bajo Nota N°: ${notaEntrega.trim()}`,
+    });
 
     setSuccessEntregaAnim(true);
     setNotaEntrega("");
@@ -394,7 +427,14 @@ export default function SecretaryOrdersPage() {
                     o.estado === "en_proceso" ||
                     o.estado === "pendiente" ||
                     o.estado === "rechazado") && (
-                    <span className="text-xs text-slate-400 font-mono">—</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-slate-500 hover:text-[#3C1C6C] hover:bg-purple-50 rounded-xl text-xs font-semibold"
+                      onClick={() => openReviewModal(o)}
+                    >
+                      Ver Ficha
+                    </Button>
                   )}
                 </td>
               </tr>

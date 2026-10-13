@@ -93,7 +93,7 @@ function safeNum(v: any) {
   return Number.isFinite(n) ? n : 0;
 }
 function fmtMoney(n: number) {
-  return `$${n.toFixed(2)}`;
+  return `Bs ${n.toFixed(2)}`;
 }
 function toYMD(d: Date) {
   const yyyy = d.getFullYear();
@@ -1239,8 +1239,8 @@ export default function AdminOverviewPage() {
                     <th className="py-2 px-3">Doctor</th>
                     <th className="py-2 px-3">Estado</th>
                     <th className="py-2 px-3">Fecha</th>
-                    <th className="py-2 px-3">Total</th>
-                    <th className="py-2 px-3">Saldo</th>
+                    <th className="py-2 px-3">Total (Bs)</th>
+                    <th className="py-2 px-3">Saldo (Bs)</th>
                   </tr>
                 </thead>
                 <tbody>
