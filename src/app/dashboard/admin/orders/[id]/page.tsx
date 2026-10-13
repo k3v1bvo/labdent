@@ -28,6 +28,7 @@ import {
   ShieldCheck,
   History,
   Lock,
+  Truck,
 } from "lucide-react";
 
 export default function OrderDetailPage() {
@@ -292,7 +293,35 @@ export default function OrderDetailPage() {
           {order.observaciones && (
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs">
               <span className="text-slate-400 block mb-1 font-semibold">Instrucciones & Observaciones Clínicas:</span>
-              <p className="text-slate-700 leading-relaxed">{order.observaciones}</p>
+              <p className="text-slate-700 leading-relaxed whitespace-pre-line">{order.observaciones}</p>
+            </div>
+          )}
+
+          {/* 🚚 Logística de Despacho & Consultorio Dental */}
+          {order.observaciones && order.observaciones.includes("DELIVERY") && (
+            <div className="p-4 rounded-2xl bg-purple-50/80 border border-purple-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+              <div className="flex items-start gap-2.5">
+                <Truck className="w-5 h-5 text-purple-700 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold text-purple-900 block">🚚 Solicitud de Envío / Delivery al Consultorio:</span>
+                  <p className="text-purple-800 mt-0.5 font-medium">
+                    {order.observaciones.split("\n").find((l: string) => l.includes("DELIVERY"))?.replace(/[\[\]]/g, "")}
+                  </p>
+                </div>
+              </div>
+
+              {order.doctor_telefono && (
+                <a
+                  href={`https://wa.me/591${order.doctor_telefono.replace(/\D/g, "")}?text=${encodeURIComponent(
+                    `Hola Dr. ${order.doctor_nombre || ""}, le escribimos de Guisela Laboratorio Dental. Su pedido #${order.numero_requerimiento || ""} para el paciente ${order.paciente_nombre || ""} ya está listo. Tenemos registrada su dirección de entrega. ¿Se encuentra disponible en su consultorio para despachar el delivery?`
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shrink-0 shadow-sm transition-colors cursor-pointer"
+                >
+                  📲 Consultar Disponibilidad para Entrega
+                </a>
+              )}
             </div>
           )}
 

@@ -2,6 +2,14 @@ import { supabase } from "./supabaseClient";
 import { getUserProfile } from "./getUserProfile";
 import { uploadToImgbb } from "./imgbb";
 
+export interface EmployeeSchedule {
+  hora_entrada: string; // "08:00:00"
+  hora_salida: string; // "17:00:00"
+  tolerancia_entrada_minutos?: number;
+  turno_nombre?: string; // "Turno Mañana", "Turno Continuo", etc.
+  observaciones?: string;
+}
+
 export interface WorkshopConfig {
   id: number;
   taller_nombre: string;
@@ -13,6 +21,7 @@ export interface WorkshopConfig {
   hora_salida: string; // "18:30:00"
   duracion_almuerzo_minutos: number; // 60
   tolerancia_almuerzo_minutos: number; // 10
+  horarios_personal?: Record<string, EmployeeSchedule>;
 }
 
 export interface AttendanceRecord {
@@ -82,15 +91,66 @@ export async function getWorkshopConfig(): Promise<WorkshopConfig> {
       .eq("id", 1)
       .maybeSingle();
 
-    if (error || !data) return defaultConfig;
+    let horariosPersonal = data?.horarios_personal;
+    if (!horariosPersonal && typeof window !== "undefined") {
+      try {
+        const local = localStorage.getItem("labdent_horarios_personal");
+        if (local) horariosPersonal = JSON.parse(local);
+      } catch (e) {}
+    }
+
     return {
       ...defaultConfig,
       ...data,
       latitud: Number(data.latitud),
       longitud: Number(data.longitud),
+      horarios_personal: horariosPersonal || {},
     };
   } catch (err) {
     return defaultConfig;
+  }
+}
+
+/**
+ * Asigna o actualiza el horario personalizado de un colaborador individual
+ */
+export async function updateEmployeeSchedule(
+  userId: string,
+  schedule: EmployeeSchedule | null
+): Promise<{ success: boolean; error?: any }> {
+  try {
+    const current = await getWorkshopConfig();
+    const updatedHorarios = { ...(current.horarios_personal || {}) };
+
+    if (!schedule) {
+      delete updatedHorarios[userId];
+    } else {
+      updatedHorarios[userId] = schedule;
+    }
+
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(
+          "labdent_horarios_personal",
+          JSON.stringify(updatedHorarios)
+        );
+      } catch (e) {}
+    }
+
+    const { error } = await supabase
+      .from("configuracion_taller")
+      .upsert({
+        id: 1,
+        horarios_personal: updatedHorarios,
+        updated_at: new Date().toISOString(),
+      });
+
+    if (error) {
+      console.warn("Could not save horarios_personal to Supabase column:", error.message);
+    }
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err };
   }
 }
 
@@ -172,22 +232,45 @@ export async function registerAttendanceMark({
     let estado: "A_TIEMPO" | "TARDANZA" | "FUERA_DE_RANGO" | "ALMUERZO_EXCESO" =
       "A_TIEMPO";
     let minutosRetraso = 0;
+    let obsFinal = observaciones || "";
 
     if (distancia > config.radio_tolerancia_metros) {
       estado = "FUERA_DE_RANGO";
     } else if (tipo === "ENTRADA") {
-      // Evaluar hora de entrada y tolerancia de 20 min
-      const [hEntrada, mEntrada] = config.hora_entrada.split(":").map(Number);
+      // Evaluar horario individual o general
+      const userSchedule = config.horarios_personal?.[user.id];
+      const horaEntradaStr = userSchedule?.hora_entrada || config.hora_entrada;
+      const tolEntrada =
+        userSchedule?.tolerancia_entrada_minutos ?? config.tolerancia_entrada_minutos;
+
+      const [hEntrada, mEntrada] = horaEntradaStr.split(":").map(Number);
       const entradaEsperada = new Date(now);
       entradaEsperada.setHours(hEntrada, mEntrada, 0, 0);
 
       const entradaLimite = new Date(entradaEsperada);
-      entradaLimite.setMinutes(entradaLimite.getMinutes() + config.tolerancia_entrada_minutos);
+      entradaLimite.setMinutes(entradaLimite.getMinutes() + tolEntrada);
 
       if (now > entradaLimite) {
         estado = "TARDANZA";
         const diffMs = now.getTime() - entradaEsperada.getTime();
         minutosRetraso = Math.round(diffMs / 60000);
+      }
+    } else if (tipo === "SALIDA_JORNADA") {
+      // Evaluar horario de salida y cálculo de horas extras
+      const userSchedule = config.horarios_personal?.[user.id];
+      const horaSalidaStr = userSchedule?.hora_salida || config.hora_salida;
+      const [hSalida, mSalida] = horaSalidaStr.split(":").map(Number);
+      const salidaEsperada = new Date(now);
+      salidaEsperada.setHours(hSalida, mSalida, 0, 0);
+
+      if (now > salidaEsperada) {
+        const diffMin = Math.round((now.getTime() - salidaEsperada.getTime()) / 60000);
+        if (diffMin >= 15) {
+          const h = Math.floor(diffMin / 60);
+          const m = diffMin % 60;
+          const extraStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
+          obsFinal = (obsFinal ? obsFinal + " | " : "") + `⏰ Horas extras: +${extraStr} (${diffMin} min)`;
+        }
       }
     } else if (tipo === "REGRESO_ALMUERZO") {
       // Buscar la salida de almuerzo de hoy
@@ -238,7 +321,7 @@ export async function registerAttendanceMark({
       foto_selfie_url: finalFotoUrl,
       estado,
       minutos_retraso: minutosRetraso,
-      observaciones: observaciones || null,
+      observaciones: obsFinal || null,
       created_at: now.toISOString(),
     };
 

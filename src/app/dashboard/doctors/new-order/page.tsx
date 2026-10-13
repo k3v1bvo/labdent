@@ -26,6 +26,9 @@ import {
   Save,
   Wand2,
   Copy,
+  Truck,
+  Building2,
+  MapPin,
 } from "lucide-react";
 
 type SuggestionType = "paciente" | "color" | "colimetro";
@@ -43,6 +46,12 @@ interface DoctorPedidoForm {
   color_pieza: string;
   colimetro: string;
   observaciones: string;
+  // Delivery & Consultorio
+  requiere_delivery: boolean;
+  clinica_nombre: string;
+  direccion_entrega: string;
+  referencia_entrega: string;
+  telefono_entrega: string;
 }
 
 /**
@@ -105,6 +114,11 @@ export default function DoctorNewOrderPage() {
       color_pieza: "",
       colimetro: "",
       observaciones: "",
+      requiere_delivery: false,
+      clinica_nombre: "",
+      direccion_entrega: "",
+      referencia_entrega: "",
+      telefono_entrega: "",
     }),
     []
   );
@@ -174,6 +188,23 @@ export default function DoctorNewOrderPage() {
           ...prev,
           doctor_nombre: profile.nombre ?? "",
           doctor_telefono: profile.telefono ?? "",
+          telefono_entrega: profile.telefono ?? "",
+        }));
+      }
+
+      // Buscar doctor en tabla doctores para auto-cargar su clínica y dirección
+      const { data: docRow } = await supabase
+        .from("doctores")
+        .select("clinica, direccion, telefono")
+        .eq("profile_id", user.id)
+        .maybeSingle();
+
+      if (docRow) {
+        setForm((prev) => ({
+          ...prev,
+          clinica_nombre: docRow.clinica || prev.clinica_nombre,
+          direccion_entrega: docRow.direccion || prev.direccion_entrega,
+          telefono_entrega: docRow.telefono || prev.telefono_entrega,
         }));
       }
 
@@ -223,7 +254,7 @@ export default function DoctorNewOrderPage() {
     if (name === "paciente_nombre") v = normalizePersonName(value);
 
     // ✅ teléfono solo dígitos (pro y evita basura)
-    if (name === "paciente_telefono" || name === "doctor_telefono") {
+    if (name === "paciente_telefono" || name === "doctor_telefono" || name === "telefono_entrega") {
       v = onlyDigits(value);
     }
 
@@ -357,6 +388,7 @@ export default function DoctorNewOrderPage() {
       color_pieza: "",
       colimetro: "",
       observaciones: "",
+      requiere_delivery: false,
     }));
     // mover focus al requerimiento
     setTimeout(() => reqRef.current?.focus(), 60);
@@ -450,6 +482,15 @@ export default function DoctorNewOrderPage() {
       doctorId = createdDoctor.id;
     }
 
+    // Formatear logística de delivery en observaciones si se activó
+    let finalObservaciones = form.observaciones?.trim() || "";
+    if (form.requiere_delivery && form.direccion_entrega.trim()) {
+      const deliveryTag = `[🚚 DELIVERY: ${form.clinica_nombre.trim() || "Consultorio"} | Dir: ${form.direccion_entrega.trim()}${form.referencia_entrega.trim() ? ` (Ref: ${form.referencia_entrega.trim()})` : ""}${form.telefono_entrega.trim() ? ` | Contacto: ${form.telefono_entrega.trim()}` : ""}]`;
+      finalObservaciones = finalObservaciones
+        ? `${finalObservaciones}\n${deliveryTag}`
+        : deliveryTag;
+    }
+
     // 3) Insertar pedido EN REVISIÓN
     const { error: insertErr } = await supabase.from("pedidos").insert([
       {
@@ -465,7 +506,7 @@ export default function DoctorNewOrderPage() {
         pieza_numero: form.pieza_numero.trim(),
         color_pieza: form.color_pieza.trim() || null,
         colimetro: form.colimetro.trim() || null,
-        observaciones: form.observaciones?.trim() || null,
+        observaciones: finalObservaciones || null,
 
         estado: "pendiente_revision",
 
@@ -865,6 +906,105 @@ export default function DoctorNewOrderPage() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* 🚚 Logística de Despacho & Consultorio Dental (Opcional) */}
+            <div className="lg:col-span-3 border border-purple-200/80 rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-purple-50/50 via-white to-slate-50 space-y-4 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-[#3C1C6C] text-white flex items-center justify-center shadow-sm shrink-0">
+                    <Truck className="w-5 h-5 text-purple-200" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+                      Logística de Despacho & Delivery
+                      <span className="text-[11px] font-semibold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
+                        Opcional
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Indica si deseas que el trabajo terminado sea enviado por mensajería/delivery a tu clínica.
+                    </p>
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2 cursor-pointer select-none bg-white px-3 py-2 rounded-xl border border-purple-200 shadow-sm self-start sm:self-auto hover:bg-purple-50/40 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={form.requiere_delivery}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, requiere_delivery: e.target.checked }))
+                    }
+                    className="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500 cursor-pointer"
+                  />
+                  <span className="text-xs font-bold text-slate-700">
+                    Enviar por Delivery al finalizar
+                  </span>
+                </label>
+              </div>
+
+              {form.requiere_delivery && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-purple-100">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-purple-600" /> Nombre de Clínica / Consultorio
+                    </label>
+                    <Input
+                      name="clinica_nombre"
+                      value={form.clinica_nombre}
+                      onChange={handleChange}
+                      placeholder="Ej. Clínica Dental Sonrisas"
+                      className="h-9 text-xs rounded-xl border-slate-200"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-purple-600" /> Dirección de Entrega
+                    </label>
+                    <Input
+                      name="direccion_entrega"
+                      value={form.direccion_entrega}
+                      onChange={handleChange}
+                      placeholder="Ej. Av. Busch #1234, Piso 3, Of. 301"
+                      className="h-9 text-xs rounded-xl border-slate-200"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-purple-600" /> Celular para Entrega
+                    </label>
+                    <Input
+                      name="telefono_entrega"
+                      value={form.telefono_entrega}
+                      onChange={handleChange}
+                      placeholder="Ej. 70012345"
+                      className="h-9 text-xs rounded-xl border-slate-200"
+                    />
+                  </div>
+
+                  <div className="md:col-span-3 space-y-1">
+                    <label className="text-xs font-semibold text-slate-700">
+                      Punto de Referencia / Indicaciones para el móvil
+                    </label>
+                    <Input
+                      name="referencia_entrega"
+                      value={form.referencia_entrega}
+                      onChange={handleChange}
+                      placeholder="Ej. Al lado del banco Mercantil, tocar timbre 3B..."
+                      className="h-9 text-xs rounded-xl border-slate-200"
+                    />
+                  </div>
+
+                  <div className="md:col-span-3 bg-white/90 p-2.5 rounded-xl border border-purple-100 flex items-center gap-2 text-xs text-purple-950">
+                    <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
+                    <span>
+                      Al finalizar el trabajo en el laboratorio, el equipo te contactará para consultar disponibilidad antes de despachar el pedido.
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* ✅ Footer acciones (por si scrollean al final) */}
