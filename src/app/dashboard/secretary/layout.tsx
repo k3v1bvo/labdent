@@ -85,11 +85,11 @@ export default function SecretaryLayout({
   }
 
   const navItems = [
-    { label: "Dashboard", path: "/dashboard/secretary", icon: <Home className="w-4 h-4" /> },
-    { label: "Pedidos", path: "/dashboard/secretary/orders", icon: <ClipboardList className="w-4 h-4" /> },
-    { label: "Nuevo Pedido", path: "/dashboard/secretary/new-order", icon: <FilePlus className="w-4 h-4" /> },
-    { label: "Doctores", path: "/dashboard/secretary/doctors", icon: <Stethoscope className="w-4 h-4" /> },
-    { label: "Mi Asistencia", path: "/dashboard/attendance", icon: <Clock className="w-4 h-4 text-emerald-400" /> },
+    { label: "Dashboard Principal", path: "/dashboard/secretary", icon: <Home className="w-5 h-5" /> },
+    { label: "Gestión de Pedidos", path: "/dashboard/secretary/orders", icon: <ClipboardList className="w-5 h-5" /> },
+    { label: "Registrar Nuevo Pedido", path: "/dashboard/secretary/new-order", icon: <FilePlus className="w-5 h-5 text-purple-300" /> },
+    { label: "Doctores & Clínicas", path: "/dashboard/secretary/doctors", icon: <Stethoscope className="w-5 h-5" /> },
+    { label: "Marcar Mi Asistencia", path: "/dashboard/attendance", icon: <Clock className="w-5 h-5 text-emerald-400" /> },
   ];
 
   return (
@@ -99,13 +99,13 @@ export default function SecretaryLayout({
       {/* ========================================================= */}
       <aside
         className={`hidden md:flex relative ${
-          open ? "w-64" : "w-20"
-        } bg-slate-900 border-r border-slate-800 text-slate-200 transition-all duration-300 flex-col z-30 shrink-0`}
+          open ? "w-68" : "w-20"
+        } bg-[#0F081D] border-r border-purple-950/60 text-slate-200 transition-all duration-300 flex-col z-30 shrink-0 shadow-xl`}
       >
         {/* Toggle */}
         <button
           onClick={() => setOpen(!open)}
-          className="absolute -right-3.5 top-7 z-40 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-full p-1.5 shadow-md transition-colors"
+          className="absolute -right-3.5 top-7 z-40 bg-[#1E0E38] hover:bg-[#3C1C6C] border border-[#A57CFA]/40 text-white rounded-full p-1.5 shadow-lg transition-colors cursor-pointer"
           aria-label={open ? "Colapsar menú" : "Expandir menú"}
           type="button"
         >
@@ -113,26 +113,26 @@ export default function SecretaryLayout({
         </button>
 
         {/* Brand Logo Oficial Guisela */}
-        <div className="h-16 flex items-center px-4 border-b border-slate-800/80 gap-3">
-          <div className="relative w-9 h-9 rounded-xl bg-purple-950/60 p-1 flex items-center justify-center border border-[#A57CFA]/30 shrink-0">
+        <div className="h-18 flex items-center px-4 border-b border-purple-950/60 gap-3 bg-[#130A24]/60">
+          <div className="relative w-10 h-10 rounded-2xl bg-gradient-to-br from-[#3C1C6C] to-[#6329B7] p-1.5 flex items-center justify-center border border-[#A57CFA]/50 shadow-md shadow-purple-950/40 shrink-0">
             <Image
               src="/images/brand/guisela-symbol-white.png"
               alt="Guisela"
-              width={32}
-              height={32}
+              width={34}
+              height={34}
               className="object-contain"
               unoptimized
             />
           </div>
           {open && (
             <div className="flex flex-col min-w-0">
-              <span className="font-black text-base tracking-tight text-white flex items-center gap-1.5">
+              <span className="font-black text-lg tracking-tight text-white flex items-center gap-2">
                 Guisela
-                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-[#A57CFA]/20 text-[#D0B9FF] border border-[#A57CFA]/30">
+                <span className="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
                   RECEPCIÓN
                 </span>
               </span>
-              <span className="text-[11px] text-slate-400 truncate">
+              <span className="text-xs text-purple-200/70 truncate font-medium">
                 Gestión & Secretaría
               </span>
             </div>
@@ -140,7 +140,13 @@ export default function SecretaryLayout({
         </div>
 
         {/* Nav list */}
-        <nav className="flex-1 space-y-1.5 px-3 py-4 overflow-y-auto">
+        <nav className="flex-1 space-y-2 px-3 py-4 overflow-y-auto">
+          {open && (
+            <p className="px-3 text-[11px] font-black uppercase tracking-wider text-[#A57CFA] pt-1 pb-1">
+              GESTIÓN CLÍNICA
+            </p>
+          )}
+
           {navItems.map((item) => {
             const isActive = pathname === item.path;
             return (
@@ -148,14 +154,14 @@ export default function SecretaryLayout({
                 key={item.path}
                 type="button"
                 onClick={() => router.push(item.path)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                className={`w-full flex items-center gap-3.5 px-3 py-2.5 rounded-2xl text-[14.5px] transition-all cursor-pointer group ${
                   isActive
-                    ? "bg-[#3C1C6C]/50 text-[#D0B9FF] border border-[#A57CFA]/40 shadow-sm font-bold"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent"
+                    ? "bg-gradient-to-r from-[#6329B7]/70 via-[#3C1C6C]/90 to-[#6329B7]/50 text-white font-bold border-l-4 border-l-[#A57CFA] border-y border-r border-[#A57CFA]/40 shadow-lg shadow-purple-950/50"
+                    : "text-slate-200 hover:text-white hover:bg-white/10 font-medium border border-transparent"
                 }`}
                 title={!open ? item.label : undefined}
               >
-                <span className={`${isActive ? "text-[#A57CFA]" : "text-slate-400"}`}>
+                <span className={`${isActive ? "text-[#A57CFA] drop-shadow-[0_0_8px_rgba(165,124,250,0.6)]" : "text-slate-300 group-hover:text-white"}`}>
                   {item.icon}
                 </span>
                 {open && <span className="truncate">{item.label}</span>}
@@ -163,44 +169,51 @@ export default function SecretaryLayout({
             );
           })}
 
-          <div className="pt-2">
+          <div className="pt-3 border-t border-purple-950/60">
             <button
               type="button"
               onClick={() => setProfileOpen(true)}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent transition-all"
+              className="w-full flex items-center gap-3.5 px-3 py-2.5 rounded-2xl text-[14.5px] font-semibold text-slate-200 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
               title={!open ? "Mi Perfil" : undefined}
             >
-              <User className="w-4 h-4 text-slate-400" />
-              {open && <span className="truncate">Mi Perfil</span>}
+              <User className="w-5 h-5 text-slate-300" />
+              {open && <span className="truncate">Mi Perfil & Datos</span>}
             </button>
           </div>
         </nav>
 
-        {/* Footer */}
-        <div className="p-3 border-t border-slate-800/80 bg-slate-900/50 mt-auto">
+        {/* Footer con Tarjeta Ejecutiva */}
+        <div className="p-3 border-t border-purple-950/60 bg-[#130A24]/90 mt-auto">
           {open && (
-            <div className="mb-2.5 px-2 py-1.5 rounded-lg flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-[#A57CFA]">
-                {(profile?.name || "S").charAt(0).toUpperCase()}
+            <button
+              type="button"
+              onClick={() => setProfileOpen(true)}
+              className="w-full mb-2.5 p-2 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#A57CFA]/50 transition-all flex items-center gap-3 text-left cursor-pointer group"
+            >
+              <div className="relative">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 border border-blue-400/50 flex items-center justify-center font-bold text-sm text-white shadow-md">
+                  {(profile?.name || "S").charAt(0).toUpperCase()}
+                </div>
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-[#0F081D] rounded-full" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-slate-200 truncate">
+                <p className="text-sm font-bold text-white truncate group-hover:text-[#D0B9FF]">
                   {profile?.name || "Secretaría"}
                 </p>
-                <span className="text-[10px] text-slate-400 font-medium">
-                  Atención & Ingresos
+                <span className="text-[11px] text-blue-300 font-semibold">
+                  Atención Clínica
                 </span>
               </div>
-            </div>
+            </button>
           )}
 
           <Button
             variant="ghost"
             size="sm"
-            className="w-full justify-start text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition-colors text-xs font-medium"
+            className="w-full justify-start text-rose-300 hover:text-rose-100 hover:bg-rose-500/20 rounded-xl transition-colors text-xs font-bold h-9"
             onClick={handleLogout}
           >
-            <LogOut className="w-4 h-4 mr-2 shrink-0" />
+            <LogOut className="w-4 h-4 mr-2 shrink-0 text-rose-400" />
             {open && "Cerrar sesión"}
           </Button>
         </div>
@@ -251,7 +264,7 @@ export default function SecretaryLayout({
               </button>
             </div>
 
-            <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
+            <nav className="flex-1 space-y-1.5 px-3 py-4 overflow-y-auto">
               {navItems.map((item) => {
                 const isActive = pathname === item.path;
                 return (
@@ -262,13 +275,13 @@ export default function SecretaryLayout({
                       router.push(item.path);
                       setMobileOpen(false);
                     }}
-                    className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-sm font-medium transition-all ${
+                    className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-[15px] transition-all cursor-pointer ${
                       isActive
-                        ? "bg-[#3C1C6C]/60 text-[#D0B9FF] border border-[#A57CFA]/40 font-bold shadow-xs"
-                        : "text-slate-300 hover:text-white hover:bg-slate-800/70 border border-transparent"
+                        ? "bg-gradient-to-r from-[#6329B7]/70 via-[#3C1C6C]/90 to-[#6329B7]/50 text-white font-bold border-l-4 border-l-[#A57CFA] border-y border-r border-[#A57CFA]/40 shadow-md"
+                        : "text-slate-200 hover:text-white hover:bg-white/10 font-medium border border-transparent"
                     }`}
                   >
-                    <span className={isActive ? "text-[#A57CFA]" : "text-slate-400"}>
+                    <span className={isActive ? "text-[#A57CFA] drop-shadow-[0_0_8px_rgba(165,124,250,0.6)]" : "text-slate-300"}>
                       {item.icon}
                     </span>
                     <span>{item.label}</span>
@@ -276,41 +289,53 @@ export default function SecretaryLayout({
                 );
               })}
 
-              <div className="pt-3 border-t border-slate-800/80 mt-2">
+              <div className="pt-3 border-t border-purple-950/60 mt-3">
                 <button
                   type="button"
                   onClick={() => {
                     setProfileOpen(true);
                     setMobileOpen(false);
                   }}
-                  className="w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all"
+                  className="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-[15px] font-semibold text-slate-200 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
                 >
-                  <User className="w-4 h-4 text-slate-400" />
-                  <span>Mi Perfil</span>
+                  <User className="w-5 h-5 text-slate-300" />
+                  <span>Mi Perfil & Datos</span>
                 </button>
               </div>
             </nav>
 
-            <div className="p-4 border-t border-slate-800 bg-slate-900/80">
-              <div className="mb-3 px-2 py-1 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-sm text-[#A57CFA]">
-                  {(profile?.name || "S").charAt(0).toUpperCase()}
+            <div className="p-4 border-t border-purple-950/60 bg-[#130A24]/90">
+              <button
+                type="button"
+                onClick={() => {
+                  setProfileOpen(true);
+                  setMobileOpen(false);
+                }}
+                className="w-full mb-3 p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex items-center gap-3 text-left cursor-pointer group"
+              >
+                <div className="relative">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 border border-blue-400/50 flex items-center justify-center font-bold text-sm text-white shadow-md">
+                    {(profile?.name || "S").charAt(0).toUpperCase()}
+                  </div>
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-[#0F081D] rounded-full" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-slate-200 truncate">
+                  <p className="text-sm font-bold text-white truncate group-hover:text-[#D0B9FF]">
                     {profile?.name || "Secretaría"}
                   </p>
-                  <span className="text-[10px] text-slate-400">Recepción / Gestión</span>
+                  <span className="text-[11px] text-blue-300 font-semibold">
+                    Recepción & Gestión
+                  </span>
                 </div>
-              </div>
+              </button>
 
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-full justify-start text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition-colors text-xs font-medium h-10"
+                className="w-full justify-start text-rose-300 hover:text-rose-100 hover:bg-rose-500/20 rounded-xl transition-colors text-xs font-bold h-10"
                 onClick={handleLogout}
               >
-                <LogOut className="w-4 h-4 mr-2 shrink-0" />
+                <LogOut className="w-4 h-4 mr-2 shrink-0 text-rose-400" />
                 Cerrar sesión
               </Button>
             </div>

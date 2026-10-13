@@ -337,6 +337,96 @@ export default function AttendanceClockInPage() {
         </div>
       </Card>
 
+      {/* Ficha Oficial de Horario Asignado & Reglamento Laboral */}
+      <Card className="p-5 sm:p-6 rounded-3xl border-2 border-[#A57CFA]/40 bg-gradient-to-br from-white via-purple-50/40 to-white shadow-md relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-bl from-purple-200/40 via-transparent to-transparent rounded-bl-full pointer-events-none" />
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-purple-100">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#3C1C6C] text-[#D0B9FF] text-[11px] font-extrabold uppercase tracking-wider mb-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-[#A57CFA]" />
+              Reglamento Interno Oficial • Guisela Lab
+            </div>
+            <h2 className="text-lg sm:text-xl font-black text-[#3C1C6C] tracking-tight">
+              Ficha de Tu Horario Asignado & Normas de Asistencia
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-500">Colaborador:</span>
+            <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-purple-100/80 text-[#3C1C6C] border border-purple-200 uppercase tracking-wide">
+              {profile?.nombre || "Personal de Taller"} ({profile?.rol || "Técnico"})
+            </span>
+          </div>
+        </div>
+
+        {/* 4 Indicadores Clave del Horario */}
+        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* 1. Entrada */}
+          <div className="p-3.5 rounded-2xl bg-white border border-purple-100 shadow-xs">
+            <div className="flex items-center gap-2 text-purple-700 mb-1">
+              <Clock className="w-4 h-4 text-[#A57CFA]" />
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+                Entrada Oficial
+              </span>
+            </div>
+            <p className="text-2xl font-black text-slate-900 tracking-tight">08:30 <span className="text-xs font-bold text-slate-500">AM</span></p>
+            <div className="mt-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md inline-block">
+              Tolerancia: +20 min (hasta 08:50)
+            </div>
+          </div>
+
+          {/* 2. Almuerzo */}
+          <div className="p-3.5 rounded-2xl bg-white border border-purple-100 shadow-xs">
+            <div className="flex items-center gap-2 text-orange-600 mb-1">
+              <Utensils className="w-4 h-4 text-orange-500" />
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+                Almuerzo
+              </span>
+            </div>
+            <p className="text-2xl font-black text-slate-900 tracking-tight">60 <span className="text-xs font-bold text-slate-500">minutos</span></p>
+            <div className="mt-1 text-[11px] font-semibold text-orange-800 bg-orange-50 px-2 py-0.5 rounded-md inline-block">
+              Retorno: +10 min tolerancia
+            </div>
+          </div>
+
+          {/* 3. Salida */}
+          <div className="p-3.5 rounded-2xl bg-white border border-purple-100 shadow-xs">
+            <div className="flex items-center gap-2 text-slate-700 mb-1">
+              <LogOut className="w-4 h-4 text-[#A57CFA]" />
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+                Salida Oficial
+              </span>
+            </div>
+            <p className="text-2xl font-black text-slate-900 tracking-tight">18:30 <span className="text-xs font-bold text-slate-500">PM</span></p>
+            <div className="mt-1 text-[11px] font-semibold text-purple-800 bg-purple-50 px-2 py-0.5 rounded-md inline-block">
+              Fin de jornada de taller
+            </div>
+          </div>
+
+          {/* 4. GPS & Foto */}
+          <div className="p-3.5 rounded-2xl bg-white border border-purple-100 shadow-xs">
+            <div className="flex items-center gap-2 text-blue-600 mb-1">
+              <ShieldCheck className="w-4 h-4 text-blue-500" />
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+                Control Antifraude
+              </span>
+            </div>
+            <p className="text-2xl font-black text-slate-900 tracking-tight">100m <span className="text-xs font-bold text-slate-500">GPS</span></p>
+            <div className="mt-1 text-[11px] font-semibold text-blue-800 bg-blue-50 px-2 py-0.5 rounded-md inline-block">
+              Foto selfie biométrica obligatoria
+            </div>
+          </div>
+        </div>
+
+        <p className="mt-4 text-xs text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center gap-2">
+          <Info className="w-4 h-4 text-[#A57CFA] shrink-0" />
+          <span>
+            Todo registro fuera de la tolerancia establecida se audita automáticamente. Asegúrate de estar dentro del radio de 100m del laboratorio y habilitar tu cámara al marcar.
+          </span>
+        </p>
+      </Card>
+
       {/* Banner de Cronómetro de Almuerzo si está en almuerzo activo */}
       {isInLunch && (
         <motion.div

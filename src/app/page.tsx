@@ -51,13 +51,31 @@ const galleryItems: GalleryItem[] = [
     badge: "Centro Digital 3D",
   },
   {
+    id: "scanner3d",
+    tag: "digital",
+    title: "Escaneo Intraoral 3D & Diseño Dental",
+    category: "Digitalización Dental",
+    desc: "Captura de modelos digitales en tiempo real con mapeo de textura en color y articulación virtual para ajuste oclusal exacto.",
+    image: "/images/gallery/scanner-cad-3d.jpg",
+    badge: "Escaneo Intraoral",
+  },
+  {
     id: "zirconia",
     tag: "zirconio",
     title: "Coronas & Puentes en Zirconio Multicapa",
-    category: "Crown & Bridge",
+    category: "Coronas y Puentes",
     desc: "Ajuste pasivo y anatómico sobre modelo maestro seccionado. Translucidez gradual desde el cuello hasta el borde incisal natural.",
     image: "/images/gallery/zirconia-crowns.jpg",
-    badge: "Crown & Bridge",
+    badge: "Zirconio Multicapa",
+  },
+  {
+    id: "zirconia-monolithic",
+    tag: "zirconio",
+    title: "Zirconio Monolítico de Alta Resistencia",
+    category: "Estética y Resistencia",
+    desc: "Estructuras monolíticas pulidas con brillo natural, ideales para sectores posteriores y rehabilitación de alta carga masticatoria.",
+    image: "/images/gallery/zirconia-monolithic.jpg",
+    badge: "Monolítico Premium",
   },
   {
     id: "ceramica",
@@ -69,10 +87,19 @@ const galleryItems: GalleryItem[] = [
     badge: "Estratificación Manual",
   },
   {
+    id: "ceramic-staining",
+    tag: "ceramica",
+    title: "Caracterización & Glaseado Individual",
+    category: "Personalización Estética",
+    desc: "Pigmentación minuciosa de fisuras y degradados de color personalizados para mimetizar la dentición natural del paciente.",
+    image: "/images/gallery/ceramic-layering.jpg",
+    badge: "Caracterización Fina",
+  },
+  {
     id: "implantes",
     tag: "implantes",
     title: "Rehabilitación Compleja sobre Implantes",
-    category: "Implant Prosthetics",
+    category: "Prótesis sobre Implantes",
     desc: "Estructura fresada en titanio grado médico con muñones individuales y caracterización gingival para sobredentaduras y All-on-4.",
     image: "/images/gallery/implant-prosthetics.jpg",
     badge: "Implantología Avanzada",
@@ -89,12 +116,12 @@ export default function LandingPage() {
     ? galleryItems
     : galleryItems.filter((item) => item.tag === activeFilter);
 
-  // Autoplay respetando pausa
+  // Autoplay dinámico cada 3.5 segundos respetando pausa
   useEffect(() => {
     if (isPaused) return;
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % filteredItems.length);
-    }, 6000);
+    }, 3500);
     return () => clearInterval(timer);
   }, [isPaused, filteredItems.length]);
 
@@ -196,8 +223,8 @@ export default function LandingPage() {
               </h1>
 
               <p className="mt-5 text-base sm:text-lg text-slate-600 leading-relaxed max-w-xl">
-                Especialistas en <strong>Crown & Bridge (Zirconio multicapa, E.max)</strong>,{" "}
-                <strong>Implant Prosthetics</strong> y <strong>Flujo Digital Intraoral</strong> con trazabilidad en vivo por estación para clínicas y odontólogos.
+                Especialistas en <strong>Coronas & Puentes (Zirconio multicapa, E.max)</strong>,{" "}
+                <strong>Prótesis sobre Implantes</strong> y <strong>Flujo Digital Intraoral</strong> con trazabilidad en vivo por estación para clínicas y odontólogos.
               </p>
 
               <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
@@ -239,7 +266,7 @@ export default function LandingPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-3xl font-black text-[#3C1C6C]">Realtime</p>
+                  <p className="text-3xl font-black text-[#3C1C6C]">En Vivo</p>
                   <p className="text-xs font-semibold text-slate-500 uppercase mt-0.5">
                     Tracking por Estación
                   </p>
@@ -447,7 +474,7 @@ export default function LandingPage() {
           </div>
 
           {/* Miniaturas de Acceso Rápido con Altura Explícita */}
-          <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+          <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 sm:gap-3">
             {filteredItems.map((item, idx) => {
               const isActive = idx === currentIndex;
               return (
@@ -516,7 +543,7 @@ export default function LandingPage() {
                   <Award className="w-7 h-7 text-[#3C1C6C]" />
                 </div>
                 <h3 className="text-2xl font-black text-[#3C1C6C] tracking-tight">
-                  Crown & Bridge
+                  Coronas & Puentes
                 </h3>
                 <p className="text-xs font-bold text-[#A57CFA] uppercase tracking-wider mt-1 mb-3">
                   Coronas & Puentes Zirconio / Disilicato
@@ -544,7 +571,7 @@ export default function LandingPage() {
                   href="/login"
                   className="text-xs font-extrabold text-[#3C1C6C] hover:text-[#A57CFA] inline-flex items-center gap-1.5 transition-colors"
                 >
-                  <span>Solicitar orden de Crown & Bridge</span>
+                  <span>Solicitar orden de Coronas & Puentes</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
@@ -572,7 +599,7 @@ export default function LandingPage() {
                   <ShieldCheck className="w-7 h-7 text-[#D0B9FF]" />
                 </div>
                 <h3 className="text-2xl font-black text-[#3C1C6C] tracking-tight">
-                  Implant Prosthetics
+                  Prótesis sobre Implantes
                 </h3>
                 <p className="text-xs font-bold text-[#A57CFA] uppercase tracking-wider mt-1 mb-3">
                   Prótesis sobre Implantes & Pilares
@@ -624,7 +651,7 @@ export default function LandingPage() {
                   <Cpu className="w-7 h-7 text-[#3C1C6C]" />
                 </div>
                 <h3 className="text-2xl font-black text-[#3C1C6C] tracking-tight">
-                  Digital Workflow
+                  Flujo Digital CAD/CAM
                 </h3>
                 <p className="text-xs font-bold text-[#A57CFA] uppercase tracking-wider mt-1 mb-3">
                   Flujo Digital Integral CAD/CAM
@@ -952,8 +979,8 @@ export default function LandingPage() {
                 Especialidades
               </p>
               <ul className="space-y-2 text-xs font-semibold">
-                <li><a href="#servicios" className="hover:text-[#3C1C6C]">Crown & Bridge (Zirconio)</a></li>
-                <li><a href="#servicios" className="hover:text-[#3C1C6C]">Implant Prosthetics</a></li>
+                <li><a href="#servicios" className="hover:text-[#3C1C6C]">Coronas y Puentes (Zirconio)</a></li>
+                <li><a href="#servicios" className="hover:text-[#3C1C6C]">Prótesis sobre Implantes</a></li>
                 <li><a href="#servicios" className="hover:text-[#3C1C6C]">Disilicato de Litio (E.max)</a></li>
                 <li><a href="#servicios" className="hover:text-[#3C1C6C]">Prótesis Removibles y Esqueléticos</a></li>
                 <li><a href="#servicios" className="hover:text-[#3C1C6C]">Modelos Impresos 3D</a></li>
