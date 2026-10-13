@@ -85,17 +85,17 @@ export default function StationPickerDialog({
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full">
+        <Button variant="outline" className="w-full rounded-xl border-slate-200 font-semibold h-11">
           {triggerLabel}
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Selecciona tu estación</DialogTitle>
+          <DialogTitle className="text-[#3C1C6C] font-bold text-lg">Selecciona tu estación</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-2 max-h-[320px] overflow-auto pr-1">
+        <div className="space-y-2.5 max-h-[340px] overflow-auto pr-1">
           {stations.map((s) => {
             const active = selectedStationId === s.id;
             return (
@@ -104,24 +104,24 @@ export default function StationPickerDialog({
                 type="button"
                 onClick={() => setSelectedStationId(s.id)}
                 className={[
-                  "w-full text-left rounded-md border px-3 py-2 transition",
+                  "w-full text-left rounded-xl border p-3.5 transition flex flex-col justify-center min-h-[52px]",
                   active
-                    ? "border-green-600 bg-green-50"
-                    : "border-gray-200 hover:bg-gray-50",
+                    ? "border-[#6329B7] bg-purple-50/90 shadow-sm ring-1 ring-[#A57CFA]/40"
+                    : "border-slate-200 hover:bg-slate-50",
                 ].join(" ")}
               >
                 <div className="flex items-center justify-between">
-                  <div className="font-medium">
+                  <div className={`font-semibold text-sm ${active ? "text-[#3C1C6C]" : "text-slate-800"}`}>
                     {s.orden}. {s.nombre}
                   </div>
                   {active ? (
-                    <span className="text-xs text-green-700 font-semibold">
-                      Seleccionada
+                    <span className="text-xs text-[#6329B7] font-bold bg-white px-2 py-0.5 rounded-full border border-purple-200">
+                      ✓ Seleccionada
                     </span>
                   ) : null}
                 </div>
                 {s.descripcion ? (
-                  <div className="text-xs text-gray-600 mt-1">
+                  <div className="text-xs text-slate-500 mt-1 leading-relaxed">
                     {s.descripcion}
                   </div>
                 ) : null}
@@ -130,31 +130,30 @@ export default function StationPickerDialog({
           })}
         </div>
 
-        <div className="flex gap-2 pt-2">
+        <div className="flex flex-col-reverse sm:flex-row gap-2 pt-3 border-t border-slate-100">
           <Button
             variant="outline"
-            className="w-full"
+            className="w-full rounded-xl border-slate-200 h-11"
             onClick={() => setOpen(false)}
             disabled={loadingStation}
           >
             Cancelar
           </Button>
           <Button
-            className="w-full"
+            className="w-full bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold h-11 shadow-md"
             onClick={handleSaveStation}
             disabled={loadingStation || !selectedStationId}
           >
-            {loadingStation ? "Guardando..." : "Guardar"}
+            {loadingStation ? "Guardando..." : "Guardar Estación"}
           </Button>
         </div>
 
-        <p className="text-xs text-gray-500 pt-1">
-          Nota: si tienes tareas en proceso, el sistema no te dejará cambiar de
-          estación.
+        <p className="text-xs text-slate-400 pt-1">
+          Nota: si tienes tareas en proceso, el sistema no te dejará cambiar de estación.
         </p>
 
-        <p className="text-xs text-gray-500">
-          Actual: <span className="font-medium">{currentLabel}</span>
+        <p className="text-xs text-slate-500">
+          Actual: <span className="font-semibold text-slate-700">{currentLabel}</span>
         </p>
       </DialogContent>
     </Dialog>

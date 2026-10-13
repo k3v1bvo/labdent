@@ -269,16 +269,16 @@ function Modal({
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[80]">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="w-full max-w-5xl rounded-2xl bg-white shadow-xl border overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b">
-            <div className="font-semibold text-slate-900">{title}</div>
-            <Button variant="outline" onClick={onClose} className="gap-2">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" onClick={onClose} />
+      <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-4">
+        <div className="w-full max-w-5xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-xl border overflow-hidden">
+          <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b shrink-0">
+            <div className="font-semibold text-slate-900 truncate pr-2">{title}</div>
+            <Button variant="outline" size="sm" onClick={onClose} className="gap-2 shrink-0">
               <X className="w-4 h-4" /> Cerrar
             </Button>
           </div>
-          <div className="p-5">{children}</div>
+          <div className="p-4 sm:p-5 overflow-y-auto">{children}</div>
         </div>
       </div>
     </div>
@@ -775,10 +775,10 @@ export default function AdminOverviewPage() {
   }, [modalItems, modalSearch]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-10 space-y-6">
+    <div className="min-h-screen bg-gray-50/50 p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-green-700 flex items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#3C1C6C] flex items-center gap-2">
             📊 Métricas & Control (Admin)
           </h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -809,7 +809,7 @@ export default function AdminOverviewPage() {
           <Card className="shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-green-700" />
+                <TrendingUp className="w-5 h-5 text-[#3C1C6C]" />
                 Estado actual GLOBAL (sin filtros)
               </CardTitle>
             </CardHeader>

@@ -41,6 +41,7 @@ import {
   AlertTriangle,
   CalendarDays,
   Filter,
+  RefreshCcw,
 } from "lucide-react";
 
 type PedidoLite = {
@@ -566,39 +567,45 @@ export default function TechnicianDashboard() {
 
           <div className="flex gap-2 flex-wrap justify-end">
             {/* ✅ Detalles con el componente nuevo */}
-            <Button variant="outline" onClick={() => openDetail(task)}>
-              <Info className="w-4 h-4 mr-1" /> Detalles
+            <Button variant="outline" size="sm" onClick={() => openDetail(task)} className="rounded-xl border-slate-200">
+              <Info className="w-4 h-4 mr-1 text-[#3C1C6C]" /> Detalles
             </Button>
 
             {mode === "queue" && (
-              <Button onClick={() => tomarTarea(task.id)}>Tomar</Button>
+              <Button size="sm" className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold shadow-sm" onClick={() => tomarTarea(task.id)}>
+                Tomar Tarea
+              </Button>
             )}
 
             {mode === "mine" && task.estado === "pendiente" && (
-              <Button onClick={() => tomarTarea(task.id)}>Tomar</Button>
+              <Button size="sm" className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold shadow-sm" onClick={() => tomarTarea(task.id)}>
+                Iniciar Tarea
+              </Button>
             )}
 
             {mode === "mine" && task.estado === "en_proceso" && (
               <>
-                <Button variant="outline" onClick={() => soltarTarea(task.id)}>
+                <Button size="sm" variant="outline" onClick={() => soltarTarea(task.id)} className="rounded-xl border-slate-200">
                   Soltar
                 </Button>
 
                 <Button
+                  size="sm"
                   variant="outline"
                   onClick={() => openCommentDialog(task, "save")}
+                  className="rounded-xl border-slate-200"
                 >
-                  Agregar comentario
+                  Comentario
                 </Button>
 
-                <Button onClick={() => openCommentDialog(task, "advance")}>
-                  Completar y avanzar
+                <Button size="sm" className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold shadow-sm" onClick={() => openCommentDialog(task, "advance")}>
+                  ✓ Completar & Avanzar
                 </Button>
               </>
             )}
 
             {mode === "mine" && task.estado === "completado" && (
-              <span className="text-sm text-green-700 font-medium flex items-center gap-1">
+              <span className="text-xs text-green-700 font-bold bg-green-50 px-2.5 py-1 rounded-full border border-green-200 flex items-center gap-1">
                 ✅ Completado
               </span>
             )}
@@ -751,16 +758,19 @@ export default function TechnicianDashboard() {
         )}
       </AnimatePresence>
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Panel del Técnico</h1>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => router.push("/dashboard/profile")}>
-            Perfil
-          </Button>
-          <Button variant="destructive" onClick={logout}>
-            Salir
-          </Button>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#3C1C6C] flex items-center gap-2">
+            🔬 Estación de Trabajo Dental
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Gestión técnica de tareas, registro de tiempos y avance de órdenes.
+          </p>
         </div>
+
+        <Button variant="outline" onClick={refreshAll} className="rounded-xl border-slate-200 self-start sm:self-auto">
+          <RefreshCcw className="w-4 h-4 mr-2" /> Actualizar
+        </Button>
       </div>
 
       <Card>
@@ -850,7 +860,7 @@ export default function TechnicianDashboard() {
                   type="date"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
-                  className="w-[170px]"
+                  className="w-full sm:w-[160px] rounded-xl border-slate-200 text-xs"
                 />
               </div>
               <div>
@@ -859,7 +869,7 @@ export default function TechnicianDashboard() {
                   type="date"
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
-                  className="w-[170px]"
+                  className="w-full sm:w-[160px] rounded-xl border-slate-200 text-xs"
                 />
               </div>
             </div>
@@ -871,7 +881,7 @@ export default function TechnicianDashboard() {
                 <select
                   value={myStatus}
                   onChange={(e) => setMyStatus(e.target.value as any)}
-                  className="border rounded-md px-3 py-2 text-sm bg-white"
+                  className="border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white font-medium"
                 >
                   <option value="">Todos</option>
                   <option value="pendiente">pendiente</option>
@@ -882,9 +892,11 @@ export default function TechnicianDashboard() {
               </div>
             </div>
 
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-1.5 sm:gap-2 flex-wrap">
               <Button
                 variant="outline"
+                size="sm"
+                className="rounded-xl border-slate-200 text-xs"
                 onClick={() => {
                   const t = todayISO();
                   setFromDate(t);
@@ -895,15 +907,19 @@ export default function TechnicianDashboard() {
               </Button>
               <Button
                 variant="outline"
+                size="sm"
+                className="rounded-xl border-slate-200 text-xs"
                 onClick={() => {
                   setFromDate(addDaysISO(-7));
                   setToDate(todayISO());
                 }}
               >
-                Últimos 7 días
+                Últimos 7d
               </Button>
               <Button
                 variant="outline"
+                size="sm"
+                className="rounded-xl border-slate-200 text-xs"
                 onClick={() => {
                   setFromDate(monthStartISO());
                   setToDate(todayISO());
@@ -913,6 +929,8 @@ export default function TechnicianDashboard() {
               </Button>
               <Button
                 variant="outline"
+                size="sm"
+                className="rounded-xl border-slate-200 text-xs"
                 onClick={() => {
                   setFromDate("");
                   setToDate("");
@@ -947,12 +965,12 @@ export default function TechnicianDashboard() {
 
       {/* ✅ Dialog: comentario técnico */}
       <Dialog open={commentOpen} onOpenChange={setCommentOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-[#3C1C6C] font-bold text-lg">
               {commentAction === "advance"
-                ? "Completar con comentario"
-                : "Guardar comentario"}
+                ? "Completar con comentario técnico"
+                : "Guardar anotación técnica"}
             </DialogTitle>
           </DialogHeader>
 
@@ -960,19 +978,23 @@ export default function TechnicianDashboard() {
             ref={commentRef}
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Describe qué se hizo, detalles, problemas, materiales, etc."
-            className="min-h-[140px]"
+            placeholder="Describe qué se hizo, ajuste marginal, color, observaciones para la siguiente estación..."
+            className="min-h-[140px] rounded-xl border-slate-200 mt-2"
           />
 
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setCommentOpen(false)}>
+          <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button variant="outline" onClick={() => setCommentOpen(false)} className="rounded-xl border-slate-200 h-10 w-full sm:w-auto">
               Cancelar
             </Button>
 
             {commentAction === "save" ? (
-              <Button onClick={saveCommentOnly}>Guardar comentario</Button>
+              <Button onClick={saveCommentOnly} className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold h-10 w-full sm:w-auto shadow-md">
+                Guardar comentario
+              </Button>
             ) : (
-              <Button onClick={completeWithComment}>Guardar y avanzar</Button>
+              <Button onClick={completeWithComment} className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold h-10 w-full sm:w-auto shadow-md">
+                ✓ Guardar y avanzar
+              </Button>
             )}
           </DialogFooter>
         </DialogContent>

@@ -166,81 +166,150 @@ export default function UsersAdminPage() {
               <p className="text-sm">No se encontraron usuarios con los filtros actuales.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm text-left">
-                <thead className="bg-[#3C1C6C] text-white text-xs uppercase font-semibold">
-                  <tr>
-                    <th className="px-6 py-4">Usuario / Nombre</th>
-                    <th className="px-6 py-4">Teléfono</th>
-                    <th className="px-6 py-4">Rol Asignado</th>
-                    <th className="px-6 py-4">Fecha Registro</th>
-                    <th className="px-6 py-4 text-right">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {filteredUsers.map((u) => {
-                    const currentRole = roles.find((r) => r.value === u.rol?.toLowerCase()) || roles[3];
-                    const RoleIcon = currentRole.icon;
+            <>
+              {/* Vista Móvil: Tarjetas */}
+              <div className="md:hidden divide-y divide-slate-100">
+                {filteredUsers.map((u) => {
+                  const currentRole = roles.find((r) => r.value === u.rol?.toLowerCase()) || roles[3];
+                  const RoleIcon = currentRole.icon;
 
-                    return (
-                      <tr key={u.id} className="hover:bg-purple-50/30 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-purple-100 text-[#3C1C6C] font-bold text-xs flex items-center justify-center border border-purple-200 shrink-0">
-                              {(u.nombre || "U").charAt(0).toUpperCase()}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-semibold text-slate-800 truncate">
-                                {u.nombre || "Sin nombre"}
-                              </p>
-                              <p className="text-xs text-slate-400 font-mono truncate">
-                                ID: {u.id.slice(0, 8)}...
-                              </p>
-                            </div>
+                  return (
+                    <div key={u.id} className="p-4 space-y-3 bg-white hover:bg-purple-50/20 transition-colors">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-10 h-10 rounded-full bg-purple-100 text-[#3C1C6C] font-bold text-sm flex items-center justify-center border border-purple-200 shrink-0">
+                            {(u.nombre || "U").charAt(0).toUpperCase()}
                           </div>
-                        </td>
-                        <td className="px-6 py-4 text-slate-600">
-                          {u.telefono ? (
-                            <span className="font-medium text-xs">📞 {u.telefono}</span>
-                          ) : (
-                            <span className="text-slate-400 text-xs italic">No registrado</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${currentRole.color}">
-                            <RoleIcon className="w-3.5 h-3.5" />
-                            <select
-                              value={u.rol || "tecnico"}
-                              onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                              className="bg-transparent font-semibold border-none focus:outline-none cursor-pointer"
-                            >
-                              <option value="admin">Administrador</option>
-                              <option value="secretaria">Secretaría</option>
-                              <option value="doctor">Doctor</option>
-                              <option value="tecnico">Técnico</option>
-                            </select>
+                          <div className="min-w-0">
+                            <p className="font-bold text-slate-800 text-sm truncate">
+                              {u.nombre || "Sin nombre"}
+                            </p>
+                            <p className="text-xs text-slate-400 font-mono truncate">
+                              ID: {u.id.slice(0, 8)}...
+                            </p>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 text-xs text-slate-500">
+                        </div>
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(u.id, u.nombre)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl p-2 h-9 w-9 shrink-0"
+                          title="Eliminar perfil"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <span className="text-slate-600">
+                          {u.telefono ? `📞 ${u.telefono}` : <span className="text-slate-400 italic">Sin teléfono</span>}
+                        </span>
+                        <span className="text-slate-400">
                           {u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(u.id, u.nombre)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg p-2"
-                            title="Eliminar perfil"
+                        </span>
+                      </div>
+
+                      <div className="pt-1">
+                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border ${currentRole.color} w-full justify-between`}>
+                          <span className="flex items-center gap-1.5">
+                            <RoleIcon className="w-3.5 h-3.5" />
+                            <span>Rol:</span>
+                          </span>
+                          <select
+                            value={u.rol || "tecnico"}
+                            onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                            className="bg-transparent font-bold border-none focus:outline-none cursor-pointer text-xs"
                           >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                            <option value="admin">Administrador</option>
+                            <option value="secretaria">Secretaría</option>
+                            <option value="doctor">Doctor</option>
+                            <option value="tecnico">Técnico</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Vista Desktop: Tabla */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full text-sm text-left">
+                  <thead className="bg-[#3C1C6C] text-white text-xs uppercase font-semibold">
+                    <tr>
+                      <th className="px-6 py-4">Usuario / Nombre</th>
+                      <th className="px-6 py-4">Teléfono</th>
+                      <th className="px-6 py-4">Rol Asignado</th>
+                      <th className="px-6 py-4">Fecha Registro</th>
+                      <th className="px-6 py-4 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {filteredUsers.map((u) => {
+                      const currentRole = roles.find((r) => r.value === u.rol?.toLowerCase()) || roles[3];
+                      const RoleIcon = currentRole.icon;
+
+                      return (
+                        <tr key={u.id} className="hover:bg-purple-50/30 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-purple-100 text-[#3C1C6C] font-bold text-xs flex items-center justify-center border border-purple-200 shrink-0">
+                                {(u.nombre || "U").charAt(0).toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-semibold text-slate-800 truncate">
+                                  {u.nombre || "Sin nombre"}
+                                </p>
+                                <p className="text-xs text-slate-400 font-mono truncate">
+                                  ID: {u.id.slice(0, 8)}...
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-slate-600">
+                            {u.telefono ? (
+                              <span className="font-medium text-xs">📞 {u.telefono}</span>
+                            ) : (
+                              <span className="text-slate-400 text-xs italic">No registrado</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${currentRole.color}`}>
+                              <RoleIcon className="w-3.5 h-3.5" />
+                              <select
+                                value={u.rol || "tecnico"}
+                                onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                                className="bg-transparent font-semibold border-none focus:outline-none cursor-pointer"
+                              >
+                                <option value="admin">Administrador</option>
+                                <option value="secretaria">Secretaría</option>
+                                <option value="doctor">Doctor</option>
+                                <option value="tecnico">Técnico</option>
+                              </select>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-xs text-slate-500">
+                            {u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(u.id, u.nombre)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg p-2"
+                              title="Eliminar perfil"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

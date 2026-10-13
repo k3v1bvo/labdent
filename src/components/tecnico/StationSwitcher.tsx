@@ -106,19 +106,19 @@ export default function StationSwitcher() {
   }
 
   return (
-    <Card className="w-full max-w-md shadow-lg mt-4">
-      <CardHeader>
-        <CardTitle className="text-center text-green-700">Mi estación</CardTitle>
+    <Card className="w-full max-w-md shadow-md rounded-2xl border-slate-200 mt-4">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-center text-[#3C1C6C] font-bold text-lg">Mi Estación de Trabajo</CardTitle>
       </CardHeader>
 
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3.5">
         {loading ? (
-          <p className="text-sm opacity-70">Cargando estación...</p>
+          <p className="text-sm opacity-70 text-center py-2">Cargando estación...</p>
         ) : (
           <>
-            <div className="text-sm text-center">
-              <span className="opacity-70">Estación actual: </span>
-              <span className="font-medium">
+            <div className="text-sm text-center bg-purple-50/70 p-3 rounded-xl border border-purple-100">
+              <span className="text-slate-500">Estación actual: </span>
+              <span className="font-bold text-[#3C1C6C]">
                 {estacionActual
                   ? `${estacionActual.orden}. ${estacionActual.nombre}`
                   : "No asignada"}
@@ -126,7 +126,7 @@ export default function StationSwitcher() {
             </div>
 
             {errorMsg && (
-              <div className="rounded-md border p-2 text-sm text-center">
+              <div className="rounded-xl border border-red-200 bg-red-50 text-red-700 p-2.5 text-xs text-center">
                 {errorMsg}
               </div>
             )}
@@ -134,46 +134,55 @@ export default function StationSwitcher() {
             <div className="flex justify-center">
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" disabled={loading}>
+                  <Button variant="outline" disabled={loading} className="rounded-xl border-slate-200 font-semibold h-10">
                     Cambiar estación
                   </Button>
                 </DialogTrigger>
 
-                <DialogContent>
+                <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
                   <DialogHeader>
-                    <DialogTitle>Selecciona tu estación</DialogTitle>
+                    <DialogTitle className="text-[#3C1C6C] font-bold text-lg">Selecciona tu estación</DialogTitle>
                   </DialogHeader>
 
-                  <div className="space-y-2 max-h-72 overflow-auto">
+                  <div className="space-y-2 max-h-72 overflow-auto pr-1">
                     {estaciones.map((e) => (
                       <label
                         key={e.id}
-                        className="flex items-center gap-2 rounded-md p-2 hover:bg-muted cursor-pointer"
+                        className={`flex items-center gap-3 rounded-xl p-3 border transition cursor-pointer ${
+                          seleccionId === e.id
+                            ? "border-[#6329B7] bg-purple-50/80 font-bold text-[#3C1C6C]"
+                            : "border-slate-200 hover:bg-slate-50 text-slate-700"
+                        }`}
                       >
                         <input
                           type="radio"
                           name="estacion"
                           checked={seleccionId === e.id}
                           onChange={() => setSeleccionId(e.id)}
+                          className="accent-[#3C1C6C]"
                         />
-                        <span>
+                        <span className="text-sm">
                           {e.orden}. {e.nombre}
                         </span>
                       </label>
                     ))}
                   </div>
 
-                  <div className="flex justify-end gap-2 pt-3">
-                    <Button variant="outline" onClick={cargar} disabled={saving}>
+                  <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-100">
+                    <Button variant="outline" onClick={cargar} disabled={saving} className="rounded-xl border-slate-200 h-10">
                       Recargar
                     </Button>
-                    <Button onClick={guardar} disabled={saving || !seleccionId}>
-                      {saving ? "Guardando..." : "Guardar"}
+                    <Button
+                      onClick={guardar}
+                      disabled={saving || !seleccionId}
+                      className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold h-10 shadow-md"
+                    >
+                      {saving ? "Guardando..." : "Guardar Estación"}
                     </Button>
                   </div>
 
-                  <p className="text-xs opacity-70 pt-2">
-                    Si tienes tareas en proceso, no te dejará cambiarte.
+                  <p className="text-xs text-slate-400 pt-1">
+                    Nota: si tienes tareas en proceso, el sistema no te dejará cambiar de estación.
                   </p>
                 </DialogContent>
               </Dialog>

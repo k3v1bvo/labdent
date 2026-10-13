@@ -511,38 +511,38 @@ export default function AdminNewOrderPage() {
       )}
 
       {/* ✅ Header sticky pro + completitud */}
-      <div className="sticky top-0 z-40 bg-white/70 backdrop-blur-md border-b py-4 mb-6 rounded-2xl px-4">
+      <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 py-4 mb-6 rounded-2xl px-4 sm:px-6 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-bold text-green-700 flex items-center gap-2">
-              <Sparkles className="w-6 h-6" /> Nuevo Requerimiento (Admin)
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-[#3C1C6C] dark:text-white flex items-center gap-2">
+              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-[#A57CFA]" /> Nuevo Requerimiento
             </h1>
-            <p className="text-sm text-muted-foreground">Creación directa: entra a producción con estado “pendiente”.</p>
+            <p className="text-xs sm:text-sm text-slate-500">Creación directa: entra a producción con estado “pendiente”.</p>
 
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1">
-                <ClipboardCheck className="w-4 h-4" /> Completitud
+            <div className="flex items-center gap-2 text-xs text-slate-500 pt-1">
+              <span className="inline-flex items-center gap-1 font-medium">
+                <ClipboardCheck className="w-4 h-4 text-[#A57CFA]" /> Completitud
               </span>
-              <div className="h-2 w-44 bg-white border rounded-full overflow-hidden">
-                <div className="h-full bg-green-600" style={{ width: `${completion}%` }} />
+              <div className="h-2 w-36 sm:w-48 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-[#3C1C6C] via-[#6329B7] to-[#A57CFA] transition-all duration-300" style={{ width: `${completion}%` }} />
               </div>
-              <span className="font-medium">{completion}%</span>
+              <span className="font-bold text-[#3C1C6C] dark:text-[#A57CFA]">{completion}%</span>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" onClick={quickFillExample} className="flex items-center gap-2" disabled={loading}>
-              <Wand2 className="w-4 h-4" /> Relleno rápido
+          <div className="flex flex-wrap items-center gap-2 pt-2 md:pt-0">
+            <Button type="button" variant="outline" onClick={quickFillExample} className="text-xs h-9 sm:h-10 flex items-center gap-1.5 border-slate-200 hover:bg-purple-50" disabled={loading}>
+              <Wand2 className="w-3.5 h-3.5 text-[#A57CFA]" /> Relleno rápido
             </Button>
 
-            <Button type="button" variant="outline" onClick={clearAll} className="flex items-center gap-2" disabled={loading}>
-              <X className="w-4 h-4" /> Limpiar
+            <Button type="button" variant="outline" onClick={clearAll} className="text-xs h-9 sm:h-10 flex items-center gap-1.5 border-slate-200 hover:bg-rose-50 hover:text-rose-600" disabled={loading}>
+              <X className="w-3.5 h-3.5" /> Limpiar
             </Button>
 
             <Button
               type="submit"
               form="admin-new-order-form"
-              className="bg-green-700 hover:bg-green-800 text-white flex items-center gap-2"
+              className="bg-[#3C1C6C] hover:bg-[#2C1550] text-white text-xs sm:text-sm h-9 sm:h-10 px-4 sm:px-5 rounded-xl font-bold flex items-center gap-2 shadow-md shadow-purple-950/20"
               disabled={loading || !requiredOk}
               title={!requiredOk ? "Completa los campos obligatorios (*)" : "Guardar requerimiento"}
             >
@@ -560,9 +560,11 @@ export default function AdminNewOrderPage() {
         </div>
       </div>
 
-      <Card className="shadow-md rounded-3xl">
+      <Card className="shadow-sm rounded-3xl border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900">
         <CardHeader className="pb-2">
-          <CardTitle className="text-green-700 text-xl font-bold">📝 Formulario</CardTitle>
+          <CardTitle className="text-[#3C1C6C] dark:text-white text-lg sm:text-xl font-black flex items-center gap-2">
+            📝 Datos de la Orden de Trabajo
+          </CardTitle>
         </CardHeader>
 
         <CardContent>
@@ -876,10 +878,10 @@ export default function AdminNewOrderPage() {
                         />
                       </div>
 
-                      <div className="rounded-2xl border bg-green-50 px-4 py-3">
-                        <p className="text-xs text-green-800">Saldo restante</p>
-                        <p className="text-xl font-bold text-green-700">${saldoRestante.toFixed(2)}</p>
-                        {saldoRestante < 0 && <p className="text-xs text-red-600">⚠️ Anticipo supera el total</p>}
+                      <div className="rounded-2xl border border-purple-200 bg-purple-50/70 dark:bg-purple-950/30 px-4 py-3">
+                        <p className="text-xs font-semibold text-[#3C1C6C] dark:text-[#D0B9FF]">Saldo restante</p>
+                        <p className="text-xl font-black text-[#3C1C6C] dark:text-white">${saldoRestante.toFixed(2)}</p>
+                        {saldoRestante < 0 && <p className="text-xs text-rose-600 font-semibold">⚠️ Anticipo supera el total</p>}
                       </div>
                     </div>
                   )}
@@ -905,13 +907,13 @@ export default function AdminNewOrderPage() {
 
             {/* ✅ Footer acciones */}
             <div className="lg:col-span-3 flex flex-col sm:flex-row gap-2 justify-end pt-2">
-              <Button type="button" variant="outline" onClick={clearAll} className="flex items-center gap-2" disabled={loading}>
+              <Button type="button" variant="outline" onClick={clearAll} className="flex items-center gap-2 border-slate-200 hover:bg-rose-50 hover:text-rose-600" disabled={loading}>
                 <X className="w-4 h-4" /> Limpiar
               </Button>
 
               <Button
                 type="submit"
-                className="bg-green-700 hover:bg-green-800 text-white flex items-center gap-2"
+                className="bg-[#3C1C6C] hover:bg-[#2C1550] text-white font-bold px-6 h-11 rounded-xl shadow-md shadow-purple-950/20 flex items-center gap-2"
                 disabled={loading || !requiredOk}
                 title={!requiredOk ? "Completa los campos obligatorios (*)" : "Guardar requerimiento"}
               >

@@ -137,11 +137,11 @@ export default function TaskDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[88vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Info className="w-5 h-5 text-slate-700" />
-            Detalles del registro
+          <DialogTitle className="flex items-center gap-2 text-[#3C1C6C] font-bold">
+            <Info className="w-5 h-5 text-[#A57CFA]" />
+            Detalles del registro de trabajo
           </DialogTitle>
         </DialogHeader>
 
@@ -356,9 +356,10 @@ export default function TaskDetailsDialog({
           </div>
         )}
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 border-t border-slate-100 pt-3">
           <Button
             variant="outline"
+            className="w-full sm:w-auto rounded-xl border-slate-200 h-10"
             onClick={async () => {
               const txt = p?.numero_requerimiento ?? "";
               if (!txt.trim()) return;
@@ -371,7 +372,11 @@ export default function TaskDetailsDialog({
             <Copy className="w-4 h-4 mr-2" /> Copiar requerimiento
           </Button>
 
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto rounded-xl border-slate-200 h-10"
+            onClick={() => onOpenChange(false)}
+          >
             Cerrar
           </Button>
         </DialogFooter>

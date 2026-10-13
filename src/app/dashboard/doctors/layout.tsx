@@ -10,11 +10,13 @@ import {
   FilePlus,
   LogOut,
   Menu,
+  X,
   User,
   Sparkles,
 } from "lucide-react";
 import Image from "next/image";
 import DoctorNotifications from "@/components/notifications/DoctorNotifications";
+import { Avatar } from "@/components/ui/avatar";
 
 export default function DoctorLayout({
   children,
@@ -22,11 +24,17 @@ export default function DoctorLayout({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [profile, setProfile] = useState<{ name?: string; role?: string }>({});
   const [profileOpen, setProfileOpen] = useState(false);
 
   const router = useRouter();
   const pathname = usePathname();
+
+  // Cerrar drawer móvil al cambiar de ruta
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     async function loadProfile() {
@@ -68,11 +76,13 @@ export default function DoctorLayout({
 
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100">
-      {/* Sidebar */}
+      {/* ========================================================= */}
+      {/* 1. SIDEBAR DESKTOP (md: y superior) */}
+      {/* ========================================================= */}
       <aside
-        className={`relative ${
+        className={`hidden md:flex relative ${
           open ? "w-64" : "w-20"
-        } bg-slate-900 border-r border-slate-800 text-slate-200 transition-all duration-300 flex flex-col z-30 shrink-0`}
+        } bg-slate-900 border-r border-slate-800 text-slate-200 transition-all duration-300 flex-col z-30 shrink-0`}
       >
         {/* Toggle */}
         <button
@@ -88,7 +98,7 @@ export default function DoctorLayout({
         <div className="h-16 flex items-center px-4 border-b border-slate-800/80 gap-3">
           <div className="relative w-9 h-9 rounded-xl bg-purple-950/60 p-1 flex items-center justify-center border border-[#A57CFA]/30 shrink-0">
             <Image
-              src="/images/brand/guisela-emblem-inverted.png"
+              src="/images/brand/guisela-symbol-white.png"
               alt="Guisela"
               width={32}
               height={32}
@@ -122,12 +132,12 @@ export default function DoctorLayout({
                 onClick={() => router.push(item.path)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   isActive
-                    ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 shadow-sm"
+                    ? "bg-[#3C1C6C]/50 text-[#D0B9FF] border border-[#A57CFA]/40 shadow-sm font-bold"
                     : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent"
                 }`}
                 title={!open ? item.label : undefined}
               >
-                <span className={`${isActive ? "text-cyan-400" : "text-slate-400"}`}>
+                <span className={`${isActive ? "text-[#A57CFA]" : "text-slate-400"}`}>
                   {item.icon}
                 </span>
                 {open && <span className="truncate">{item.label}</span>}
@@ -152,15 +162,15 @@ export default function DoctorLayout({
         <div className="p-3 border-t border-slate-800/80 bg-slate-900/50 mt-auto">
           {open && (
             <div className="mb-2.5 px-2 py-1.5 rounded-lg flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-cyan-400">
+              <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-[#A57CFA]">
                 {(profile?.name || "D").charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold text-slate-200 truncate">
                   {profile?.name || "Doctor"}
                 </p>
-                <span className="text-[10px] text-cyan-400 font-medium">
-                  Médico Solicitante
+                <span className="text-[10px] text-slate-400 font-medium">
+                  Odontólogo Cliente
                 </span>
               </div>
             </div>
@@ -178,41 +188,159 @@ export default function DoctorLayout({
         </div>
       </aside>
 
-      {/* Main Container */}
+      {/* ========================================================= */}
+      {/* 2. DRAWER MÓVIL RESPONSIVE (< md) */}
+      {/* ========================================================= */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div
+            className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+            onClick={() => setMobileOpen(false)}
+            aria-hidden="true"
+          />
+
+          <div className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-slate-900 border-r border-slate-800 text-slate-200 z-50 flex flex-col shadow-2xl animate-in slide-in-from-left duration-200">
+            <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="relative w-9 h-9 rounded-xl bg-purple-950/60 p-1 flex items-center justify-center border border-[#A57CFA]/30 shrink-0">
+                  <Image
+                    src="/images/brand/guisela-symbol-white.png"
+                    alt="Guisela"
+                    width={32}
+                    height={32}
+                    className="object-contain"
+                    unoptimized
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-black text-sm text-white flex items-center gap-1.5">
+                    Guisela
+                    <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-[#A57CFA]/20 text-[#D0B9FF] border border-[#A57CFA]/30">
+                      CLÍNICA
+                    </span>
+                  </span>
+                  <span className="text-[10px] text-slate-400">Portal Odontológico</span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setMobileOpen(false)}
+                className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                aria-label="Cerrar menú móvil"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
+              {navItems.map((item) => {
+                const isActive = pathname === item.path;
+                return (
+                  <button
+                    key={item.path}
+                    type="button"
+                    onClick={() => {
+                      router.push(item.path);
+                      setMobileOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-sm font-medium transition-all ${
+                      isActive
+                        ? "bg-[#3C1C6C]/60 text-[#D0B9FF] border border-[#A57CFA]/40 font-bold shadow-xs"
+                        : "text-slate-300 hover:text-white hover:bg-slate-800/70 border border-transparent"
+                    }`}
+                  >
+                    <span className={isActive ? "text-[#A57CFA]" : "text-slate-400"}>
+                      {item.icon}
+                    </span>
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+
+              <div className="pt-3 border-t border-slate-800/80 mt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileOpen(true);
+                    setMobileOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all"
+                >
+                  <User className="w-4 h-4 text-slate-400" />
+                  <span>Mi Perfil</span>
+                </button>
+              </div>
+            </nav>
+
+            <div className="p-4 border-t border-slate-800 bg-slate-900/80">
+              <div className="mb-3 px-2 py-1 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-sm text-[#A57CFA]">
+                  {(profile?.name || "D").charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-slate-200 truncate">
+                    {profile?.name || "Doctor"}
+                  </p>
+                  <span className="text-[10px] text-slate-400">Portal Clínico</span>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition-colors text-xs font-medium h-10"
+                onClick={handleLogout}
+              >
+                <LogOut className="w-4 h-4 mr-2 shrink-0" />
+                Cerrar sesión
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 3. MAIN CONTAINER & TOPBAR RESPONSIVE */}
+      {/* ========================================================= */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="h-16 flex justify-between items-center px-6 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 z-20 shrink-0">
+        <header className="h-16 flex justify-between items-center px-4 sm:px-6 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 z-20 shrink-0">
           <div className="flex items-center gap-3">
-            <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
-              Portal Odontológico
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              className="md:hidden p-2 -ml-1 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+              aria-label="Abrir menú de navegación"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight truncate">
+              Portal del Odontólogo
             </h2>
-            <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800/60">
-              ● Conectado con Laboratorio
+            <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 dark:bg-purple-950/60 text-[#3C1C6C] dark:text-[#D0B9FF] border border-purple-200 dark:border-purple-800/60">
+              ● En Línea
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <DoctorNotifications />
+
+            <button
+              type="button"
+              onClick={() => setProfileOpen(true)}
+              className="rounded-full focus:outline-none focus:ring-2 focus:ring-[#A57CFA] transition-shadow p-0.5"
+              aria-label="Abrir perfil"
+            >
+              <Avatar name={profile?.name || "Doctor"} />
+            </button>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8">{children}</main>
       </div>
 
-      <ProfileDialog
-        open={profileOpen}
-        onOpenChange={setProfileOpen}
-        onSaved={async () => {
-          const { data } = await supabase.auth.getUser();
-          if (data?.user) {
-            const { data: p } = await supabase
-              .from("profiles")
-              .select("nombre, rol")
-              .eq("id", data.user.id)
-              .single();
-            if (p) setProfile({ name: p.nombre, role: p.rol });
-          }
-        }}
-      />
+      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
     </div>
   );
 }

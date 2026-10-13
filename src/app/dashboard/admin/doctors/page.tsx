@@ -358,110 +358,118 @@ export default function AdminDoctorsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-green-700 flex items-center gap-2">
-            <Stethoscope className="w-7 h-7" /> Gestión de Doctores
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#3C1C6C] flex items-center gap-2">
+            <Stethoscope className="w-7 h-7 text-[#A57CFA]" /> Gestión de Doctores
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Administra doctores (con cuenta o directorio) y filtra por fecha de registro.
           </p>
         </div>
 
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={fetchDoctores}>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={fetchDoctores} className="rounded-xl border-slate-200">
             <RefreshCcw className="w-4 h-4 mr-2" /> Refrescar
           </Button>
-          <Button className="bg-green-700 hover:bg-green-800 text-white" onClick={openCreate}>
+          <Button className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl shadow-md font-bold" onClick={openCreate}>
             <Plus className="w-4 h-4 mr-2" /> Nuevo Doctor
           </Button>
         </div>
       </div>
 
       {/* Filtros PRO */}
-      <Card className="border shadow-sm">
-        <CardContent className="p-5 space-y-4">
+      <Card className="rounded-2xl border-slate-200 shadow-sm">
+        <CardContent className="p-4 sm:p-5 space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Buscar */}
             <div className="lg:col-span-5">
-              <label className="text-xs text-gray-600 flex items-center gap-2 mb-1">
-                <Search className="w-4 h-4" /> Buscar
+              <label className="text-xs font-semibold text-slate-600 flex items-center gap-2 mb-1.5">
+                <Search className="w-4 h-4 text-slate-400" /> Buscar
               </label>
               <Input
                 placeholder="Nombre, teléfono, clínica, especialidad..."
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
+                className="rounded-xl border-slate-200 text-sm"
               />
             </div>
 
             {/* Presets + fechas */}
             <div className="lg:col-span-7">
-              <div className="flex flex-wrap items-center gap-2 mb-3">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3">
                 <Button
                   type="button"
+                  size="sm"
                   variant={rangePreset === "hoy" ? "default" : "outline"}
                   onClick={() => applyPreset("hoy")}
-                  className={rangePreset === "hoy" ? "bg-green-700 hover:bg-green-800 text-white" : ""}
+                  className={rangePreset === "hoy" ? "bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold" : "rounded-xl border-slate-200 text-xs"}
                 >
                   Hoy
                 </Button>
 
                 <Button
                   type="button"
+                  size="sm"
                   variant={rangePreset === "semana" ? "default" : "outline"}
                   onClick={() => applyPreset("semana")}
-                  className={rangePreset === "semana" ? "bg-green-700 hover:bg-green-800 text-white" : ""}
+                  className={rangePreset === "semana" ? "bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold" : "rounded-xl border-slate-200 text-xs"}
                 >
                   Semana
                 </Button>
 
                 <Button
                   type="button"
+                  size="sm"
                   variant={rangePreset === "mes" ? "default" : "outline"}
                   onClick={() => applyPreset("mes")}
-                  className={rangePreset === "mes" ? "bg-green-700 hover:bg-green-800 text-white" : ""}
+                  className={rangePreset === "mes" ? "bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold" : "rounded-xl border-slate-200 text-xs"}
                 >
                   Mes
                 </Button>
 
                 <Button
                   type="button"
+                  size="sm"
                   variant={rangePreset === "anio" ? "default" : "outline"}
                   onClick={() => applyPreset("anio")}
-                  className={rangePreset === "anio" ? "bg-green-700 hover:bg-green-800 text-white" : ""}
+                  className={rangePreset === "anio" ? "bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold" : "rounded-xl border-slate-200 text-xs"}
                 >
                   Año
                 </Button>
 
-                <div className="w-px h-6 bg-gray-200 mx-1" />
+                <div className="hidden sm:block w-px h-6 bg-slate-200 mx-1" />
 
                 <Button
                   type="button"
+                  size="sm"
                   variant={rangePreset === "ult7" ? "default" : "outline"}
                   onClick={() => applyPreset("ult7")}
-                  className={rangePreset === "ult7" ? "bg-green-700 hover:bg-green-800 text-white" : ""}
+                  className={rangePreset === "ult7" ? "bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold" : "rounded-xl border-slate-200 text-xs"}
                 >
                   Últ 7d
                 </Button>
 
                 <Button
                   type="button"
+                  size="sm"
                   variant={rangePreset === "ult30" ? "default" : "outline"}
                   onClick={() => applyPreset("ult30")}
-                  className={rangePreset === "ult30" ? "bg-green-700 hover:bg-green-800 text-white" : ""}
+                  className={rangePreset === "ult30" ? "bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold" : "rounded-xl border-slate-200 text-xs"}
                 >
                   Últ 30d
                 </Button>
 
                 <Button
                   type="button"
+                  size="sm"
                   variant={rangePreset === "ult90" ? "default" : "outline"}
                   onClick={() => applyPreset("ult90")}
-                  className={rangePreset === "ult90" ? "bg-green-700 hover:bg-green-800 text-white" : ""}
+                  className={rangePreset === "ult90" ? "bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold" : "rounded-xl border-slate-200 text-xs"}
                 >
                   Últ 90d
                 </Button>
 
-                <Button type="button" variant="outline" onClick={clearFilters}>
-                  <X className="w-4 h-4 mr-2" /> Limpiar
+                <Button type="button" size="sm" variant="outline" onClick={clearFilters} className="rounded-xl border-slate-200 text-xs">
+                  <X className="w-3.5 h-3.5 mr-1" /> Limpiar
                 </Button>
               </div>
 
@@ -512,7 +520,7 @@ export default function AdminDoctorsPage() {
         <CardContent>
           {loading ? (
             <div className="flex justify-center py-10">
-              <Loader2 className="animate-spin w-8 h-8 text-green-600" />
+              <Loader2 className="animate-spin w-8 h-8 text-[#3C1C6C]" />
             </div>
           ) : filtered.length === 0 ? (
             <p className="text-gray-500">No hay doctores para mostrar.</p>
@@ -555,8 +563,8 @@ export default function AdminDoctorsPage() {
                       </div>
 
                       <span
-                        className={`text-xs px-2 py-1 rounded-full border ${
-                          isAccount ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-700"
+                        className={`text-xs px-2.5 py-1 rounded-full border font-semibold ${
+                          isAccount ? "bg-purple-50 text-[#3C1C6C] border-purple-200" : "bg-slate-100 text-slate-600 border-slate-200"
                         }`}
                         title={isAccount ? "Doctor con cuenta (perfil)" : "Doctor directorio (sin cuenta)"}
                       >
@@ -565,25 +573,25 @@ export default function AdminDoctorsPage() {
                     </div>
 
                     {/* Footer card */}
-                    <div className="mt-4 flex items-center justify-between gap-3">
+                    <div className="mt-4 flex items-center justify-between gap-3 pt-3 border-t border-slate-100">
                       <p className="text-xs text-gray-500">
                         Registrado: <span className="font-medium text-gray-700">{fmtDate(doc.created_at)}</span>
                       </p>
 
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => openEdit(doc)}>
-                          <Edit className="w-4 h-4 mr-2" />
+                        <Button variant="outline" size="sm" onClick={() => openEdit(doc)} className="rounded-xl border-slate-200">
+                          <Edit className="w-3.5 h-3.5 mr-1.5" />
                           Editar
                         </Button>
 
-                        <Button variant="destructive" size="sm" onClick={() => handleDelete(doc.id)}>
-                          <Trash2 className="w-4 h-4" />
+                        <Button variant="destructive" size="sm" onClick={() => handleDelete(doc.id)} className="rounded-xl">
+                          <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>
                     </div>
 
                     {!isAccount && (
-                      <p className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">
+                      <p className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-2.5">
                         ℹ️ Este doctor no tiene cuenta ligada (profile). El teléfono suele venir de los pedidos.
                       </p>
                     )}
@@ -597,42 +605,43 @@ export default function AdminDoctorsPage() {
 
       {/* ============ Dialog: Crear ============ */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Nuevo Doctor</DialogTitle>
+            <DialogTitle className="text-[#3C1C6C] font-bold text-lg">Nuevo Doctor</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-3">
+          <div className="space-y-3.5">
             <div>
-              <label className="text-sm">Nombre / Clínica *</label>
+              <label className="text-xs font-semibold text-slate-600">Nombre / Clínica *</label>
               <Input
                 value={createForm.nombre_o_clinica}
                 onChange={(e) => setCreateForm((p) => ({ ...p, nombre_o_clinica: e.target.value }))}
                 placeholder="Ej: Dr. Juan Pérez / Clínica Central"
+                className="rounded-xl border-slate-200 mt-1"
               />
             </div>
 
             <div>
-              <label className="text-sm">Especialidad</label>
+              <label className="text-xs font-semibold text-slate-600">Especialidad</label>
               <Input
                 value={createForm.especialidad}
                 onChange={(e) => setCreateForm((p) => ({ ...p, especialidad: e.target.value }))}
                 placeholder="Ej: Rehabilitación oral"
+                className="rounded-xl border-slate-200 mt-1"
               />
             </div>
 
-            <p className="text-xs text-gray-500">
-              Nota: Si quieres teléfono aquí, lo ideal es agregarlo a tu BD (tabla doctores directorio). Con el schema
-              actual, el teléfono vive en <b>profiles</b> (solo doctores con cuenta).
+            <p className="text-xs text-slate-400">
+              Nota: Si quieres teléfono aquí, lo ideal es agregarlo a tu BD (tabla doctores directorio). Con el schema actual, el teléfono vive en <b>profiles</b> (solo doctores con cuenta).
             </p>
           </div>
 
-          <DialogFooter className="mt-4 flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>
+          <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button variant="outline" onClick={() => setCreateOpen(false)} className="rounded-xl border-slate-200 h-10 w-full sm:w-auto">
               Cancelar
             </Button>
-            <Button className="bg-green-700 hover:bg-green-800 text-white" onClick={handleCreate}>
-              Guardar
+            <Button className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold h-10 w-full sm:w-auto shadow-md" onClick={handleCreate}>
+              Guardar Doctor
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -640,18 +649,19 @@ export default function AdminDoctorsPage() {
 
       {/* ============ Dialog: Editar ============ */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Editar Doctor</DialogTitle>
+            <DialogTitle className="text-[#3C1C6C] font-bold text-lg">Editar Doctor</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-3">
+          <div className="space-y-3.5">
             <div>
-              <label className="text-sm">Nombre *</label>
+              <label className="text-xs font-semibold text-slate-600">Nombre *</label>
               <Input
                 value={editForm.nombre}
                 onChange={(e) => setEditForm((p) => ({ ...p, nombre: e.target.value }))}
                 placeholder="Nombre del doctor"
+                className="rounded-xl border-slate-200 mt-1"
               />
               {!editing?.profile_id && (
                 <p className="text-xs text-amber-700 mt-1">
@@ -661,46 +671,48 @@ export default function AdminDoctorsPage() {
             </div>
 
             <div>
-              <label className="text-sm">Teléfono</label>
+              <label className="text-xs font-semibold text-slate-600">Teléfono</label>
               <Input
                 value={editForm.telefono}
                 onChange={(e) => setEditForm((p) => ({ ...p, telefono: e.target.value }))}
                 placeholder="Teléfono"
                 disabled={!editing?.profile_id}
+                className="rounded-xl border-slate-200 mt-1"
               />
               {!editing?.profile_id && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Para editar teléfono aquí, el doctor debe tener cuenta (profile_id). Si no, el teléfono se registra
-                  normalmente en pedidos.
+                <p className="text-xs text-slate-400 mt-1">
+                  Para editar teléfono aquí, el doctor debe tener cuenta (profile_id). Si no, el teléfono se registra normalmente en pedidos.
                 </p>
               )}
             </div>
 
             <div>
-              <label className="text-sm">Clínica</label>
+              <label className="text-xs font-semibold text-slate-600">Clínica</label>
               <Input
                 value={editForm.clinica}
                 onChange={(e) => setEditForm((p) => ({ ...p, clinica: e.target.value }))}
                 placeholder="Ej: Clínica Sonrisa"
+                className="rounded-xl border-slate-200 mt-1"
               />
             </div>
 
             <div>
-              <label className="text-sm">Especialidad</label>
+              <label className="text-xs font-semibold text-slate-600">Especialidad</label>
               <Input
                 value={editForm.especialidad}
                 onChange={(e) => setEditForm((p) => ({ ...p, especialidad: e.target.value }))}
                 placeholder="Ej: Prótesis"
+                className="rounded-xl border-slate-200 mt-1"
               />
             </div>
           </div>
 
-          <DialogFooter className="mt-4 flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setEditOpen(false)}>
+          <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button variant="outline" onClick={() => setEditOpen(false)} className="rounded-xl border-slate-200 h-10 w-full sm:w-auto">
               Cancelar
             </Button>
-            <Button className="bg-green-700 hover:bg-green-800 text-white" onClick={handleSaveEdit}>
-              Guardar cambios
+            <Button className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold h-10 w-full sm:w-auto shadow-md" onClick={handleSaveEdit}>
+              Guardar Cambios
             </Button>
           </DialogFooter>
         </DialogContent>
