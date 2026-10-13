@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { getUserProfile } from "@/lib/getUserProfile";
 import {
@@ -28,10 +29,13 @@ import {
   Timer,
   ChevronRight,
   Info,
+  ArrowLeft,
+  Settings,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function AttendanceClockInPage() {
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [config, setConfig] = useState<WorkshopConfig | null>(null);
@@ -253,8 +257,42 @@ export default function AttendanceClockInPage() {
   const isWithinGeofence =
     config && distance != null && distance <= config.radio_tolerancia_metros;
 
+  const homePath = useMemo(() => {
+    const role = (profile?.rol || "").toLowerCase();
+    if (role.includes("admin")) return "/dashboard/admin/overview";
+    if (role.includes("recep") || role.includes("secre")) return "/dashboard/secretary";
+    if (role.includes("tec")) return "/dashboard/technician";
+    return "/dashboard";
+  }, [profile?.rol]);
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-4xl mx-auto">
+      {/* Barra de Navegación Contextual / Breadcrumb */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200/80">
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
+          <button
+            onClick={() => router.push(homePath)}
+            className="hover:text-[#6C3483] font-medium transition-colors flex items-center gap-1.5 text-slate-600 hover:underline cursor-pointer"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Volver al Panel
+          </button>
+          <span>/</span>
+          <span className="text-[#3C1C6C] font-semibold">Mi Asistencia</span>
+        </div>
+
+        {profile?.rol?.toLowerCase().includes("admin") && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push("/dashboard/admin/attendance")}
+            className="text-xs text-[#6C3483] hover:bg-[#F3E8FF] h-8 gap-1.5 rounded-xl border border-purple-200/60"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            Configuración & Auditoría
+          </Button>
+        )}
+      </div>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

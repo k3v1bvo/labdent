@@ -21,6 +21,7 @@ import {
   Shield,
   ShieldAlert,
   UserCheck,
+  Clock,
 } from "lucide-react";
 import Image from "next/image";
 import AdminNotifications from "@/components/notifications/AdminNotifications";
@@ -104,7 +105,8 @@ export default function DashboardLayout({ children }: Props) {
       title: "SEGURIDAD & CONTROL",
       items: [
         { label: "Auditoría & Anti-Fraude", path: "/dashboard/admin/audit", icon: <ShieldAlert className="w-5 h-5 text-amber-400" /> },
-        { label: "Horarios, Reglas & GPS", path: "/dashboard/admin/attendance", icon: <UserCheck className="w-5 h-5 text-emerald-400" /> },
+        { label: "Horarios, Reglas & GPS", path: "/dashboard/admin/attendance", icon: <UserCheck className="w-5 h-5 text-purple-400" /> },
+        { label: "Marcar Mi Asistencia", path: "/dashboard/attendance", icon: <Clock className="w-5 h-5 text-emerald-400" /> },
         { label: "Usuarios & Permisos", path: "/dashboard/admin/users", icon: <Shield className="w-5 h-5 text-blue-400" /> },
       ],
     },
