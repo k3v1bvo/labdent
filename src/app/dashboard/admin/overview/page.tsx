@@ -9,8 +9,6 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   RefreshCcw,
-  LayoutGrid,
-  Table2,
   Search,
   Filter,
   Calendar as CalendarIcon,
@@ -25,19 +23,20 @@ import {
   FileDown,
   Activity,
   Award,
-  Medal,
   Trophy,
   Flame,
   CheckCircle2,
   Clock,
   Layers,
   Sparkles,
-  ArrowUpRight,
-  ShieldCheck,
-  ChevronRight,
   PackageCheck,
   AlertCircle,
   Briefcase,
+  Phone,
+  MessageCircle,
+  Eye,
+  Receipt,
+  HelpCircle,
 } from "lucide-react";
 
 import {
@@ -48,15 +47,12 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
   Legend,
 } from "recharts";
 
-type ViewMode = "cards" | "table";
 type RangePreset = "hoy" | "semana" | "mes" | "anio" | "ult7" | "ult30" | "ult90" | "custom" | "all";
 
 type ResumenRow = {
@@ -74,6 +70,7 @@ type PedidoLite = {
   numero_requerimiento: string | null;
   paciente_nombre: string | null;
   doctor_nombre: string | null;
+  doctor_telefono: string | null;
   trabajo_realizar: string | null;
   numero_caja: string | null;
   estado: string | null;
@@ -109,10 +106,16 @@ type TechMetric = {
 
 type DoctorRank = {
   doctor: string;
+  doctor_telefono: string | null;
   pedidos: number;
+  pedidos_con_deuda: number;
   ingresos: number;
   anticipo: number;
   saldo_pendiente: number;
+  deuda_0_7d: number;
+  deuda_8_15d: number;
+  deuda_16_mas_d: number;
+  pedidos_items: PedidoLite[];
 };
 
 type TrabajoDemand = {
@@ -278,6 +281,13 @@ function chipCls(key: string) {
   return "bg-slate-100 text-slate-700 border-slate-200";
 }
 
+function cleanPhone(raw?: string | null) {
+  if (!raw) return "";
+  const num = raw.replace(/\D/g, "");
+  if (num.length === 8) return `591${num}`;
+  return num;
+}
+
 function downloadCSV(filename: string, rows: Record<string, any>[]) {
   const headers = Array.from(new Set(rows.flatMap((r) => Object.keys(r))));
   const esc = (v: any) => {
@@ -401,12 +411,12 @@ export default function AdminOverviewPage() {
   const [pedidosAll, setPedidosAll] = useState<PedidoLite[]>([]);
   const [vwOk, setVwOk] = useState(true);
 
-  const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [preset, setPreset] = useState<RangePreset>("all");
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
   const [q, setQ] = useState("");
   const [estadoFilter, setEstadoFilter] = useState<string>("all");
+  const [doctorTab, setDoctorTab] = useState<"todos" | "deudores" | "al_dia">("deudores");
 
   const [stationBottlenecks, setStationBottlenecks] = useState<StationBottleneck[]>([]);
   const [techMetrics, setTechMetrics] = useState<TechMetric[]>([]);
@@ -452,7 +462,7 @@ export default function AdminOverviewPage() {
     const { data, error } = await supabase
       .from("pedidos")
       .select(
-        "id,numero_requerimiento,paciente_nombre,doctor_nombre,trabajo_realizar,numero_caja,estado,fecha_creacion,fecha_ingreso,fecha_entrega,total,anticipo,creado_por"
+        "id,numero_requerimiento,paciente_nombre,doctor_nombre,doctor_telefono,trabajo_realizar,numero_caja,estado,fecha_creacion,fecha_ingreso,fecha_entrega,total,anticipo,creado_por"
       )
       .order("fecha_creacion", { ascending: false })
       .limit(5000);
@@ -469,6 +479,7 @@ export default function AdminOverviewPage() {
       numero_requerimiento: p.numero_requerimiento == null ? null : String(p.numero_requerimiento),
       paciente_nombre: p.paciente_nombre == null ? null : String(p.paciente_nombre),
       doctor_nombre: p.doctor_nombre == null ? null : String(p.doctor_nombre),
+      doctor_telefono: p.doctor_telefono == null ? null : String(p.doctor_telefono),
       trabajo_realizar: p.trabajo_realizar == null ? null : String(p.trabajo_realizar),
       numero_caja: p.numero_caja == null ? null : String(p.numero_caja),
       estado: p.estado == null ? null : String(p.estado),
@@ -628,7 +639,6 @@ export default function AdminOverviewPage() {
         };
       });
 
-      // Ordenar por más completadas y más horas trabajadas (El que más produjo arriba)
       calculatedTechs.sort((a, b) => b.completadas - a.completadas || b.horas - a.horas);
       setTechMetrics(calculatedTechs);
     } catch (e: any) {
@@ -667,6 +677,16 @@ export default function AdminOverviewPage() {
     setModalOpen(true);
   }
 
+  function handleSendWhatsApp(doc: DoctorRank) {
+    const phone = cleanPhone(doc.doctor_telefono);
+    if (!phone) {
+      toast.error(`El doctor(a) ${doc.doctor} no tiene número telefónico registrado.`);
+      return;
+    }
+    const msg = `Estimado(a) ${doc.doctor}, le saludamos cordialmente de Guisela Laboratorio Dental.\n\nLe compartimos su resumen de estado de cuenta actual:\n- Saldo pendiente de pago: ${fmtMoney(doc.saldo_pendiente)}\n- Pedidos con saldo pendiente: ${doc.pedidos_con_deuda} trabajo(s)\n\nQuedamos atentos para coordinar la cancelación o entrega de sus trabajos. ¡Muchas gracias por su preferencia!`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+  }
+
   const pedidosFiltered = useMemo(() => {
     const sQ = q.trim().toLowerCase();
     return pedidosAll.filter((p) => {
@@ -702,6 +722,8 @@ export default function AdminOverviewPage() {
       saldoPendiente = 0;
     let sumHoras = 0,
       cntHoras = 0;
+    let saldoEnListos = 0;
+    let pedidosListosConSaldo = 0;
 
     const now = Date.now();
     let atrasados = 0;
@@ -715,9 +737,15 @@ export default function AdminOverviewPage() {
 
       const t = safeNum(p.total);
       const a = safeNum(p.anticipo);
+      const saldo = Math.max(0, t - a);
       ingresos += t;
       anticipo += a;
-      saldoPendiente += Math.max(0, t - a);
+      saldoPendiente += saldo;
+
+      if (est === "finalizado" && saldo > 0) {
+        saldoEnListos += saldo;
+        pedidosListosConSaldo++;
+      }
 
       const fc = parseTime(p.fecha_creacion || p.fecha_ingreso || null);
       const fe = parseTime(p.fecha_entrega);
@@ -735,6 +763,8 @@ export default function AdminOverviewPage() {
     const totalTerminados = finalizados + entregados;
     const cumplimientoPct =
       pedidosAll.length > 0 ? Math.round(((pedidosAll.length - atrasados) / pedidosAll.length) * 100) : 100;
+    const ticketPromedio = pedidosAll.length > 0 ? Math.round(ingresos / pedidosAll.length) : 0;
+    const tasaCobroPct = ingresos > 0 ? Math.round((anticipo / ingresos) * 100) : 100;
 
     return {
       count: pedidosAll.length,
@@ -746,6 +776,10 @@ export default function AdminOverviewPage() {
       ingresos,
       anticipo,
       saldoPendiente,
+      saldoEnListos,
+      pedidosListosConSaldo,
+      ticketPromedio,
+      tasaCobroPct,
       tiempoProm,
       tiempoPromDias,
       atrasados,
@@ -753,31 +787,81 @@ export default function AdminOverviewPage() {
     };
   }, [pedidosAll]);
 
-  // Ranking Doctores
+  // Ranking Doctores & Análisis de Deuda por Períodos
   useEffect(() => {
-    const agg = new Map<string, { pedidos: number; ingresos: number; anticipo: number; saldo: number }>();
+    const agg = new Map<
+      string,
+      {
+        doctor_telefono: string | null;
+        pedidos: number;
+        pedidos_con_deuda: number;
+        ingresos: number;
+        anticipo: number;
+        saldo: number;
+        deuda_0_7d: number;
+        deuda_8_15d: number;
+        deuda_16_mas_d: number;
+        items: PedidoLite[];
+      }
+    >();
+
+    const now = Date.now();
+
     for (const p of pedidosFiltered) {
       const d = (p.doctor_nombre || "—").trim() || "—";
-      if (!agg.has(d)) agg.set(d, { pedidos: 0, ingresos: 0, anticipo: 0, saldo: 0 });
+      if (!agg.has(d)) {
+        agg.set(d, {
+          doctor_telefono: p.doctor_telefono || null,
+          pedidos: 0,
+          pedidos_con_deuda: 0,
+          ingresos: 0,
+          anticipo: 0,
+          saldo: 0,
+          deuda_0_7d: 0,
+          deuda_8_15d: 0,
+          deuda_16_mas_d: 0,
+          items: [],
+        });
+      }
       const a = agg.get(d)!;
+      if (!a.doctor_telefono && p.doctor_telefono) a.doctor_telefono = p.doctor_telefono;
+
       a.pedidos += 1;
+      a.items.push(p);
+
       const t = safeNum(p.total);
       const an = safeNum(p.anticipo);
+      const saldo = Math.max(0, t - an);
       a.ingresos += t;
       a.anticipo += an;
-      a.saldo += Math.max(0, t - an);
+      a.saldo += saldo;
+
+      if (saldo > 0) {
+        a.pedidos_con_deuda += 1;
+        const base = parseTime(p.fecha_creacion || p.fecha_ingreso || null);
+        const days = Number.isFinite(base) ? Math.floor((now - base) / 86400000) : 0;
+        if (days <= 7) a.deuda_0_7d += saldo;
+        else if (days <= 15) a.deuda_8_15d += saldo;
+        else a.deuda_16_mas_d += saldo;
+      }
     }
+
     setDoctorRank(
       Array.from(agg.entries())
         .map(([doctor, a]) => ({
           doctor,
+          doctor_telefono: a.doctor_telefono,
           pedidos: a.pedidos,
+          pedidos_con_deuda: a.pedidos_con_deuda,
           ingresos: Math.round(a.ingresos * 100) / 100,
           anticipo: Math.round(a.anticipo * 100) / 100,
           saldo_pendiente: Math.round(a.saldo * 100) / 100,
+          deuda_0_7d: Math.round(a.deuda_0_7d * 100) / 100,
+          deuda_8_15d: Math.round(a.deuda_8_15d * 100) / 100,
+          deuda_16_mas_d: Math.round(a.deuda_16_mas_d * 100) / 100,
+          pedidos_items: a.items,
         }))
-        .sort((a, b) => b.pedidos - a.pedidos || b.ingresos - a.ingresos)
-        .slice(0, 8)
+        .sort((a, b) => b.saldo_pendiente - a.saldo_pendiente || b.ingresos - a.ingresos)
     );
   }, [pedidosFiltered]);
 
@@ -839,18 +923,6 @@ export default function AdminOverviewPage() {
       .reverse();
   }, [resumenVW, desde, hasta]);
 
-  const pieGlobal = useMemo(
-    () => [
-      { name: "Pendientes", value: globalMetrics.pendientes, key: "pendiente" },
-      { name: "En Proceso", value: globalMetrics.en_proceso, key: "en_proceso" },
-      { name: "Finalizados", value: globalMetrics.finalizados, key: "finalizado" },
-      { name: "Entregados", value: globalMetrics.entregados, key: "entregado" },
-    ],
-    [globalMetrics]
-  );
-
-  const PIE_COLORS = ["#F59E0B", "#3B82F6", "#10B981", "#8B5CF6"];
-
   const modalFiltered = useMemo(() => {
     const sQ = modalSearch.trim().toLowerCase();
     if (!sQ) return modalItems;
@@ -872,6 +944,16 @@ export default function AdminOverviewPage() {
 
   const topTech = techMetrics[0] || null;
 
+  // Filtrado de la tabla de doctores por pestaña
+  const displayedDoctors = useMemo(() => {
+    if (doctorTab === "deudores") return doctorRank.filter((d) => d.saldo_pendiente > 0);
+    if (doctorTab === "al_dia") return doctorRank.filter((d) => d.saldo_pendiente === 0);
+    return doctorRank;
+  }, [doctorRank, doctorTab]);
+
+  const totalDeudoresCount = useMemo(() => doctorRank.filter((d) => d.saldo_pendiente > 0).length, [doctorRank]);
+  const totalAlDiaCount = useMemo(() => doctorRank.filter((d) => d.saldo_pendiente === 0).length, [doctorRank]);
+
   return (
     <div className="min-h-screen bg-[#FDFCFE] p-4 sm:p-6 lg:p-8 space-y-7 text-slate-800">
       {/* ── HEADER EJECUTIVO ── */}
@@ -885,7 +967,7 @@ export default function AdminOverviewPage() {
             📊 Centro de Control & Analítica Dental
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Métricas de productividad de técnicos, cuellos de botella en taller, tiempos promedio y finanzas en tiempo real.
+            Métricas de técnicos, cartera de doctores deudores por períodos, cuellos de botella y finanzas en tiempo real.
           </p>
         </div>
 
@@ -904,7 +986,7 @@ export default function AdminOverviewPage() {
         <div className="border border-amber-300 bg-amber-50 text-amber-900 rounded-2xl p-4 text-sm flex items-center gap-3">
           <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
           <span>
-            Vista agregada en modo cálculo dinámico directo desde las tablas de producción y órdenes.
+            Vista analítica en modo cálculo dinámico directo desde las tablas de producción y órdenes.
           </span>
         </div>
       )}
@@ -912,7 +994,7 @@ export default function AdminOverviewPage() {
       {loading ? (
         <div className="bg-white border border-purple-100 rounded-3xl shadow-sm p-14 text-center text-slate-500">
           <div className="w-10 h-10 border-4 border-[#3C1C6C] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="font-medium text-slate-700">Analizando métricas del taller, tiempos y finanzas...</p>
+          <p className="font-medium text-slate-700">Analizando métricas del taller, finanzas y cartera de doctores...</p>
         </div>
       ) : (
         <>
@@ -958,12 +1040,12 @@ export default function AdminOverviewPage() {
                   <Flame className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                   {topTech && topTech.en_proceso > 0
                     ? `${topTech.en_proceso} trabajo(s) en su mesa actualmente`
-                    : "Líder de rendimiento del laboratorio"}
+                    : "Líder de rendimiento del taller"}
                 </p>
               </CardContent>
             </Card>
 
-            {/* 2. TIEMPO PROMEDIO DE ENTREGA */}
+            {/* 2. TIEMPO PROMEDIO DE ENTREGA & SLA */}
             <Card className="border border-purple-200/80 bg-white shadow-xs hover:shadow-md transition">
               <CardHeader className="pb-1 pt-4 px-5">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#3C1C6C] flex items-center gap-1.5">
@@ -993,7 +1075,7 @@ export default function AdminOverviewPage() {
               </CardContent>
             </Card>
 
-            {/* 3. SALUD FINANCIERA (INGRESOS & SALDO PENDIENTE) */}
+            {/* 3. SALUD FINANCIERA & COBRANZAS */}
             <Card className="border border-slate-200 bg-white shadow-xs hover:shadow-md transition">
               <CardHeader className="pb-1 pt-4 px-5">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
@@ -1001,8 +1083,13 @@ export default function AdminOverviewPage() {
                 </span>
               </CardHeader>
               <CardContent className="pt-2 pb-4 px-5 space-y-2">
-                <div className="text-2xl font-black text-slate-900">
-                  {fmtMoney(globalMetrics.ingresos)}
+                <div className="flex items-baseline justify-between">
+                  <div className="text-2xl font-black text-slate-900">
+                    {fmtMoney(globalMetrics.ingresos)}
+                  </div>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                    {globalMetrics.tasaCobroPct}% cobrado
+                  </span>
                 </div>
                 <div className="space-y-1 pt-1 border-t border-slate-100 text-xs">
                   <div className="flex justify-between">
@@ -1012,11 +1099,17 @@ export default function AdminOverviewPage() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Saldo por cobrar:</span>
+                    <span className="text-slate-500">Saldo por cobrar (Total):</span>
                     <span className="font-bold text-rose-600">
                       {fmtMoney(globalMetrics.saldoPendiente)}
                     </span>
                   </div>
+                  {globalMetrics.saldoEnListos > 0 && (
+                    <div className="flex justify-between font-bold text-amber-800 bg-amber-50 px-2 py-1 rounded-md border border-amber-200/60 mt-1">
+                      <span>A cobrar al entregar:</span>
+                      <span>{fmtMoney(globalMetrics.saldoEnListos)}</span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1037,7 +1130,7 @@ export default function AdminOverviewPage() {
               <CardHeader className="pb-1 pt-4 px-5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                    <PackageCheck className="w-4 h-4 text-blue-600" /> Producción Activa
+                    <PackageCheck className="w-4 h-4 text-blue-600" /> Producción Activa & Ticket
                   </span>
                   {globalMetrics.atrasados > 0 && (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white animate-pulse">
@@ -1053,17 +1146,20 @@ export default function AdminOverviewPage() {
                   </span>
                   <span className="text-xs font-semibold text-slate-500">en taller ahora</span>
                 </div>
-                <div className="pt-1 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="text-slate-500">Terminados / Listos:</span>
-                  <span className="font-bold text-emerald-600">
-                    {globalMetrics.totalTerminados} pedidos
-                  </span>
+                <div className="pt-1 border-t border-slate-100 space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Terminados / Listos:</span>
+                    <span className="font-bold text-emerald-600">
+                      {globalMetrics.totalTerminados} pedidos
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Ticket promedio:</span>
+                    <span className="font-bold text-[#3C1C6C]">
+                      {fmtMoney(globalMetrics.ticketPromedio)}
+                    </span>
+                  </div>
                 </div>
-                <p className="text-[11px] text-slate-400">
-                  {globalMetrics.atrasados === 0
-                    ? "✅ Todos los trabajos están dentro del plazo"
-                    : "⚠️ Haz click para inspeccionar casos retrasados"}
-                </p>
               </CardContent>
             </Card>
           </div>
@@ -1205,16 +1301,14 @@ export default function AdminOverviewPage() {
              ══════════════════════════════════════════════════════════ */}
           <Card className="border border-purple-100/80 shadow-xs bg-white">
             <CardHeader className="pb-2">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div>
-                  <CardTitle className="text-base font-extrabold text-[#190B2E] flex items-center gap-2">
-                    <Layers className="w-5 h-5 text-[#6329B7]" />
-                    Cuellos de Botella & Tiempo por Estación de Producción
-                  </CardTitle>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Permite identificar en qué fase de la prótesis (CAD, Fresado, Cerámica, Calidad) se estancan los pedidos.
-                  </p>
-                </div>
+              <div>
+                <CardTitle className="text-base font-extrabold text-[#190B2E] flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-[#6329B7]" />
+                  Cuellos de Botella & Tiempo por Estación de Producción
+                </CardTitle>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Permite identificar en qué fase de la prótesis (CAD, Fresado, Cerámica, Calidad) se estancan los pedidos.
+                </p>
               </div>
             </CardHeader>
             <CardContent className="pt-2">
@@ -1270,64 +1364,237 @@ export default function AdminOverviewPage() {
           </Card>
 
           {/* ══════════════════════════════════════════════════════════
-              SECCIÓN 3: CLIENTES TOP (DOCTORES) & DEMANDA DE MATERIALES
+              SECCIÓN 3: CONTROL DE DEUDAS DE DOCTORES & CARTERA POR PERÍODOS
+             ══════════════════════════════════════════════════════════ */}
+          <Card className="border border-purple-200/80 bg-white shadow-xs">
+            <CardHeader className="pb-3 border-b bg-slate-50/50">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                      <Receipt className="w-5 h-5 text-rose-600" />
+                      Cartera de Doctores & Cuentas por Cobrar por Períodos
+                    </CardTitle>
+                    <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                      Bs {globalMetrics.saldoPendiente.toFixed(2)} por cobrar
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Antigüedad de deudas por períodos, órdenes impagas y botón de recordatorio de cobro por WhatsApp.
+                  </p>
+                </div>
+
+                {/* Selector de Pestaña de Doctores */}
+                <div className="inline-flex items-center rounded-xl border bg-white p-1 shadow-2xs text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setDoctorTab("deudores")}
+                    className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+                      doctorTab === "deudores"
+                        ? "bg-rose-600 text-white shadow-xs"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    Con Saldo Deudor ({totalDeudoresCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDoctorTab("al_dia")}
+                    className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+                      doctorTab === "al_dia"
+                        ? "bg-emerald-600 text-white shadow-xs"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Al Día ({totalAlDiaCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDoctorTab("todos")}
+                    className={`px-3 py-1.5 rounded-lg font-bold transition ${
+                      doctorTab === "todos"
+                        ? "bg-[#3C1C6C] text-white shadow-xs"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    Todos ({doctorRank.length})
+                  </button>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="pt-4">
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-slate-50 text-slate-600 border-b">
+                    <tr>
+                      <th className="py-2.5 px-3 text-left">Doctor / Clínica</th>
+                      <th className="py-2.5 px-2 text-center">Pedidos</th>
+                      <th className="py-2.5 px-3 text-right">Total Facturado</th>
+                      <th className="py-2.5 px-3 text-center">Deuda 0–7 días</th>
+                      <th className="py-2.5 px-3 text-center">Deuda 8–15 días</th>
+                      <th className="py-2.5 px-3 text-center">Deuda +16 días</th>
+                      <th className="py-2.5 px-3 text-right">Saldo Deudor Total</th>
+                      <th className="py-2.5 px-3 text-center">Acciones de Cobro</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {displayedDoctors.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="py-6 text-center text-slate-400">
+                          No hay doctores en esta categoría.
+                        </td>
+                      </tr>
+                    ) : (
+                      displayedDoctors.map((doc, i) => {
+                        const hasDebt = doc.saldo_pendiente > 0;
+                        const unpaidOrders = doc.pedidos_items.filter(
+                          (p) => safeNum(p.total) - safeNum(p.anticipo) > 0
+                        );
+
+                        return (
+                          <tr key={doc.doctor} className="hover:bg-slate-50/70 transition">
+                            {/* Doctor y Teléfono */}
+                            <td className="py-3 px-3 font-semibold text-slate-900">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-purple-100 text-[#3C1C6C] text-[10px] font-black flex items-center justify-center">
+                                  {i + 1}
+                                </div>
+                                <div>
+                                  <span className="font-bold block text-slate-900">{doc.doctor}</span>
+                                  {doc.doctor_telefono ? (
+                                    <span className="text-[11px] text-slate-400 flex items-center gap-1 font-mono">
+                                      <Phone className="w-3 h-3 text-slate-400" /> {doc.doctor_telefono}
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] text-slate-400 italic">Sin teléfono</span>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Pedidos */}
+                            <td className="py-3 px-2 text-center">
+                              <span className="font-bold text-slate-800">{doc.pedidos}</span>
+                              {hasDebt && (
+                                <span className="block text-[10px] text-rose-600 font-semibold">
+                                  ({doc.pedidos_con_deuda} con saldo)
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Facturado */}
+                            <td className="py-3 px-3 text-right font-medium text-slate-900">
+                              {fmtMoney(doc.ingresos)}
+                            </td>
+
+                            {/* Deuda 0-7d */}
+                            <td className="py-3 px-3 text-center">
+                              {doc.deuda_0_7d > 0 ? (
+                                <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                  {fmtMoney(doc.deuda_0_7d)}
+                                </span>
+                              ) : (
+                                <span className="text-slate-300">—</span>
+                              )}
+                            </td>
+
+                            {/* Deuda 8-15d */}
+                            <td className="py-3 px-3 text-center">
+                              {doc.deuda_8_15d > 0 ? (
+                                <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-orange-50 text-orange-800 border border-orange-200">
+                                  {fmtMoney(doc.deuda_8_15d)}
+                                </span>
+                              ) : (
+                                <span className="text-slate-300">—</span>
+                              )}
+                            </td>
+
+                            {/* Deuda +16d */}
+                            <td className="py-3 px-3 text-center">
+                              {doc.deuda_16_mas_d > 0 ? (
+                                <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300 animate-pulse">
+                                  {fmtMoney(doc.deuda_16_mas_d)}
+                                </span>
+                              ) : (
+                                <span className="text-slate-300">—</span>
+                              )}
+                            </td>
+
+                            {/* Saldo Deudor Total */}
+                            <td className="py-3 px-3 text-right">
+                              {hasDebt ? (
+                                <span className="font-extrabold text-sm text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 block">
+                                  {fmtMoney(doc.saldo_pendiente)}
+                                </span>
+                              ) : (
+                                <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                  Al día ✅
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Acciones */}
+                            <td className="py-3 px-3 text-center">
+                              <div className="flex items-center justify-center gap-1.5">
+                                {hasDebt && (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 px-2 text-[11px] border-purple-200 text-[#3C1C6C] hover:bg-purple-50 gap-1"
+                                      onClick={() =>
+                                        openDrilldown(
+                                          `Órdenes Impagas · ${doc.doctor} (Bs ${doc.saldo_pendiente})`,
+                                          unpaidOrders
+                                        )
+                                      }
+                                      title="Ver pedidos con saldo pendiente"
+                                    >
+                                      <Eye className="w-3.5 h-3.5" /> Impagos
+                                    </Button>
+
+                                    <Button
+                                      size="sm"
+                                      className="h-7 px-2 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white gap-1 shadow-xs"
+                                      onClick={() => handleSendWhatsApp(doc)}
+                                      title="Enviar estado de cuenta a WhatsApp"
+                                    >
+                                      <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                                    </Button>
+                                  </>
+                                )}
+                                {!hasDebt && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 px-2 text-[11px] text-slate-600"
+                                    onClick={() =>
+                                      openDrilldown(`Historial de Pedidos · ${doc.doctor}`, doc.pedidos_items)
+                                    }
+                                  >
+                                    Ver Casos
+                                  </Button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ══════════════════════════════════════════════════════════
+              SECCIÓN 4: DEMANDA DE PRÓTESIS & MATERIALES DEL LABORATORIO
              ══════════════════════════════════════════════════════════ */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* RANKING DE DOCTORES */}
-            <Card className="border border-slate-200 bg-white shadow-xs">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                  <Briefcase className="w-5 h-5 text-purple-700" />
-                  Top Doctores & Clínicas (Volumen e Ingresos)
-                </CardTitle>
-                <p className="text-xs text-slate-500">
-                  Odontólogos con mayor frecuencia de órdenes y control de saldo pendiente.
-                </p>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead className="bg-slate-50 text-slate-600 border-b">
-                      <tr>
-                        <th className="py-2 px-3 text-left">Doctor / Clínica</th>
-                        <th className="py-2 px-2 text-center">Pedidos</th>
-                        <th className="py-2 px-3 text-right">Facturado</th>
-                        <th className="py-2 px-3 text-right">Saldo Deudor</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {doctorRank.map((doc, i) => (
-                        <tr key={doc.doctor} className="hover:bg-slate-50/60 transition">
-                          <td className="py-2.5 px-3 font-semibold text-slate-800 flex items-center gap-2">
-                            <span className="w-4 h-4 rounded-full bg-purple-100 text-[#3C1C6C] text-[10px] font-black flex items-center justify-center">
-                              {i + 1}
-                            </span>
-                            {doc.doctor}
-                          </td>
-                          <td className="py-2.5 px-2 text-center font-bold text-slate-700">
-                            {doc.pedidos}
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-extrabold text-slate-900">
-                            {fmtMoney(doc.ingresos)}
-                          </td>
-                          <td className="py-2.5 px-3 text-right">
-                            {doc.saldo_pendiente > 0 ? (
-                              <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
-                                {fmtMoney(doc.saldo_pendiente)}
-                              </span>
-                            ) : (
-                              <span className="text-emerald-700 font-semibold">Al día ✅</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* TIPOS DE PRÓTESIS / MATERIALES MÁS PEDIDOS */}
+            {/* PRÓTESIS MÁS SOLICITADAS */}
             <Card className="border border-slate-200 bg-white shadow-xs">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-extrabold text-slate-900 flex items-center gap-2">
@@ -1335,7 +1602,7 @@ export default function AdminOverviewPage() {
                   Prótesis & Materiales Más Solicitados
                 </CardTitle>
                 <p className="text-xs text-slate-500">
-                  Desglose por tipo de restauración dental y rentabilidad para el laboratorio.
+                  Desglose por tipo de restauración dental y facturación generada para el taller.
                 </p>
               </CardHeader>
               <CardContent className="pt-2 space-y-3">
@@ -1365,10 +1632,34 @@ export default function AdminOverviewPage() {
                 })}
               </CardContent>
             </Card>
+
+            {/* AGING DE COBRANZA GENERAL */}
+            <Card className="border border-slate-200 bg-white shadow-xs">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-rose-600" />
+                  Antigüedad de la Cartera Total (Aging)
+                </CardTitle>
+                <p className="text-xs text-slate-500">
+                  Distribución temporal de los saldos pendientes por cobrar en el laboratorio.
+                </p>
+              </CardHeader>
+              <CardContent className="h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={aging} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                    <XAxis dataKey="bucket" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip />
+                    <Bar dataKey="saldo" name="Saldo Deudor (Bs)" fill="#F43F5E" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
           </div>
 
           {/* ══════════════════════════════════════════════════════════
-              SECCIÓN 4: FILTROS AVANZADOS Y BANDEJA OPERATIVA
+              SECCIÓN 5: FILTROS DINÁMICOS Y BANDEJA OPERATIVA
              ══════════════════════════════════════════════════════════ */}
           <Card className="shadow-xs border border-purple-100 bg-white">
             <CardHeader className="pb-3">
@@ -1515,68 +1806,6 @@ export default function AdminOverviewPage() {
               </div>
             </CardContent>
           </Card>
-
-          {/* ══════════════════════════════════════════════════════════
-              SECCIÓN 5: GRÁFICOS DE EVOLUCIÓN & SALDOS EN EL TIEMPO
-             ══════════════════════════════════════════════════════════ */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* GRÁFICO EVOLUCIÓN */}
-            <Card className="border border-slate-200 bg-white shadow-xs">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-bold text-slate-900">
-                  📈 Evolución de Pedidos en Taller por Fecha
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="h-[280px]">
-                {resumenVWFiltered.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-xs text-slate-400">
-                    Sin registros en el rango seleccionado.
-                  </div>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={resumenVWFiltered.map((r) => ({
-                        fecha: labelFromFecha(r.fecha),
-                        pendientes: safeNum(r.pedidos_pendientes),
-                        proceso: safeNum(r.pedidos_en_proceso),
-                        finalizados: safeNum(r.pedidos_finalizados),
-                        entregados: safeNum(r.pedidos_entregados),
-                      }))}
-                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                      <XAxis dataKey="fecha" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 11 }} />
-                      <Tooltip />
-                      <Bar dataKey="proceso" name="En Proceso" fill="#3B82F6" stackId="a" />
-                      <Bar dataKey="finalizados" name="Finalizados" fill="#10B981" stackId="a" />
-                      <Bar dataKey="pendientes" name="Pendientes" fill="#F59E0B" stackId="a" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* AGING DE COBRANZA */}
-            <Card className="border border-slate-200 bg-white shadow-xs">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-bold text-slate-900">
-                  ⏳ Cuentas por Cobrar por Antigüedad (Aging)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="h-[280px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={aging} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                    <XAxis dataKey="bucket" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip />
-                    <Bar dataKey="saldo" name="Saldo Deudor (Bs)" fill="#F43F5E" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
 
           {/* ══════════════════════════════════════════════════════════
               SECCIÓN 6: MODAL DETALLE (DRILL-DOWN CON CSV)
