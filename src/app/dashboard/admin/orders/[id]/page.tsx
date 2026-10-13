@@ -25,12 +25,16 @@ import {
   AlertTriangle,
   ExternalLink,
   ShieldAlert,
+  ShieldCheck,
+  History,
+  Lock,
 } from "lucide-react";
 
 export default function OrderDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const [order, setOrder] = useState<any>(null);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -82,6 +86,22 @@ export default function OrderDetailPage() {
       } else {
         setOrder(data);
       }
+
+      // Cargar historial forense de auditoría
+      try {
+        const { data: auditData } = await supabase
+          .from("auditoria_pedidos")
+          .select("*")
+          .eq("pedido_id", id)
+          .order("created_at", { ascending: false });
+
+        if (auditData) {
+          setAuditLogs(auditData);
+        }
+      } catch (err) {
+        console.warn("Tabla auditoria_pedidos aún no disponible:", err);
+      }
+
       setLoading(false);
     }
 
@@ -230,15 +250,15 @@ export default function OrderDetailPage() {
             <div className="space-y-1 text-xs">
               <div className="flex justify-between text-slate-600">
                 <span>Total:</span>
-                <span className="font-bold text-slate-800">${total.toFixed(2)}</span>
+                <span className="font-bold text-slate-800">Bs {total.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-slate-600">
                 <span>Anticipo:</span>
-                <span className="font-bold text-green-700">${anticipo.toFixed(2)}</span>
+                <span className="font-bold text-green-700">Bs {anticipo.toFixed(2)}</span>
               </div>
               <div className="flex justify-between pt-1 border-t border-purple-200/60 font-bold text-[#3C1C6C]">
                 <span>Saldo Pendiente:</span>
-                <span>${saldoPendiente.toFixed(2)}</span>
+                <span>Bs {saldoPendiente.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -343,6 +363,77 @@ export default function OrderDetailPage() {
             </div>
           ) : (
             <p className="text-xs text-slate-400 italic">No hay historial registrado para esta orden todavía.</p>
+          )}
+        </div>
+
+        {/* Historial Forense de Auditoría Anti-Fraude */}
+        <div className="space-y-4 pt-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-[#3C1C6C] flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" /> Registro de Auditoría Forense & Integridad
+            </h2>
+            {auditLogs.some((l) => l.accion === "MODIFICACION_MONTO") ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-700" /> Montos Modificados Tras Creación
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Registro Íntegro
+              </span>
+            )}
+          </div>
+
+          {auditLogs && auditLogs.length > 0 ? (
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
+              <table className="min-w-full text-xs text-left">
+                <thead className="bg-[#3C1C6C] text-white uppercase font-semibold">
+                  <tr>
+                    <th className="px-4 py-3">Fecha & Hora</th>
+                    <th className="px-4 py-3">Responsable</th>
+                    <th className="px-4 py-3">Acción</th>
+                    <th className="px-4 py-3">Valores Registrados</th>
+                    <th className="px-4 py-3">Motivo / Justificación</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {auditLogs.map((log) => (
+                    <tr key={log.id} className="hover:bg-slate-50/60">
+                      <td className="px-4 py-3 font-mono text-[11px] text-slate-500 whitespace-nowrap">
+                        {new Date(log.created_at).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="font-bold text-slate-800 block">{log.usuario_nombre || "Usuario"}</span>
+                        <span className="text-[10px] text-slate-500 capitalize bg-slate-100 px-1.5 py-0.5 rounded">
+                          {log.usuario_rol || "Rol"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          log.accion === "APROBACION" ? "bg-purple-100 text-[#3C1C6C]" :
+                          log.accion === "REGISTRO_ENTREGA" ? "bg-orange-100 text-orange-900" :
+                          log.accion === "MODIFICACION_MONTO" ? "bg-amber-100 text-amber-900 font-extrabold" :
+                          log.accion === "RECHAZO" ? "bg-red-100 text-red-900" :
+                          "bg-blue-100 text-blue-900"
+                        }`}>
+                          {log.accion}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 max-w-xs font-mono text-[11px] text-slate-600 truncate">
+                        {log.valor_nuevo || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-slate-700 italic">
+                        {log.motivo || "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 text-xs text-slate-500 flex items-center justify-between">
+              <span>No se registran eventos adicionales de auditoría para este pedido.</span>
+              <span className="text-[11px] text-slate-400 font-mono">auditoria_pedidos</span>
+            </div>
           )}
         </div>
 

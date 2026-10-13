@@ -832,7 +832,7 @@ export default function AdminNewOrderPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div className="md:col-span-1">
                   <label className="text-sm font-medium">
-                    Total <span className="text-red-500">*</span>
+                    Total (Bs) <span className="text-red-500">*</span>
                   </label>
                   <Input
                     ref={totalRef}
@@ -866,7 +866,7 @@ export default function AdminNewOrderPage() {
                   {mostrarAnticipo && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-sm font-medium">Anticipo</label>
+                        <label className="text-sm font-medium">Anticipo (Bs)</label>
                         <Input
                           type="number"
                           name="anticipo"
@@ -880,7 +880,7 @@ export default function AdminNewOrderPage() {
 
                       <div className="rounded-2xl border border-purple-200 bg-purple-50/70 dark:bg-purple-950/30 px-4 py-3">
                         <p className="text-xs font-semibold text-[#3C1C6C] dark:text-[#D0B9FF]">Saldo restante</p>
-                        <p className="text-xl font-black text-[#3C1C6C] dark:text-white">${saldoRestante.toFixed(2)}</p>
+                        <p className="text-xl font-black text-[#3C1C6C] dark:text-white">Bs {saldoRestante.toFixed(2)}</p>
                         {saldoRestante < 0 && <p className="text-xs text-rose-600 font-semibold">⚠️ Anticipo supera el total</p>}
                       </div>
                     </div>

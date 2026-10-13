@@ -12,6 +12,7 @@ import {
   User,
   LogOut,
   Sparkles,
+  ArrowLeft,
 } from "lucide-react";
 import Image from "next/image";
 import TechnicianNotifications from "@/components/notifications/TechnicianNotifications";
@@ -37,7 +38,7 @@ export default function TechnicianLayout({ children }: Props) {
   const [open, setOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [profile, setProfile] = useState<{ name?: string }>({});
+  const [profile, setProfile] = useState<{ name?: string; role?: string }>({});
   const router = useRouter();
   const pathname = usePathname();
 
@@ -57,11 +58,11 @@ export default function TechnicianLayout({ children }: Props) {
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("nombre")
+        .select("nombre, rol")
         .eq("id", user.id)
         .single();
 
-      if (profileData) setProfile({ name: profileData.nombre });
+      if (profileData) setProfile({ name: profileData.nombre, role: profileData.rol });
     }
 
     loadProfile();
@@ -126,6 +127,20 @@ export default function TechnicianLayout({ children }: Props) {
 
         {/* Navegación */}
         <nav className="flex-1 space-y-1.5 px-3 py-4 overflow-y-auto">
+          {profile?.role === "admin" && (
+            <div className="mb-3 pb-3 border-b border-purple-900/50">
+              <button
+                type="button"
+                onClick={() => router.push("/dashboard/admin/overview")}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-purple-950/80 border border-purple-500/50 text-purple-200 text-xs font-bold hover:bg-purple-900 transition-all shadow-md group"
+                title={!open ? "Volver a Administración" : undefined}
+              >
+                <ArrowLeft className="w-4 h-4 text-purple-300 group-hover:-translate-x-1 transition-transform shrink-0" />
+                {open && <span className="truncate">← Volver a Panel Admin</span>}
+              </button>
+            </div>
+          )}
+
           {navItems.map((item) => {
             const isActive = pathname === item.path;
             return (
@@ -237,6 +252,22 @@ export default function TechnicianLayout({ children }: Props) {
             </div>
 
             <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
+              {profile?.role === "admin" && (
+                <div className="mb-3 pb-3 border-b border-purple-900/50">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      router.push("/dashboard/admin/overview");
+                      setMobileOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl bg-purple-950/80 border border-purple-500/50 text-purple-200 text-sm font-bold hover:bg-purple-900 transition-all shadow-md"
+                  >
+                    <ArrowLeft className="w-4 h-4 text-purple-300 shrink-0" />
+                    <span>← Volver al Panel Admin</span>
+                  </button>
+                </div>
+              )}
+
               {navItems.map((item) => {
                 const isActive = pathname === item.path;
                 return (
@@ -324,6 +355,18 @@ export default function TechnicianLayout({ children }: Props) {
             <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 dark:bg-purple-950/60 text-[#3C1C6C] dark:text-[#D0B9FF] border border-purple-200 dark:border-purple-800/60">
               ● En Producción
             </span>
+            {profile?.role === "admin" && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => router.push("/dashboard/admin/overview")}
+                className="h-8 gap-1.5 text-xs font-bold text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900 rounded-xl"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">← Volver a Admin</span>
+                <span className="sm:hidden">Admin</span>
+              </Button>
+            )}
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">

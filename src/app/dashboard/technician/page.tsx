@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -102,7 +103,7 @@ function msToHuman(ms: number) {
 
 function money(n: number | null | undefined) {
   if (n == null || !Number.isFinite(Number(n))) return "—";
-  return `$${Number(n).toFixed(2)}`;
+  return `Bs ${Number(n).toFixed(2)}`;
 }
 
 function statusBadge(estado: TaskRow["estado"]) {
@@ -327,6 +328,28 @@ export default function TechnicianDashboard() {
   useEffect(() => {
     if (!userId) return;
     refreshAll();
+
+    const channel = supabase
+      .channel(`tech-tasks-realtime-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "historial_estaciones" },
+        () => {
+          refreshAll();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "pedidos" },
+        () => {
+          refreshAll();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, stationId, fromDate, toDate, myStatus]);
 
@@ -695,19 +718,6 @@ export default function TechnicianDashboard() {
                 <span className="font-medium">{p?.numero_caja || "—"}</span>
               </span>
             </p>
-
-            {(p?.total != null || p?.anticipo != null) && (
-              <p className="text-sm mt-1">
-                <span className="text-muted-foreground">Total:</span>{" "}
-                <span className="font-semibold">{money(p?.total)}</span>{" "}
-                <span className="text-muted-foreground">| Anticipo:</span>{" "}
-                <span className="font-semibold">{money(p?.anticipo)}</span>{" "}
-                <span className="text-muted-foreground">| Saldo:</span>{" "}
-                <span className="font-semibold">
-                  {saldo != null ? money(saldo) : "—"}
-                </span>
-              </p>
-            )}
           </div>
         </div>
 
@@ -768,9 +778,16 @@ export default function TechnicianDashboard() {
           </p>
         </div>
 
-        <Button variant="outline" onClick={refreshAll} className="rounded-xl border-slate-200 self-start sm:self-auto">
-          <RefreshCcw className="w-4 h-4 mr-2" /> Actualizar
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link href="/dashboard/attendance">
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-sm gap-2">
+              <Clock className="w-4 h-4" /> Marcar Asistencia (GPS & Selfie)
+            </Button>
+          </Link>
+          <Button variant="outline" onClick={refreshAll} className="rounded-xl border-slate-200">
+            <RefreshCcw className="w-4 h-4 mr-2" /> Actualizar
+          </Button>
+        </div>
       </div>
 
       <Card>
