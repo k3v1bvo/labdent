@@ -39,6 +39,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { ClinicLocationPickerModal } from "@/components/location/ClinicLocationPickerModal";
+import { ClinicLocationNavigatorModal } from "@/components/location/ClinicLocationNavigatorModal";
 
 type ProfileRow = {
   id: string;
@@ -78,6 +80,10 @@ export function ProfileDialog({
   const [clinica, setClinica] = useState("");
   const [especialidad, setEspecialidad] = useState("Rehabilitación Oral");
   const [direccionConsultorio, setDireccionConsultorio] = useState("");
+  const [latitudClinica, setLatitudClinica] = useState<number | null>(null);
+  const [longitudClinica, setLongitudClinica] = useState<number | null>(null);
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [showMapNavigator, setShowMapNavigator] = useState(false);
   const [doctorTotalPedidos, setDoctorTotalPedidos] = useState<number | null>(null);
 
   // Campos específicos de Técnico
@@ -125,6 +131,12 @@ export function ProfileDialog({
 
       // Cargar datos guardados en user_metadata
       if (meta.direccion_consultorio) setDireccionConsultorio(meta.direccion_consultorio);
+      if (meta.latitud_clinica !== undefined && meta.latitud_clinica !== null) {
+        setLatitudClinica(Number(meta.latitud_clinica));
+      }
+      if (meta.longitud_clinica !== undefined && meta.longitud_clinica !== null) {
+        setLongitudClinica(Number(meta.longitud_clinica));
+      }
       if (meta.area_taller) setAreaTaller(meta.area_taller);
       if (meta.turno) {
         setTurnoTecnico(meta.turno);
@@ -287,6 +299,8 @@ export function ProfileDialog({
     await supabase.auth.updateUser({
       data: {
         direccion_consultorio: direccionConsultorio.trim(),
+        latitud_clinica: latitudClinica,
+        longitud_clinica: longitudClinica,
         area_taller: areaTaller.trim(),
         turno: profile.rol === "tecnico" ? turnoTecnico.trim() : turnoSecretaria.trim(),
         puesto: puestoSecretaria.trim(),
@@ -547,17 +561,41 @@ export function ProfileDialog({
                         />
                       </div>
 
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5 text-[#A57CFA]" />
-                          Dirección del Consultorio (Para entregas y mensajería)
-                        </label>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <MapPin className="w-3.5 h-3.5 text-[#A57CFA]" />
+                            Dirección del Consultorio
+                          </label>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShowMapPicker(true)}
+                            className="h-7 px-2.5 text-[11px] font-bold text-[#3C1C6C] bg-purple-50 hover:bg-purple-100 border-purple-200 rounded-lg gap-1 cursor-pointer"
+                          >
+                            <MapPin className="w-3 h-3 text-[#A57CFA]" />
+                            {latitudClinica ? "📍 Modificar Pin GPS" : "📍 Fijar Pin en Mapa (GPS)"}
+                          </Button>
+                        </div>
                         <Input
                           value={direccionConsultorio}
                           onChange={(e) => setDireccionConsultorio(e.target.value)}
                           placeholder="Ej: Av. Ballivián #456, Calacoto, Piso 2"
                           className="rounded-xl border-slate-200 focus:border-[#3C1C6C] bg-white text-sm h-11"
                         />
+                        {latitudClinica && longitudClinica && (
+                          <div className="flex items-center justify-between text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-medium">
+                            <span>✓ Coordenadas GPS guardadas: {latitudClinica.toFixed(4)}, {longitudClinica.toFixed(4)}</span>
+                            <button
+                              type="button"
+                              onClick={() => setShowMapNavigator(true)}
+                              className="text-emerald-800 font-bold underline cursor-pointer hover:text-emerald-950"
+                            >
+                              Probar ruta
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -753,6 +791,26 @@ export function ProfileDialog({
                                 <span className="text-slate-400 font-normal italic">Sin registrar</span>
                               )}
                             </p>
+                            {latitudClinica && longitudClinica ? (
+                              <button
+                                type="button"
+                                onClick={() => setShowMapNavigator(true)}
+                                className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#3C1C6C] hover:bg-[#2C1450] text-white text-[11px] font-bold shadow-2xs transition-all cursor-pointer"
+                              >
+                                🚗 Abrir en Maps / Yango / InDrive
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  startEdit();
+                                  setShowMapPicker(true);
+                                }}
+                                className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold text-[#3C1C6C] bg-purple-100 hover:bg-purple-200 cursor-pointer"
+                              >
+                                📍 Fijar en Mapa GPS
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1022,6 +1080,32 @@ export function ProfileDialog({
           </div>
         )}
       </DialogContent>
+
+      {/* Modales de Mapa Interactivo y Navegación para Clínicas */}
+      <ClinicLocationPickerModal
+        open={showMapPicker}
+        onOpenChange={setShowMapPicker}
+        clinicaNombre={clinica || profile?.nombre || "Clínica Dental"}
+        initialLat={latitudClinica}
+        initialLng={longitudClinica}
+        initialAddress={direccionConsultorio}
+        onConfirm={({ direccion, lat, lng }) => {
+          setDireccionConsultorio(direccion);
+          setLatitudClinica(lat);
+          setLongitudClinica(lng);
+        }}
+      />
+
+      {latitudClinica && longitudClinica && (
+        <ClinicLocationNavigatorModal
+          open={showMapNavigator}
+          onOpenChange={setShowMapNavigator}
+          clinicaNombre={clinica || profile?.nombre || "Clínica Dental"}
+          direccion={direccionConsultorio}
+          lat={latitudClinica}
+          lng={longitudClinica}
+        />
+      )}
     </Dialog>
   );
 }
