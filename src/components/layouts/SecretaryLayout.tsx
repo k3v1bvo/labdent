@@ -113,27 +113,27 @@ export default function SecretaryLayout({
         </button>
 
         {/* Brand Logo Oficial Guisela */}
-        <div className="h-18 flex items-center px-4 border-b border-purple-950/60 gap-3 bg-[#130A24]/60">
-          <div className="relative w-10 h-10 rounded-2xl bg-gradient-to-br from-[#3C1C6C] to-[#6329B7] p-1.5 flex items-center justify-center border border-[#A57CFA]/50 shadow-md shadow-purple-950/40 shrink-0">
+        <div className="h-18 flex items-center px-4 border-b border-purple-950/60 gap-3 bg-[#130A24]/70">
+          <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-[#3C1C6C] via-[#4D248B] to-[#6329B7] p-1.5 flex items-center justify-center border border-[#A57CFA]/40 shadow-md shadow-purple-950/40 shrink-0">
             <Image
-              src="/images/brand/guisela-symbol-white.png"
-              alt="Guisela"
-              width={34}
-              height={34}
-              className="object-contain"
+              src="/images/brand/guisela-emblem-silver.png"
+              alt="Guisela Dental"
+              width={38}
+              height={38}
+              className="w-full h-full object-contain drop-shadow-sm"
               unoptimized
             />
           </div>
           {open && (
             <div className="flex flex-col min-w-0">
-              <span className="font-black text-lg tracking-tight text-white flex items-center gap-2">
+              <span className="font-black text-base tracking-tight text-white flex items-center gap-2 leading-none">
                 Guisela
-                <span className="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                <span className="text-[9px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full bg-blue-500/25 text-blue-200 border border-blue-400/40 shadow-xs">
                   RECEPCIÓN
                 </span>
               </span>
-              <span className="text-xs text-purple-200/70 truncate font-medium">
-                Gestión & Secretaría
+              <span className="text-[11px] text-purple-200/80 truncate font-semibold mt-1">
+                Gestión & Logística
               </span>
             </div>
           )}
@@ -233,24 +233,24 @@ export default function SecretaryLayout({
           <div className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-slate-900 border-r border-slate-800 text-slate-200 z-50 flex flex-col shadow-2xl animate-in slide-in-from-left duration-200">
             <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800">
               <div className="flex items-center gap-3">
-                <div className="relative w-9 h-9 rounded-xl bg-purple-950/60 p-1 flex items-center justify-center border border-[#A57CFA]/30 shrink-0">
+                <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-[#3C1C6C] via-[#4D248B] to-[#6329B7] p-1.5 flex items-center justify-center border border-[#A57CFA]/40 shadow-md shrink-0">
                   <Image
-                    src="/images/brand/guisela-symbol-white.png"
-                    alt="Guisela"
+                    src="/images/brand/guisela-emblem-silver.png"
+                    alt="Guisela Dental"
                     width={32}
                     height={32}
-                    className="object-contain"
+                    className="w-full h-full object-contain drop-shadow-sm"
                     unoptimized
                   />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-black text-sm text-white flex items-center gap-1.5">
+                  <span className="font-black text-sm text-white flex items-center gap-1.5 leading-none">
                     Guisela
-                    <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-[#A57CFA]/20 text-[#D0B9FF] border border-[#A57CFA]/30">
+                    <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-blue-500/20 text-blue-200 border border-blue-400/30">
                       RECEPCIÓN
                     </span>
                   </span>
-                  <span className="text-[10px] text-slate-400">Atención y Pedidos</span>
+                  <span className="text-[11px] text-purple-200/80 mt-0.5">Atención y Pedidos</span>
                 </div>
               </div>
 

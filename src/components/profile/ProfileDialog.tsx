@@ -422,27 +422,32 @@ export function ProfileDialog({
         ) : (
           <div className="flex flex-col">
             {/* 1. Header Banner Superior con Gradiente Real Guisela */}
-            <div className="relative h-28 bg-gradient-to-r from-[#1B0B2E] via-[#3C1C6C] to-[#6329B7] p-5 flex items-start justify-between text-white overflow-hidden shrink-0">
-              <div className="absolute -top-10 -right-10 w-36 h-36 bg-[#A57CFA]/20 rounded-full blur-xl pointer-events-none" />
+            <div className="relative h-32 bg-gradient-to-r from-[#1B0B2E] via-[#3C1C6C] to-[#6329B7] p-5 pr-14 flex items-start justify-between text-white overflow-hidden shrink-0">
+              <div className="absolute -top-10 -right-10 w-44 h-44 bg-[#A57CFA]/20 rounded-full blur-2xl pointer-events-none" />
 
-              <div className="flex items-center gap-2 relative z-10">
-                <div className="relative w-7 h-7 rounded-lg bg-white/10 p-1 flex items-center justify-center border border-white/20">
+              <div className="flex items-center gap-2.5 relative z-10">
+                <div className="relative w-8 h-8 rounded-xl bg-white/15 p-1 flex items-center justify-center border border-white/25 shadow-xs shrink-0">
                   <Image
-                    src="/images/brand/guisela-symbol-white.png"
-                    alt="Guisela"
-                    width={24}
-                    height={24}
-                    className="object-contain"
+                    src="/images/brand/guisela-emblem-silver.png"
+                    alt="Guisela Dental"
+                    width={28}
+                    height={28}
+                    className="w-full h-full object-contain drop-shadow-xs"
                     unoptimized
                   />
                 </div>
-                <span className="text-xs font-black tracking-wider text-purple-200 uppercase">
-                  Guisela Dental
-                </span>
+                <div>
+                  <span className="text-xs font-black tracking-wider text-white uppercase block leading-tight">
+                    Guisela Dental
+                  </span>
+                  <span className="text-[10px] text-purple-200/80 font-medium block leading-tight">
+                    Sistema Integral & CAD/CAM
+                  </span>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 relative z-10">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 text-[11px] font-bold text-white border border-white/20 backdrop-blur-xs">
+              <div className="flex items-center gap-2 relative z-10 mr-1">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 text-[11px] font-bold text-emerald-300 border border-emerald-400/30 backdrop-blur-xs shadow-xs">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   Sesión Activa
                 </span>
