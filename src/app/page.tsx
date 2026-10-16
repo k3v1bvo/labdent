@@ -142,25 +142,27 @@ export default function LandingPage() {
       {/* ========================================================= */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-purple-100/80 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          {/* Logo Primario Flotante con Halo que sobresale hacia abajo */}
-          <Link href="/" className="flex items-center gap-3 group relative py-1">
-            <div className="relative flex items-center">
-              {/* Halo protector suave: Aura luminosa para que el diente y texto resalten sobre fotos al scrollear */}
+          {/* Logo Primario Oficial — Muela artística con halo armónico que sobresale sutilmente */}
+          <Link href="/" className="flex items-center group relative z-20">
+            <div className="relative flex items-center py-1">
+              {/* Halo protector suave: Aura luminosa blanca-violeta que acompaña la raíz del diente */}
               <div
-                className="absolute -inset-x-3 -top-2 -bottom-5 bg-gradient-to-b from-white/95 via-white/85 to-purple-50/75 rounded-3xl blur-md pointer-events-none opacity-90 group-hover:opacity-100 transition-opacity"
+                className="absolute -left-2 -bottom-2.5 w-24 sm:w-28 h-14 bg-white/90 rounded-2xl blur-xs pointer-events-none shadow-[0_8px_18px_-4px_rgba(60,28,108,0.16)]"
                 aria-hidden="true"
               />
 
-              {/* Logo con escala y desplazamiento vertical para que la muela sobresalga abajo */}
-              <Image
-                src="/images/brand/guisela-logo-primary.png"
-                alt="Guísela Laboratorio Dental"
-                width={500}
-                height={160}
-                className="relative z-10 h-22 sm:h-25 w-auto object-contain scale-110 sm:scale-120 origin-left translate-y-2.5 sm:translate-y-3 drop-shadow-[0_6px_16px_rgba(60,28,108,0.18)] drop-shadow-[0_2px_6px_rgba(255,255,255,0.9)] group-hover:scale-125 transition-transform duration-300"
-                priority
-                unoptimized
-              />
+              {/* Logo 100% completo, nítido y legible en perfecta armonía */}
+              <div className="relative z-10 w-48 sm:w-56 h-20 flex items-center">
+                <Image
+                  src="/images/brand/guisela-logo-primary.png"
+                  alt="Guísela Laboratorio Dental"
+                  width={590}
+                  height={330}
+                  className="w-full h-auto max-h-[84px] object-contain object-left translate-y-1 sm:translate-y-1.5 drop-shadow-[0_4px_10px_rgba(60,28,108,0.12)] group-hover:scale-102 transition-transform duration-200"
+                  priority
+                  unoptimized
+                />
+              </div>
             </div>
           </Link>
 
