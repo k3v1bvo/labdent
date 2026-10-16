@@ -141,16 +141,16 @@ export default function LandingPage() {
       {/* 1. NAVBAR SUPERIOR — Logo Primario a Color */}
       {/* ========================================================= */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-purple-100/80 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          {/* Logo Primario Oficial */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-24 sm:h-28 flex items-center justify-between">
+          {/* Logo Primario Oficial (Tamaño ampliado al doble) */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative h-13 w-52 sm:w-60 flex items-center">
+            <div className="relative h-20 sm:h-24 w-72 sm:w-80 flex items-center">
               <Image
                 src="/images/brand/guisela-logo-primary.png"
                 alt="Guisela Laboratorio Dental"
-                width={280}
-                height={85}
-                className="h-13 w-auto object-contain group-hover:scale-102 transition-transform"
+                width={500}
+                height={160}
+                className="h-20 sm:h-24 w-auto object-contain group-hover:scale-102 transition-transform"
                 priority
                 unoptimized
               />
