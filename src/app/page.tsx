@@ -141,28 +141,19 @@ export default function LandingPage() {
       {/* 1. NAVBAR SUPERIOR — Logo Primario a Color */}
       {/* ========================================================= */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-purple-100/80 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          {/* Logo Primario Oficial — Muela artística con halo armónico que sobresale sutilmente */}
-          <Link href="/" className="flex items-center group relative z-20">
-            <div className="relative flex items-center py-1">
-              {/* Halo protector suave: Aura luminosa blanca-violeta que acompaña la raíz del diente */}
-              <div
-                className="absolute -left-2 -bottom-2.5 w-24 sm:w-28 h-14 bg-white/90 rounded-2xl blur-xs pointer-events-none shadow-[0_8px_18px_-4px_rgba(60,28,108,0.16)]"
-                aria-hidden="true"
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-22 sm:h-24 flex items-center justify-between">
+          {/* Logo Primario Oficial */}
+          <Link href="/" className="flex items-center group relative z-20 py-1">
+            <div className="relative flex items-center h-18 sm:h-20 w-64 sm:w-72">
+              <Image
+                src="/images/brand/guisela-logo-primary.png"
+                alt="Guísela Laboratorio Dental"
+                width={590}
+                height={330}
+                className="w-full h-full object-contain object-left group-hover:scale-105 transition-all duration-200 drop-shadow-xs"
+                priority
+                unoptimized
               />
-
-              {/* Logo 100% completo, nítido y legible en perfecta armonía */}
-              <div className="relative z-10 w-48 sm:w-56 h-20 flex items-center">
-                <Image
-                  src="/images/brand/guisela-logo-primary.png"
-                  alt="Guísela Laboratorio Dental"
-                  width={590}
-                  height={330}
-                  className="w-full h-auto max-h-[84px] object-contain object-left translate-y-1 sm:translate-y-1.5 drop-shadow-[0_4px_10px_rgba(60,28,108,0.12)] group-hover:scale-102 transition-transform duration-200"
-                  priority
-                  unoptimized
-                />
-              </div>
             </div>
           </Link>
 

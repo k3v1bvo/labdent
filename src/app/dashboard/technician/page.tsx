@@ -312,7 +312,7 @@ export default function TechnicianDashboard() {
       if (isGoogleUser && user.email !== "tecnico@labdent.com") {
         const { data: teCheck } = await supabase
           .from("tecnico_estacion")
-          .select("id")
+          .select("estacion_id")
           .eq("tecnico_id", user.id)
           .maybeSingle();
 

@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -410,6 +411,7 @@ export function ProfileDialog({
       <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto p-0 rounded-3xl border border-purple-200 shadow-2xl bg-white">
         <DialogHeader className="sr-only">
           <DialogTitle>Perfil del Usuario</DialogTitle>
+          <DialogDescription>Detalles y ajustes del perfil de usuario en Guisela Dental</DialogDescription>
         </DialogHeader>
 
         {loading ? (
@@ -818,17 +820,17 @@ export function ProfileDialog({
                       {/* Accesos Rápidos de Doctor */}
                       <div className="flex items-center gap-2 pt-1">
                         <Link
-                          href="/dashboard/pedidos/nuevo"
+                          href="/dashboard/doctors/new-order"
                           onClick={() => onOpenChange(false)}
-                          className="flex-1 flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-[#3C1C6C] text-white hover:bg-[#2C1550] text-xs font-bold transition-all shadow-xs"
+                          className="flex-1 flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-[#3C1C6C] text-white hover:bg-[#2C1550] text-xs font-bold transition-all shadow-xs cursor-pointer"
                         >
                           <PlusCircle className="w-3.5 h-3.5" />
                           Nuevo Pedido
                         </Link>
                         <Link
-                          href="/dashboard/pedidos"
+                          href="/dashboard/doctors/orders"
                           onClick={() => onOpenChange(false)}
-                          className="flex-1 flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-purple-100 text-[#3C1C6C] hover:bg-purple-200 text-xs font-bold transition-all"
+                          className="flex-1 flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-purple-100 text-[#3C1C6C] hover:bg-purple-200 text-xs font-bold transition-all cursor-pointer"
                         >
                           <ClipboardList className="w-3.5 h-3.5" />
                           Mis Pedidos {doctorTotalPedidos !== null && `(${doctorTotalPedidos})`}

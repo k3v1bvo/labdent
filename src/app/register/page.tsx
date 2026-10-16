@@ -151,14 +151,14 @@ export default function RegisterPage() {
               <ShieldCheck className="w-3.5 h-3.5 text-[#A57CFA]" /> Portal de Clínicas Odontológicas
             </div>
 
-            <div className="mb-8">
+            <div className="relative h-18 w-52 mb-6">
               <Image
                 src="/images/brand/guisela-logo-secondary-dark.png"
                 alt="Guisela Laboratorio Dental"
-                width={260}
-                height={80}
-                className="h-16 w-auto object-contain"
+                fill
+                className="object-contain"
                 priority
+                unoptimized
               />
             </div>
 
@@ -203,14 +203,14 @@ export default function RegisterPage() {
 
           <Card className="w-full rounded-3xl shadow-xl shadow-purple-900/5 border border-purple-100 bg-white dark:bg-gray-900 overflow-hidden">
             <CardHeader className="space-y-2 pt-6 sm:pt-8 pb-3 sm:pb-4 px-4 sm:px-8 text-center">
-              <div className="flex justify-center mb-2 lg:hidden">
+              <div className="relative h-14 sm:h-16 w-48 sm:w-52 mx-auto mb-2 lg:hidden">
                 <Image
                   src="/images/brand/guisela-logo-primary.png"
                   alt="Guisela Laboratorio Dental"
-                  width={200}
-                  height={60}
-                  className="h-12 w-auto object-contain"
+                  fill
+                  className="object-contain"
                   priority
+                  unoptimized
                 />
               </div>
               <CardTitle className="text-xl sm:text-2xl font-black text-[#3C1C6C] tracking-tight">
