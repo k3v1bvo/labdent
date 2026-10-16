@@ -6,9 +6,15 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 
 import StationPickerDialog, { Station } from "@/components/stations/StationPickerDialog";
+import TaskDetailsDialog, {
+  type TaskRowLite,
+} from "@/components/technician/TaskDetailsDialog";
 
 import {
   Dialog,
@@ -17,14 +23,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-
-import { motion, AnimatePresence } from "framer-motion";
-
-import TaskDetailsDialog, {
-  type TaskRowLite,
-} from "@/components/technician/TaskDetailsDialog";
 
 import {
   Clock,
@@ -44,34 +42,43 @@ import {
   CalendarDays,
   Filter,
   RefreshCcw,
+  Sparkles,
+  Cpu,
+  Flame,
+  Sun,
+  ShieldCheck,
+  Truck,
+  Wrench,
+  Inbox,
+  Play,
+  Undo2,
+  Search,
+  CheckCheck,
+  Check,
+  ChevronRight,
+  ExternalLink,
 } from "lucide-react";
 
 type PedidoLite = {
   id: string;
   paciente_nombre: string | null;
   paciente_telefono?: string | null;
-
   doctor_nombre?: string | null;
   doctor_telefono?: string | null;
-
   numero_requerimiento?: string | null;
-
   trabajo_realizar?: string | null;
   pieza_numero?: string | null;
   color_pieza?: string | null;
   colimetro?: string | null;
   numero_caja?: string | null;
-
   total?: number | null;
   anticipo?: number | null;
-
   observaciones?: string | null;
-
   fecha_ingreso?: string | null;
   hora_ingreso?: string | null;
 };
 
-type EstacionLite = { nombre: string; descripcion?: string | null };
+type EstacionLite = { nombre: string; descripcion?: string | null; orden?: number };
 
 type TaskRow = {
   id: string;
@@ -83,11 +90,22 @@ type TaskRow = {
   pedidos?: PedidoLite | null;
 };
 
+const STATION_ICONS: Record<number, any> = {
+  1: Cpu,
+  2: Flame,
+  3: Sparkles,
+  4: Sun,
+  5: ShieldCheck,
+};
+
 function formatDateTime(d: string | null | undefined) {
   if (!d) return "—";
   const date = new Date(d);
   if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleString();
+  return date.toLocaleString("es-BO", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
 }
 
 function msToHuman(ms: number) {
@@ -102,40 +120,37 @@ function msToHuman(ms: number) {
   return `${s}s`;
 }
 
-function money(n: number | null | undefined) {
-  if (n == null || !Number.isFinite(Number(n))) return "—";
-  return `Bs ${Number(n).toFixed(2)}`;
-}
-
 function statusBadge(estado: TaskRow["estado"]) {
-  const base =
-    "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium";
   switch (estado) {
     case "pendiente":
       return (
-        <span className={`${base} bg-gray-100 text-gray-700`}>
-          <Clock className="w-3 h-3" /> Pendiente
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+          <Clock className="w-3 h-3" /> En espera
         </span>
       );
     case "en_proceso":
       return (
-        <span className={`${base} bg-blue-100 text-blue-800`}>
-          <PlayCircle className="w-3 h-3" /> En proceso
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-[#3C1C6C] border border-purple-300 animate-pulse">
+          <PlayCircle className="w-3 h-3" /> En mesa activa
         </span>
       );
     case "completado":
       return (
-        <span className={`${base} bg-green-100 text-green-800`}>
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
           <CheckCircle2 className="w-3 h-3" /> Completado
         </span>
       );
     case "devuelto":
       return (
-        <span className={`${base} bg-red-100 text-red-800`}>❌ Devuelto</span>
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
+          ❌ Devuelto
+        </span>
       );
     default:
       return (
-        <span className={`${base} bg-gray-100 text-gray-700`}>{estado}</span>
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+          {estado}
+        </span>
       );
   }
 }
@@ -177,38 +192,49 @@ export default function TechnicianDashboard() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
 
   const [stations, setStations] = useState<Station[]>([]);
   const [stationId, setStationId] = useState<string | null>(null);
   const [stationName, setStationName] = useState<string | null>(null);
+  const [switchingStation, setSwitchingStation] = useState(false);
 
   const [queueTasks, setQueueTasks] = useState<TaskRow[]>([]);
   const [myTasks, setMyTasks] = useState<TaskRow[]>([]);
 
-  const canUseQueue = useMemo(
-    () => !!userId && !!stationId,
-    [userId, stationId]
-  );
+  // Tabs de navegación interna
+  const [activeTab, setActiveTab] = useState<"queue" | "in_process" | "all">("in_process");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // ✅ Overlay éxito
+  // Overlay éxito
   const [successOverlay, setSuccessOverlay] = useState<null | string>(null);
   function showSuccess(msg: string) {
     setSuccessOverlay(msg);
     setTimeout(() => setSuccessOverlay(null), 1400);
   }
 
-  // ✅ filtros "Mis tareas"
-  const [fromDate, setFromDate] = useState<string>(""); // YYYY-MM-DD
-  const [toDate, setToDate] = useState<string>(""); // YYYY-MM-DD
-  const [myStatus, setMyStatus] = useState<"" | TaskRow["estado"]>(""); // opcional
+  // Filtros "Todas mis tareas"
+  const [fromDate, setFromDate] = useState<string>("");
+  const [toDate, setToDate] = useState<string>("");
+  const [myStatus, setMyStatus] = useState<"" | TaskRow["estado"]>("");
 
-  // ✅ Dialog comentario
+  // Dialog comentario técnico
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [commentTaskId, setCommentTaskId] = useState<string | null>(null);
   const [commentAction, setCommentAction] = useState<"save" | "advance">("save");
   const commentRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Dialog detalles
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailTask, setDetailTask] = useState<TaskRowLite | null>(null);
+
+  function openDetail(task: TaskRow) {
+    setDetailTask(task as any);
+    setDetailOpen(true);
+  }
 
   function openCommentDialog(task: TaskRow, action: "save" | "advance") {
     setCommentTaskId(task.id);
@@ -226,7 +252,7 @@ export default function TechnicianDashboard() {
     if (!commentTaskId) return;
     const txt = commentText.trim();
     if (!txt) {
-      toast.warning("Escribe un comentario antes de guardar.");
+      toast.warning("Escribe una anotación antes de guardar.");
       return;
     }
 
@@ -237,12 +263,12 @@ export default function TechnicianDashboard() {
 
     if (error) {
       console.error(error);
-      toast.error(`Error guardando comentario: ${error.message}`);
+      toast.error(`Error guardando anotación: ${error.message}`);
       return;
     }
 
     setCommentOpen(false);
-    showSuccess("✅ Comentario guardado");
+    showSuccess("✅ Anotación técnica guardada");
     await refreshAll();
   }
 
@@ -262,16 +288,66 @@ export default function TechnicianDashboard() {
     }
 
     setCommentOpen(false);
-    showSuccess("✅ Avanzado a la siguiente estación");
+    showSuccess("✅ Trabajo completado y avanzado a la siguiente estación");
     await refreshAll();
   }
 
-  // ✅ Detalles (ahora con componente reutilizable)
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [detailTask, setDetailTask] = useState<TaskRowLite | null>(null);
-  function openDetail(task: TaskRow) {
-    setDetailTask(task as any);
-    setDetailOpen(true);
+  async function tomarTarea(historialId: string) {
+    const { error } = await supabase.rpc("rpc_tomar_tarea", {
+      p_historial_id: historialId,
+    });
+
+    if (error) {
+      console.error("rpc_tomar_tarea error:", error);
+      toast.error(`❌ No se pudo tomar: ${error.message}`);
+      return;
+    }
+
+    showSuccess("⚡ Tarea tomada a tu mesa de trabajo");
+    setActiveTab("in_process");
+    await refreshAll();
+  }
+
+  async function soltarTarea(historialId: string) {
+    const { error } = await supabase.rpc("rpc_soltar_tarea", {
+      p_historial_id: historialId,
+      p_comentario: null,
+    });
+
+    if (error) {
+      console.error("rpc_soltar_tarea error:", error);
+      toast.error(`❌ No se pudo soltar: ${error.message}`);
+      return;
+    }
+
+    showSuccess("Tarea devuelta a la cola");
+    await refreshAll();
+  }
+
+  // 1-Click Switch de Estación
+  async function handleQuickStationSwitch(targetStationId: string) {
+    if (targetStationId === stationId) return;
+    setSwitchingStation(true);
+    try {
+      const { error } = await supabase.rpc("rpc_cambiar_estacion", {
+        p_nueva_estacion_id: targetStationId,
+      });
+
+      if (error) {
+        toast.error(`Error cambiando estación: ${error.message}`);
+        return;
+      }
+
+      const st = stations.find((s) => s.id === targetStationId);
+      setStationId(targetStationId);
+      setStationName(st?.nombre ?? null);
+      toast.success(`⚡ Estación activa cambiada a: ${st?.nombre || "Estación"}`);
+      await refreshAll();
+    } catch (err: any) {
+      toast.error("Error al cambiar de estación");
+    } finally {
+      setSwitchingStation(false);
+    }
   }
 
   useEffect(() => {
@@ -294,43 +370,8 @@ export default function TechnicianDashboard() {
         .eq("id", user.id)
         .maybeSingle();
 
-      if (profile?.rol === "doctor") {
-        router.replace("/dashboard/doctors/orders");
-        return;
-      }
-
-      if (profile?.rol === "secretaria") {
-        router.replace("/dashboard/secretary/orders");
-        return;
-      }
-
-      // Si es un usuario de Google sin estación asignada que cayó aquí por error
-      const isGoogleUser =
-        user.app_metadata?.provider === "google" ||
-        user.identities?.some((id: any) => id.provider === "google");
-
-      if (isGoogleUser && user.email !== "tecnico@labdent.com") {
-        const { data: teCheck } = await supabase
-          .from("tecnico_estacion")
-          .select("estacion_id")
-          .eq("tecnico_id", user.id)
-          .maybeSingle();
-
-        if (!teCheck) {
-          // Auto-reparar a Doctor
-          await supabase.from("profiles").update({ rol: "doctor" }).eq("id", user.id);
-          await supabase.from("doctores").upsert({
-            profile_id: user.id,
-            nombre: profile?.nombre || user.user_metadata?.full_name || "Doctor",
-            clinica: `Clínica Dr(a). ${profile?.nombre || user.user_metadata?.full_name || "Doctor"}`,
-            especialidad: "Rehabilitación Oral",
-          });
-          router.replace("/dashboard/doctors/orders");
-          return;
-        }
-      }
-
       setUserId(user.id);
+      setUserName(profile?.nombre || "Técnico Dental");
 
       const { data: ests, error: estErr } = await supabase
         .from("estaciones")
@@ -359,7 +400,6 @@ export default function TechnicianDashboard() {
       setStationId(currentStationId);
       setStationName(currentStationName);
 
-      // ✅ defaults pro: últimos 7 días para "Mis tareas"
       const today = todayISO();
       const from = addDaysISO(-7);
       setFromDate(from);
@@ -399,14 +439,15 @@ export default function TechnicianDashboard() {
 
   async function refreshAll() {
     if (!userId) return;
+    setRefreshing(true);
 
-    // ✅ Mis tareas con filtros
+    // 1) Mis tareas
     let mineQuery = supabase
       .from("historial_estaciones")
       .select(
         `
         id, estado, comentarios, fecha_inicio, fecha_fin,
-        estaciones ( nombre, descripcion ),
+        estaciones ( nombre, descripcion, orden ),
         pedidos (
           id,
           paciente_nombre,
@@ -441,632 +482,798 @@ export default function TechnicianDashboard() {
     }
 
     const { data: mine, error: mineErr } = await mineQuery;
-
-    if (mineErr) {
-      console.error("mineErr:", mineErr);
-      toast.error("❌ Error cargando tus tareas");
-      return;
-    }
+    if (mineErr) console.error("mineErr:", mineErr);
     setMyTasks((mine as any) || []);
 
-    // ✅ Cola estación
-    if (!stationId) {
-      setQueueTasks([]);
-      return;
-    }
-
-    const { data: queue, error: qErr } = await supabase
-      .from("historial_estaciones")
-      .select(
+    // 2) Cola de estación
+    if (stationId) {
+      const { data: queue, error: qErr } = await supabase
+        .from("historial_estaciones")
+        .select(
+          `
+          id, estado, comentarios, fecha_inicio, fecha_fin,
+          estaciones ( nombre, descripcion, orden ),
+          pedidos (
+            id,
+            paciente_nombre,
+            paciente_telefono,
+            doctor_nombre,
+            doctor_telefono,
+            numero_requerimiento,
+            trabajo_realizar,
+            pieza_numero,
+            color_pieza,
+            colimetro,
+            numero_caja,
+            total,
+            anticipo,
+            observaciones,
+            fecha_ingreso,
+            hora_ingreso
+          )
         `
-        id, estado, comentarios, fecha_inicio, fecha_fin,
-        estaciones ( nombre, descripcion ),
-        pedidos (
-          id,
-          paciente_nombre,
-          paciente_telefono,
-          doctor_nombre,
-          doctor_telefono,
-          numero_requerimiento,
-          trabajo_realizar,
-          pieza_numero,
-          color_pieza,
-          colimetro,
-          numero_caja,
-          total,
-          anticipo,
-          observaciones,
-          fecha_ingreso,
-          hora_ingreso
         )
-      `
-      )
-      .is("tecnico_id", null)
-      .eq("estado", "pendiente")
-      .eq("estacion_id", stationId)
-      .order("fecha_inicio", { ascending: false });
+        .is("tecnico_id", null)
+        .eq("estado", "pendiente")
+        .eq("estacion_id", stationId)
+        .order("fecha_inicio", { ascending: true });
 
-    if (qErr) {
-      console.error("qErr:", qErr);
-      toast.error("❌ Error cargando cola de tu estación");
-      return;
+      if (qErr) console.error("qErr:", qErr);
+      setQueueTasks((queue as any) || []);
+    } else {
+      setQueueTasks([]);
     }
-    setQueueTasks((queue as any) || []);
+
+    setRefreshing(false);
   }
 
-  async function tomarTarea(historialId: string) {
-    const { error } = await supabase.rpc("rpc_tomar_tarea", {
-      p_historial_id: historialId,
+  // Tareas en proceso activo de mi mesa
+  const activeTasks = useMemo(() => {
+    return myTasks.filter((t) => t.estado === "en_proceso");
+  }, [myTasks]);
+
+  // Completadas hoy
+  const completedTodayCount = useMemo(() => {
+    const today = todayISO();
+    return myTasks.filter(
+      (t) => t.estado === "completado" && t.fecha_fin && t.fecha_fin.startsWith(today)
+    ).length;
+  }, [myTasks]);
+
+  // Filtro de búsqueda
+  function filterTasksBySearch(list: TaskRow[]) {
+    if (!searchQuery.trim()) return list;
+    const q = searchQuery.toLowerCase().trim();
+    return list.filter((t) => {
+      const p = t.pedidos;
+      const blob = [
+        p?.paciente_nombre,
+        p?.numero_requerimiento,
+        p?.numero_caja,
+        p?.doctor_nombre,
+        p?.trabajo_realizar,
+        p?.pieza_numero,
+        p?.color_pieza,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return blob.includes(q);
     });
-
-    if (error) {
-      console.error("rpc_tomar_tarea error:", error);
-      toast.error(`❌ No se pudo tomar: ${error.message}`);
-      return;
-    }
-
-    showSuccess("✅ Tarea tomada");
-    await refreshAll();
   }
 
-  async function soltarTarea(historialId: string) {
-    const { error } = await supabase.rpc("rpc_soltar_tarea", {
-      p_historial_id: historialId,
-      p_comentario: null,
-    });
+  const filteredQueue = useMemo(
+    () => filterTasksBySearch(queueTasks),
+    [queueTasks, searchQuery]
+  );
+  const filteredActive = useMemo(
+    () => filterTasksBySearch(activeTasks),
+    [activeTasks, searchQuery]
+  );
+  const filteredAll = useMemo(
+    () => filterTasksBySearch(myTasks),
+    [myTasks, searchQuery]
+  );
 
-    if (error) {
-      console.error("rpc_soltar_tarea error:", error);
-      toast.error(`❌ No se pudo soltar: ${error.message}`);
-      return;
-    }
+  const currentStationObj = useMemo(
+    () => stations.find((s) => s.id === stationId),
+    [stations, stationId]
+  );
+  const CurrentStationIcon = currentStationObj?.orden
+    ? STATION_ICONS[currentStationObj.orden] || Wrench
+    : Wrench;
 
-    showSuccess("✅ Tarea soltada");
-    await refreshAll();
-  }
-
-  async function logout() {
-    await supabase.auth.signOut();
-    router.push("/login");
-  }
-
-  function TaskCard({ task, mode }: { task: TaskRow; mode: "queue" | "mine" }) {
+  // COMPONENTE TARJETA DE TAREA DENTAL
+  function DentalTaskCard({
+    task,
+    mode,
+  }: {
+    task: TaskRow;
+    mode: "queue" | "active" | "history";
+  }) {
     const p = task.pedidos;
-
-    const req = p?.numero_requerimiento
-      ? String(p.numero_requerimiento)
-      : null;
-
-    const total = p?.total != null ? Number(p.total) : null;
-    const anticipo = p?.anticipo != null ? Number(p.anticipo) : 0;
-    const saldo = total != null ? total - anticipo : null;
+    const req = p?.numero_requerimiento || null;
+    const hasDelivery = p?.observaciones && p?.observaciones.includes("DELIVERY");
 
     const now = Date.now();
-    const startedAt = task.fecha_inicio
-      ? new Date(task.fecha_inicio).getTime()
-      : null;
+    const startedAt = task.fecha_inicio ? new Date(task.fecha_inicio).getTime() : null;
     const finishedAt = task.fecha_fin ? new Date(task.fecha_fin).getTime() : null;
 
-    const waitingMs = useMemo(() => {
-      if (!startedAt) return null;
-      if (task.estado !== "pendiente") return null;
-      return now - startedAt;
-    }, [now, startedAt, task.estado]);
-
-    const inProcessMs = useMemo(() => {
-      if (!startedAt) return null;
-      if (task.estado !== "en_proceso") return null;
-      return now - startedAt;
-    }, [now, startedAt, task.estado]);
-
-    const durationMs = useMemo(() => {
-      if (!startedAt || !finishedAt) return null;
-      if (task.estado !== "completado") return null;
-      return finishedAt - startedAt;
-    }, [startedAt, finishedAt, task.estado]);
+    const waitingMs = startedAt && task.estado === "pendiente" ? now - startedAt : null;
+    const inProcessMs = startedAt && task.estado === "en_proceso" ? now - startedAt : null;
+    const durationMs = startedAt && finishedAt && task.estado === "completado" ? finishedAt - startedAt : null;
 
     const isOld = waitingMs != null ? waitingMs > 24 * 3600 * 1000 : false;
-    const title = p?.paciente_nombre?.trim() || "Pedido";
-
-    async function quickCopy(label: string, value?: string | null) {
-      const v = (value ?? "").trim();
-      if (!v) return;
-      const ok = await copyToClipboard(v);
-      if (ok) showSuccess(`📋 Copiado: ${label}`);
-    }
+    const title = p?.paciente_nombre?.trim() || "Trabajo Dental";
 
     return (
-      <div className="border rounded-2xl p-4 bg-white shadow-sm">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-semibold text-base">{title}</p>
-
+      <div
+        className={`rounded-3xl border bg-white p-5 sm:p-6 shadow-sm hover:shadow-md transition-all space-y-4 ${
+          mode === "active"
+            ? "border-purple-300 ring-2 ring-purple-500/10"
+            : "border-slate-200/90"
+        }`}
+      >
+        {/* Cabecera de la orden */}
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 flex-wrap mb-1.5">
+              {p?.numero_caja && (
+                <span className="text-[11px] font-black px-2.5 py-0.5 rounded-md bg-purple-900 text-white shadow-xs">
+                  Caja #{p.numero_caja}
+                </span>
+              )}
               {req && (
-                <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-800">
-                  <Hash className="w-3 h-3" /> {req}
+                <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+                  {req}
                 </span>
               )}
-
-              {statusBadge(task.estado)}
-
+              {hasDelivery && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+                  <Truck className="w-3 h-3" /> Delivery
+                </span>
+              )}
               {isOld && (
-                <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-red-100 text-red-800">
-                  <AlertTriangle className="w-3 h-3" /> Antiguo
-                </span>
-              )}
-
-              {total != null && saldo != null && saldo > 0 && (
-                <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-800">
-                  <AlertTriangle className="w-3 h-3" /> Saldo pendiente
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3 text-rose-600" /> &gt;24h en espera
                 </span>
               )}
             </div>
 
-            <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
-              <span className="inline-flex items-center gap-1">
-                <Ruler className="w-3 h-3" />
-                Estación: {task.estaciones?.nombre ?? "—"}
-              </span>
-
-              {mode === "queue" && (
-                <span className="inline-flex items-center gap-1">
-                  <Timer className="w-3 h-3" />
-                  Esperando: {waitingMs != null ? msToHuman(waitingMs) : "—"}
-                </span>
-              )}
-
-              {mode === "mine" && task.estado === "en_proceso" && (
-                <span className="inline-flex items-center gap-1">
-                  <Timer className="w-3 h-3" />
-                  En proceso: {inProcessMs != null ? msToHuman(inProcessMs) : "—"}
-                </span>
-              )}
-
-              {mode === "mine" && task.estado === "completado" && (
-                <span className="inline-flex items-center gap-1">
-                  <Timer className="w-3 h-3" />
-                  Duración: {durationMs != null ? msToHuman(durationMs) : "—"}
-                </span>
-              )}
-            </div>
+            <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+              {title}
+            </h3>
+            <p className="text-xs sm:text-sm font-semibold text-[#3C1C6C] mt-0.5">
+              {p?.trabajo_realizar || "Rehabilitación Protésica"}
+            </p>
           </div>
 
-          <div className="flex gap-2 flex-wrap justify-end">
-            {/* ✅ Detalles con el componente nuevo */}
-            <Button variant="outline" size="sm" onClick={() => openDetail(task)} className="rounded-xl border-slate-200">
-              <Info className="w-4 h-4 mr-1 text-[#3C1C6C]" /> Detalles
+          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+            {statusBadge(task.estado)}
+            {inProcessMs != null && (
+              <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 inline-flex items-center gap-1">
+                <Timer className="w-3.5 h-3.5 text-purple-600 animate-spin" />
+                {msToHuman(inProcessMs)}
+              </span>
+            )}
+            {waitingMs != null && mode === "queue" && (
+              <span className="text-xs font-mono font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                Espera: {msToHuman(waitingMs)}
+              </span>
+            )}
+            {durationMs != null && (
+              <span className="text-xs font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                Duración: {msToHuman(durationMs)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Ficha técnica del trabajo protésico */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-2xl bg-slate-50/70 border border-slate-100 text-xs">
+          <div>
+            <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+              <Ruler className="w-3 h-3 text-slate-400" /> Pieza(s)
+            </span>
+            <span className="font-bold text-slate-800 text-sm">{p?.pieza_numero || "—"}</span>
+          </div>
+
+          <div>
+            <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+              <Palette className="w-3 h-3 text-[#3C1C6C]" /> Color / Tono
+            </span>
+            <span className="font-bold text-[#3C1C6C] text-sm">{p?.color_pieza || "—"}</span>
+          </div>
+
+          <div>
+            <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-amber-500" /> Colímetro
+            </span>
+            <span className="font-bold text-slate-800">{p?.colimetro || "Estándar"}</span>
+          </div>
+
+          <div>
+            <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+              <Stethoscope className="w-3 h-3 text-slate-400" /> Odontólogo
+            </span>
+            <span className="font-bold text-slate-800 truncate block">
+              {p?.doctor_nombre || "—"}
+            </span>
+          </div>
+        </div>
+
+        {/* Observaciones clínicas */}
+        {p?.observaciones && (
+          <div className="p-3 rounded-2xl bg-purple-50/40 border border-purple-100 text-xs text-slate-700 space-y-1">
+            <span className="font-bold text-[#3C1C6C] text-[11px] block">
+              Instrucciones & Especificaciones Clínicas:
+            </span>
+            <p className="italic text-slate-600 line-clamp-3">&ldquo;{p.observaciones}&rdquo;</p>
+          </div>
+        )}
+
+        {/* Comentario de estación previa o actual */}
+        {task.comentarios && (
+          <div className="p-2.5 rounded-xl bg-amber-50/60 border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
+            <span className="font-bold shrink-0">💬 Bitácora:</span>
+            <span>{task.comentarios}</span>
+          </div>
+        )}
+
+        {/* Barra de Acciones */}
+        <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-t border-slate-100">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openDetail(task)}
+              className="text-xs rounded-xl border-slate-200 h-9 font-semibold gap-1.5 hover:bg-purple-50 text-slate-700"
+            >
+              <Info className="w-3.5 h-3.5 text-[#3C1C6C]" /> Ver Ficha Técnica
             </Button>
 
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={async () => {
+                const ok = await copyToClipboard(req || p?.paciente_nombre || "");
+                if (ok) showSuccess("📋 Copiado al portapapeles");
+              }}
+              className="h-9 px-2 text-xs text-slate-400 hover:text-slate-700"
+              title="Copiar datos rápidos"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2 justify-end flex-wrap">
             {mode === "queue" && (
-              <Button size="sm" className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold shadow-sm" onClick={() => tomarTarea(task.id)}>
-                Tomar Tarea
+              <Button
+                size="sm"
+                onClick={() => tomarTarea(task.id)}
+                className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white font-bold rounded-xl text-xs h-9 px-4 gap-2 shadow-sm"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" /> Tomar a Mi Mesa
               </Button>
             )}
 
-            {mode === "mine" && task.estado === "pendiente" && (
-              <Button size="sm" className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold shadow-sm" onClick={() => tomarTarea(task.id)}>
-                Iniciar Tarea
-              </Button>
-            )}
-
-            {mode === "mine" && task.estado === "en_proceso" && (
+            {mode === "active" && (
               <>
-                <Button size="sm" variant="outline" onClick={() => soltarTarea(task.id)} className="rounded-xl border-slate-200">
-                  Soltar
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => soltarTarea(task.id)}
+                  className="rounded-xl border-slate-200 text-xs text-slate-500 hover:text-slate-800 h-9 gap-1"
+                >
+                  <Undo2 className="w-3.5 h-3.5" /> Soltar a cola
                 </Button>
 
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => openCommentDialog(task, "save")}
-                  className="rounded-xl border-slate-200"
+                  className="rounded-xl border-purple-200 text-xs font-semibold text-[#3C1C6C] hover:bg-purple-50 h-9"
                 >
-                  Comentario
+                  💬 Nota
                 </Button>
 
-                <Button size="sm" className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold shadow-sm" onClick={() => openCommentDialog(task, "advance")}>
-                  ✓ Completar & Avanzar
+                <Button
+                  size="sm"
+                  onClick={() => openCommentDialog(task, "advance")}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs h-9 px-4 gap-1.5 shadow-sm"
+                >
+                  <CheckCircle2 className="w-4 h-4" /> Completar & Avanzar
                 </Button>
               </>
             )}
 
-            {mode === "mine" && task.estado === "completado" && (
-              <span className="text-xs text-green-700 font-bold bg-green-50 px-2.5 py-1 rounded-full border border-green-200 flex items-center gap-1">
-                ✅ Completado
+            {mode === "history" && task.estado === "completado" && (
+              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 inline-flex items-center gap-1">
+                <Check className="w-3.5 h-3.5" /> Etapa Terminada
               </span>
             )}
-
-            <Button
-              variant="ghost"
-              onClick={() => quickCopy("Requerimiento", req)}
-              title="Copiar número"
-              className="px-2"
-            >
-              <Copy className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => quickCopy("Paciente", p?.paciente_nombre ?? "")}
-              title="Copiar paciente"
-              className="px-2"
-            >
-              <User className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => quickCopy("Doctor", p?.doctor_nombre ?? "")}
-              title="Copiar doctor"
-              className="px-2"
-            >
-              <Stethoscope className="w-4 h-4" />
-            </Button>
           </div>
-        </div>
-
-        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground font-semibold">Resumen</p>
-
-            <p className="flex items-center gap-2">
-              <Stethoscope className="w-4 h-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Doctor:</span>{" "}
-              <span className="font-medium">{p?.doctor_nombre || "—"}</span>
-            </p>
-
-            {p?.paciente_telefono && (
-              <p className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Tel:</span>{" "}
-                <span className="font-medium">{p.paciente_telefono}</span>
-              </p>
-            )}
-
-            {task.estaciones?.descripcion && (
-              <p className="text-sm text-muted-foreground">
-                📌 <span className="font-semibold">Objetivo:</span>{" "}
-                {task.estaciones.descripcion}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground font-semibold">Trabajo</p>
-
-            <p>
-              <span className="text-muted-foreground">Trabajo:</span>{" "}
-              <span className="font-medium">{p?.trabajo_realizar || "—"}</span>
-            </p>
-
-            <p className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
-              <span>
-                <span className="text-muted-foreground">Pieza:</span>{" "}
-                <span className="font-medium">{p?.pieza_numero || "—"}</span>
-              </span>
-
-              <span className="inline-flex items-center gap-1">
-                <Palette className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Color:</span>{" "}
-                <span className="font-medium">{p?.color_pieza || "—"}</span>
-              </span>
-
-              <span className="inline-flex items-center gap-1">
-                <Ruler className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Colímetro:</span>{" "}
-                <span className="font-medium">{p?.colimetro || "—"}</span>
-              </span>
-
-              <span className="inline-flex items-center gap-1">
-                <Box className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Caja:</span>{" "}
-                <span className="font-medium">{p?.numero_caja || "—"}</span>
-              </span>
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-3 text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
-          <span>
-            <span className="font-semibold">Inicio estación:</span>{" "}
-            {formatDateTime(task.fecha_inicio)}
-          </span>
-          <span>
-            <span className="font-semibold">Fin estación:</span>{" "}
-            {formatDateTime(task.fecha_fin)}
-          </span>
-
-          {task.comentarios && (
-            <span className="block w-full mt-1">
-              <span className="font-semibold">💬 Comentario:</span>{" "}
-              {task.comentarios}
-            </span>
-          )}
         </div>
       </div>
     );
   }
 
-  if (loading) return <div className="p-6">Cargando...</div>;
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-3">
+        <RefreshCcw className="animate-spin w-8 h-8 text-[#3C1C6C]" />
+        <p className="text-xs text-slate-500 font-medium">Iniciando mesa de trabajo técnico...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+      {/* Toast Animado Flotante */}
       <AnimatePresence>
         {successOverlay && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/70 backdrop-blur-sm"
+            className="fixed top-6 right-6 z-50 bg-[#3C1C6C] text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 border border-purple-300 font-bold text-sm"
           >
-            <motion.div
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.25 }}
-              className="bg-white border shadow-lg rounded-2xl px-6 py-4 flex items-center gap-3"
-            >
-              <CheckCircle2 className="w-7 h-7 text-green-600" />
-              <p className="font-semibold text-green-700">{successOverlay}</p>
-            </motion.div>
+            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            <span>{successOverlay}</span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#3C1C6C] flex items-center gap-2">
-            🔬 Estación de Trabajo Dental
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Gestión técnica de tareas, registro de tiempos y avance de órdenes.
-          </p>
+      {/* Hero Banner Ejecutivo Guisela */}
+      <div className="rounded-3xl border border-purple-200/80 bg-gradient-to-br from-[#3C1C6C] via-[#482084] to-[#5a2a9e] p-6 sm:p-8 text-white shadow-xl shadow-purple-950/15 space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-bold text-[#D0B9FF] border border-white/15">
+              <Sparkles className="w-3.5 h-3.5 text-[#A57CFA]" /> Taller Dental CAD/CAM & Biomimética
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+              Mesa de Trabajo · {userName}
+            </h1>
+            <p className="text-xs sm:text-sm text-purple-200/90 max-w-xl">
+              Control de producción, estratificación cerámica y registro de tiempos de laboratorio en vivo.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <Link href="/dashboard/attendance">
+              <Button className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs h-10 px-4 gap-2 shadow-md">
+                <Clock className="w-4 h-4" /> Marcar Asistencia
+              </Button>
+            </Link>
+
+            <Button
+              variant="outline"
+              onClick={refreshAll}
+              disabled={refreshing}
+              className="bg-white/10 hover:bg-white/20 text-white border-white/20 rounded-xl text-xs font-bold h-10 px-3 gap-1.5"
+            >
+              <RefreshCcw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+              Actualizar
+            </Button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <Link href="/dashboard/attendance">
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-sm gap-2">
-              <Clock className="w-4 h-4" /> Marcar Asistencia (GPS & Selfie)
-            </Button>
-          </Link>
-          <Button variant="outline" onClick={refreshAll} className="rounded-xl border-slate-200">
-            <RefreshCcw className="w-4 h-4 mr-2" /> Actualizar
-          </Button>
+        {/* Selector de Estación Rápido en 1 Clic */}
+        <div className="pt-4 border-t border-white/15 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-purple-200 flex items-center gap-1.5">
+              <CurrentStationIcon className="w-4 h-4 text-purple-300" />
+              Estación Activa de Taller:{" "}
+              <span className="text-white font-black underline underline-offset-4">
+                {stationName || "Sin Asignar"}
+              </span>
+            </span>
+            <span className="text-[11px] text-purple-300/80 hidden sm:inline">
+              Haz clic en cualquier estación para cambiar al instante
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {stations.map((s) => {
+              const isSelected = s.id === stationId;
+              const IconComp = STATION_ICONS[s.orden] || Wrench;
+
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => handleQuickStationSwitch(s.id)}
+                  disabled={switchingStation}
+                  className={`p-2.5 rounded-2xl border text-left transition-all flex items-center gap-2.5 cursor-pointer ${
+                    isSelected
+                      ? "bg-white text-[#3C1C6C] border-white font-black shadow-lg ring-2 ring-white/50"
+                      : "bg-white/10 hover:bg-white/15 text-white/90 border-white/15 font-semibold"
+                  }`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                      isSelected ? "bg-[#3C1C6C] text-white" : "bg-white/10 text-white"
+                    }`}
+                  >
+                    <IconComp className="w-4 h-4" />
+                  </div>
+                  <div className="truncate">
+                    <p className="text-[10px] uppercase tracking-wider opacity-75">
+                      Estación {s.orden}
+                    </p>
+                    <p className="text-xs truncate font-bold">{s.nombre}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Mi estación</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm">
-            Estación actual:{" "}
-            <span className="font-semibold">{stationName ?? "No asignada"}</span>
-          </p>
+      {/* KPI Cards Ejecutivas */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div
+          onClick={() => setActiveTab("in_process")}
+          className={`p-5 rounded-3xl border transition-all cursor-pointer ${
+            activeTab === "in_process"
+              ? "bg-purple-50/80 border-purple-300 shadow-md ring-2 ring-purple-500/20"
+              : "bg-white border-slate-200/90 shadow-sm hover:border-purple-200"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              En Mi Mesa de Trabajo
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-purple-100 text-[#3C1C6C] flex items-center justify-center">
+              <Play className="w-4 h-4 fill-current" />
+            </div>
+          </div>
+          <p className="text-3xl font-black text-[#3C1C6C] mt-2">{activeTasks.length}</p>
+          <p className="text-xs text-slate-400 mt-1">Órdenes en fabricación activa</p>
+        </div>
 
-          <div className="max-w-md">
-            <StationPickerDialog
-              stations={stations}
-              currentStationId={stationId}
-              triggerLabel="Cambiar estación"
-              onChanged={(newId) => {
-                const st = stations.find((x) => x.id === newId);
-                setStationId(newId);
-                setStationName(st?.nombre ?? null);
-                refreshAll();
-              }}
+        <div
+          onClick={() => setActiveTab("queue")}
+          className={`p-5 rounded-3xl border transition-all cursor-pointer ${
+            activeTab === "queue"
+              ? "bg-amber-50/80 border-amber-300 shadow-md ring-2 ring-amber-500/20"
+              : "bg-white border-slate-200/90 shadow-sm hover:border-amber-200"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Cola de Mi Estación
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+              <Inbox className="w-5 h-5" />
+            </div>
+          </div>
+          <p className="text-3xl font-black text-amber-700 mt-2">{queueTasks.length}</p>
+          <p className="text-xs text-slate-400 mt-1">En espera de ser tomadas</p>
+        </div>
+
+        <div
+          onClick={() => setActiveTab("all")}
+          className={`p-5 rounded-3xl border transition-all cursor-pointer ${
+            activeTab === "all"
+              ? "bg-emerald-50/80 border-emerald-300 shadow-md ring-2 ring-emerald-500/20"
+              : "bg-white border-slate-200/90 shadow-sm hover:border-emerald-200"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Completadas Hoy
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+              <CheckCheck className="w-5 h-5" />
+            </div>
+          </div>
+          <p className="text-3xl font-black text-emerald-700 mt-2">{completedTodayCount}</p>
+          <p className="text-xs text-slate-400 mt-1">Avanzadas a la siguiente fase</p>
+        </div>
+      </div>
+
+      {/* Barra de Filtros y Búsqueda */}
+      <div className="p-4 sm:p-5 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Navegación por Tabs */}
+          <div className="flex items-center gap-2 p-1 rounded-2xl bg-slate-100/80 w-fit">
+            <button
+              onClick={() => setActiveTab("in_process")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === "in_process"
+                  ? "bg-[#3C1C6C] text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Wrench className="w-3.5 h-3.5" />
+              En Mi Mesa ({activeTasks.length})
+            </button>
+
+            <button
+              onClick={() => setActiveTab("queue")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === "queue"
+                  ? "bg-[#3C1C6C] text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Inbox className="w-3.5 h-3.5" />
+              Cola de Espera ({queueTasks.length})
+            </button>
+
+            <button
+              onClick={() => setActiveTab("all")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === "all"
+                  ? "bg-[#3C1C6C] text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Filter className="w-3.5 h-3.5" />
+              Historial & Filtros ({myTasks.length})
+            </button>
+          </div>
+
+          {/* Buscador Rápido */}
+          <div className="relative w-full sm:w-72">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Input
+              placeholder="Buscar paciente, caja, pieza..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9.5 text-xs rounded-xl border-slate-200"
             />
           </div>
+        </div>
 
-          <div className="flex flex-wrap gap-2">
-            {stations.map((s) => (
-              <Button
-                key={s.id}
-                variant={s.id === stationId ? "default" : "outline"}
-                disabled
-                title="Cambia estación usando el botón 'Cambiar estación'"
+        {/* Filtros de Fecha solo cuando está en "Historial & Filtros" */}
+        {activeTab === "all" && (
+          <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-slate-500 font-medium">Rango:</span>
+              <Input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="w-32 h-8 text-xs rounded-xl"
+              />
+              <span className="text-slate-400">a</span>
+              <Input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="w-32 h-8 text-xs rounded-xl"
+              />
+
+              <select
+                value={myStatus}
+                onChange={(e) => setMyStatus(e.target.value as any)}
+                className="h-8 px-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-700 cursor-pointer"
               >
-                {s.orden}. {s.nombre}
-              </Button>
-            ))}
-          </div>
-
-          {!stationId && (
-            <p className="text-sm text-red-600">
-              ⚠️ Asigna una estación para ver la cola de trabajo.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Cola de mi estación (pendientes)</CardTitle>
-          <Button variant="outline" onClick={refreshAll}>
-            Refrescar
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {!canUseQueue ? (
-            <p className="text-sm text-muted-foreground">
-              Asigna una estación para ver tareas.
-            </p>
-          ) : queueTasks.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No hay tareas pendientes.</p>
-          ) : (
-            <div className="space-y-3">
-              {queueTasks.map((t) => (
-                <TaskCard key={t.id} task={t} mode="queue" />
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="space-y-2">
-          <div className="flex flex-row items-center justify-between">
-            <CardTitle>Mis tareas</CardTitle>
-            <Button variant="outline" onClick={refreshAll}>
-              Refrescar
-            </Button>
-          </div>
-
-          <div className="flex flex-col md:flex-row gap-2 md:items-end">
-            <div className="flex items-center gap-2">
-              <CalendarDays className="w-4 h-4 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Desde</p>
-                <Input
-                  type="date"
-                  value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
-                  className="w-full sm:w-[160px] rounded-xl border-slate-200 text-xs"
-                />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Hasta</p>
-                <Input
-                  type="date"
-                  value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
-                  className="w-full sm:w-[160px] rounded-xl border-slate-200 text-xs"
-                />
-              </div>
+                <option value="">Todos los estados</option>
+                <option value="en_proceso">En proceso</option>
+                <option value="completado">Completados</option>
+                <option value="devuelto">Devueltos</option>
+              </select>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Estado</p>
-                <select
-                  value={myStatus}
-                  onChange={(e) => setMyStatus(e.target.value as any)}
-                  className="border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white font-medium"
-                >
-                  <option value="">Todos</option>
-                  <option value="pendiente">pendiente</option>
-                  <option value="en_proceso">en_proceso</option>
-                  <option value="completado">completado</option>
-                  <option value="devuelto">devuelto</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex gap-1.5 sm:gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5">
               <Button
                 variant="outline"
                 size="sm"
-                className="rounded-xl border-slate-200 text-xs"
                 onClick={() => {
                   const t = todayISO();
                   setFromDate(t);
                   setToDate(t);
                 }}
+                className="h-7 text-[11px] rounded-lg"
               >
                 Hoy
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="rounded-xl border-slate-200 text-xs"
                 onClick={() => {
                   setFromDate(addDaysISO(-7));
                   setToDate(todayISO());
                 }}
+                className="h-7 text-[11px] rounded-lg"
               >
-                Últimos 7d
+                7 días
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="rounded-xl border-slate-200 text-xs"
                 onClick={() => {
                   setFromDate(monthStartISO());
                   setToDate(todayISO());
                 }}
+                className="h-7 text-[11px] rounded-lg"
               >
-                Este mes
+                Mes
               </Button>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="rounded-xl border-slate-200 text-xs"
                 onClick={() => {
                   setFromDate("");
                   setToDate("");
                   setMyStatus("");
                 }}
+                className="h-7 text-[11px] text-slate-400"
               >
-                Limpiar filtros
+                Limpiar
               </Button>
             </div>
           </div>
+        )}
+      </div>
 
-          <p className="text-xs text-muted-foreground">
-            Se filtra por <span className="font-semibold">fecha_inicio</span> de
-            la estación (historial).
-          </p>
-        </CardHeader>
-
-        <CardContent className="space-y-3">
-          {myTasks.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No tienes tareas en ese rango.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {myTasks.map((t) => (
-                <TaskCard key={t.id} task={t} mode="mine" />
-              ))}
+      {/* CONTENIDO PRINCIPAL SEGÚN EL TAB ACTIVO */}
+      <div>
+        {activeTab === "in_process" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Wrench className="w-5 h-5 text-[#3C1C6C]" />
+                Trabajos en Mi Mesa de Trabajo ({filteredActive.length})
+              </h2>
+              <span className="text-xs text-slate-400">
+                Paso activo de fabricación
+              </span>
             </div>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* ✅ Dialog: comentario técnico */}
+            {filteredActive.length === 0 ? (
+              <div className="p-12 text-center rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-3">
+                <Inbox className="w-12 h-12 text-slate-300 mx-auto" />
+                <p className="text-base font-bold text-slate-800">
+                  No tienes trabajos en proceso en este momento
+                </p>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                  Revisa la pestaña &ldquo;Cola de Espera&rdquo; para tomar las órdenes asignadas a tu estación.
+                </p>
+                <Button
+                  onClick={() => setActiveTab("queue")}
+                  className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white font-bold rounded-xl text-xs h-9"
+                >
+                  Ver Cola de Espera ({queueTasks.length})
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredActive.map((t) => (
+                  <DentalTaskCard key={t.id} task={t} mode="active" />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "queue" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Inbox className="w-5 h-5 text-amber-600" />
+                Cola de Espera en: {stationName || "Mi Estación"} ({filteredQueue.length})
+              </h2>
+              <span className="text-xs text-slate-400">
+                Órdenes listas para ser iniciadas
+              </span>
+            </div>
+
+            {!stationId ? (
+              <div className="p-12 text-center rounded-3xl bg-white border border-slate-200 shadow-sm space-y-2">
+                <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto" />
+                <p className="text-base font-bold text-slate-800">
+                  Selecciona una estación arriba para ver los trabajos en cola
+                </p>
+              </div>
+            ) : filteredQueue.length === 0 ? (
+              <div className="p-12 text-center rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-2">
+                <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
+                <p className="text-base font-bold text-slate-800">
+                  ¡Al día! No hay órdenes pendientes en la cola de esta estación
+                </p>
+                <p className="text-xs text-slate-400">
+                  Aparecerán automáticamente aquí en cuanto la estación anterior finalice un trabajo.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredQueue.map((t) => (
+                  <DentalTaskCard key={t.id} task={t} mode="queue" />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "all" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Filter className="w-5 h-5 text-[#3C1C6C]" />
+                Historial de Mis Trabajos ({filteredAll.length})
+              </h2>
+            </div>
+
+            {filteredAll.length === 0 ? (
+              <div className="p-12 text-center rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-2">
+                <Inbox className="w-10 h-10 text-slate-300 mx-auto" />
+                <p className="text-base font-bold text-slate-800">
+                  No se encontraron trabajos con los filtros seleccionados
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredAll.map((t) => (
+                  <DentalTaskCard key={t.id} task={t} mode="history" />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Modal: Comentario Técnico */}
       <Dialog open={commentOpen} onOpenChange={setCommentOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
+        <DialogContent className="w-[95vw] sm:max-w-lg p-5 sm:p-6 rounded-3xl">
           <DialogHeader>
-            <DialogTitle className="text-[#3C1C6C] font-bold text-lg">
+            <DialogTitle className="text-[#3C1C6C] font-black text-lg flex items-center gap-2">
+              <Wrench className="w-5 h-5 text-[#3C1C6C]" />
               {commentAction === "advance"
-                ? "Completar con comentario técnico"
-                : "Guardar anotación técnica"}
+                ? "Completar y Avanzar a Siguiente Estación"
+                : "Añadir Anotación Técnica a la Bitácora"}
             </DialogTitle>
           </DialogHeader>
+
+          <p className="text-xs text-slate-500 mt-1">
+            {commentAction === "advance"
+              ? "Registra detalles sobre el ajuste oclusal, márgenes o características antes de pasar a la siguiente estación."
+              : "Guarda una nota interna sobre el estado de la pieza dental."}
+          </p>
 
           <Textarea
             ref={commentRef}
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Describe qué se hizo, ajuste marginal, color, observaciones para la siguiente estación..."
-            className="min-h-[140px] rounded-xl border-slate-200 mt-2"
+            placeholder="Ej. Ajuste oclusal verificado, pulido fino completado, listo para glaseado..."
+            className="min-h-[130px] rounded-2xl border-slate-200 mt-3 text-xs leading-relaxed"
           />
 
           <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-100">
-            <Button variant="outline" onClick={() => setCommentOpen(false)} className="rounded-xl border-slate-200 h-10 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              onClick={() => setCommentOpen(false)}
+              className="rounded-xl border-slate-200 h-10 w-full sm:w-auto text-xs"
+            >
               Cancelar
             </Button>
 
-            {commentAction === "save" ? (
-              <Button onClick={saveCommentOnly} className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold h-10 w-full sm:w-auto shadow-md">
-                Guardar comentario
-              </Button>
-            ) : (
-              <Button onClick={completeWithComment} className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold h-10 w-full sm:w-auto shadow-md">
-                ✓ Guardar y avanzar
-              </Button>
-            )}
+            <Button
+              onClick={commentAction === "advance" ? completeWithComment : saveCommentOnly}
+              className={`rounded-xl text-xs font-bold h-10 px-5 text-white shadow-sm ${
+                commentAction === "advance"
+                  ? "bg-emerald-600 hover:bg-emerald-700"
+                  : "bg-[#3C1C6C] hover:bg-[#2E1553]"
+              }`}
+            >
+              {commentAction === "advance" ? "✓ Completar y Enviar a Siguiente Estación" : "Guardar Nota"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ✅ Detalles: componente reutilizable con iconos (igual que history) */}
-      <TaskDetailsDialog
-        open={detailOpen}
-        onOpenChange={setDetailOpen}
-        row={detailTask}
-      />
+      {/* Modal Reutilizable de Ficha Técnica Completa */}
+      {detailOpen && detailTask && (
+        <TaskDetailsDialog
+          open={detailOpen}
+          onOpenChange={setDetailOpen}
+          row={detailTask}
+        />
+      )}
     </div>
   );
 }
