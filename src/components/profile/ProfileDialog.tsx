@@ -27,6 +27,8 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  Building2,
+  Stethoscope,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -64,6 +66,10 @@ export function ProfileDialog({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPass, setChangingPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
+
+  // Campos específicos de Doctor / Clínica
+  const [clinica, setClinica] = useState("");
+  const [especialidad, setEspecialidad] = useState("Rehabilitación Oral");
 
   const initial = useMemo(() => {
     const n = (profile?.nombre || "").trim();
@@ -120,6 +126,23 @@ export function ProfileDialog({
       setProfile(typed);
       setNombre(typed.nombre);
       setTelefono(typed.telefono ?? "");
+
+      // Si es doctor, cargar datos clínicos desde doctores
+      if (p.rol === "doctor") {
+        const { data: docData } = await supabase
+          .from("doctores")
+          .select("id, clinica, especialidad, telefono")
+          .eq("profile_id", user.id)
+          .maybeSingle();
+
+        if (docData) {
+          setClinica(docData.clinica || "");
+          setEspecialidad(docData.especialidad || "Rehabilitación Oral");
+          if (!p.telefono && docData.telefono) {
+            setTelefono(docData.telefono);
+          }
+        }
+      }
     })();
   }, [open, onOpenChange]);
 
@@ -161,7 +184,39 @@ export function ProfileDialog({
       return;
     }
 
-    toast.success("✅ Perfil actualizado exitosamente");
+    // Si es doctor, guardar también en la tabla doctores
+    if (profile.rol === "doctor") {
+      const clinicaClean = clinica.trim();
+      const especialidadClean = especialidad.trim();
+
+      const { data: docExists } = await supabase
+        .from("doctores")
+        .select("id")
+        .eq("profile_id", profile.id)
+        .maybeSingle();
+
+      if (docExists) {
+        await supabase
+          .from("doctores")
+          .update({
+            nombre: nombreClean,
+            telefono: telClean ? telClean : null,
+            clinica: clinicaClean || `Clínica Dr(a). ${nombreClean}`,
+            especialidad: especialidadClean || "Rehabilitación Oral",
+          })
+          .eq("profile_id", profile.id);
+      } else {
+        await supabase.from("doctores").insert({
+          profile_id: profile.id,
+          nombre: nombreClean,
+          telefono: telClean ? telClean : null,
+          clinica: clinicaClean || `Clínica Dr(a). ${nombreClean}`,
+          especialidad: especialidadClean || "Rehabilitación Oral",
+        });
+      }
+    }
+
+    toast.success("✅ Perfil y datos clínicos actualizados exitosamente");
     setProfile((prev) =>
       prev ? { ...prev, nombre: nombreClean, telefono: telClean ? telClean : null } : prev
     );
@@ -375,6 +430,37 @@ export function ProfileDialog({
                     />
                   </div>
 
+                  {/* Campos adicionales exclusivos para Doctor */}
+                  {profile?.rol === "doctor" && (
+                    <>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5 text-[#A57CFA]" />
+                          Nombre de tu Clínica / Consultorio
+                        </label>
+                        <Input
+                          value={clinica}
+                          onChange={(e) => setClinica(e.target.value)}
+                          placeholder="Ej: Clínica Dental Estética San Lucas"
+                          className="rounded-xl border-slate-200 focus:border-[#3C1C6C] bg-white text-sm h-11"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <Stethoscope className="w-3.5 h-3.5 text-[#A57CFA]" />
+                          Especialidad Odontológica
+                        </label>
+                        <Input
+                          value={especialidad}
+                          onChange={(e) => setEspecialidad(e.target.value)}
+                          placeholder="Ej: Rehabilitación Oral & CAD/CAM, Implantología..."
+                          className="rounded-xl border-slate-200 focus:border-[#3C1C6C] bg-white text-sm h-11"
+                        />
+                      </div>
+                    </>
+                  )}
+
                   <div className="flex gap-2.5 pt-2">
                     <Button
                       variant="outline"
@@ -401,6 +487,65 @@ export function ProfileDialog({
               ) : (
                 /* 4. Tarjetas de Información Detallada */
                 <div className="mt-5 space-y-3">
+                  {/* Banner de Bienvenida / Completar datos para Doctor */}
+                  {profile?.rol === "doctor" && (!clinica || clinica.startsWith("Clínica Dr(a).")) && (
+                    <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 flex items-start justify-between gap-3 text-left">
+                      <div className="flex items-start gap-2.5">
+                        <Building2 className="w-4 h-4 text-amber-700 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-xs font-bold text-amber-900">¡Completa los datos de tu clínica!</p>
+                          <p className="text-[11px] text-amber-700 mt-0.5 leading-snug">
+                            Define el nombre oficial de tu consultorio para que aparezca en todas tus órdenes de trabajo.
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={startEdit}
+                        className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-[11px] font-bold px-3 py-1 h-8 shrink-0 cursor-pointer"
+                      >
+                        Completar
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Tarjetas de Información Clínica para Doctor */}
+                  {profile?.rol === "doctor" && (
+                    <div className="space-y-2.5 text-left">
+                      <div className="p-3.5 rounded-2xl bg-purple-50/60 border border-purple-100 flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-[#3C1C6C] text-[#D0B9FF] flex items-center justify-center font-bold shrink-0">
+                          <Building2 className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                            Clínica / Consultorio Dental
+                          </span>
+                          <p className="text-sm font-bold text-[#3C1C6C] mt-0.5 truncate">
+                            {clinica || (
+                              <span className="text-amber-600 font-semibold italic text-xs">
+                                Sin clínica registrada (Haz clic en Editar para completar)
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-purple-50/60 border border-purple-100 flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-purple-100 text-[#3C1C6C] flex items-center justify-center font-bold shrink-0">
+                          <Stethoscope className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                            Especialidad Odontológica
+                          </span>
+                          <p className="text-sm font-bold text-slate-800 mt-0.5">
+                            {especialidad || "Rehabilitación Oral & CAD/CAM"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-3 text-left">
                     <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200">
                       <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
