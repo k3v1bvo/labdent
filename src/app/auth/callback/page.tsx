@@ -48,22 +48,51 @@ export default function AuthCallbackPage() {
         // 2. Verificar si el usuario ya tiene perfil en 'profiles'
         const { data: profile } = await supabase
           .from("profiles")
-          .select("rol, nombre")
+          .select("rol, nombre, telefono")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
 
-        let userRole = profile?.rol?.toLowerCase() || "doctor";
+        const fullName =
+          profile?.nombre ||
+          user.user_metadata?.full_name ||
+          user.user_metadata?.name ||
+          user.email?.split("@")[0] ||
+          "Doctor";
 
-        if (!profile) {
-          // Usuario nuevo registrado con Google -> Crear perfil de Doctor por defecto
-          const fullName =
-            user.user_metadata?.full_name ||
-            user.user_metadata?.name ||
-            user.email?.split("@")[0] ||
-            "Doctor";
+        const phone = profile?.telefono || user.user_metadata?.phone || null;
 
-          const phone = user.user_metadata?.phone || null;
+        const isGoogleUser =
+          user.app_metadata?.provider === "google" ||
+          user.identities?.some((id: any) => id.provider === "google");
 
+        // Verificar si tiene asignación de estación técnica oficial
+        const { data: techAssignment } = await supabase
+          .from("tecnico_estacion")
+          .select("id")
+          .eq("tecnico_id", user.id)
+          .maybeSingle();
+
+        // Verificar si ya tiene registro en la tabla doctores
+        const { data: doctorRecord } = await supabase
+          .from("doctores")
+          .select("id")
+          .eq("profile_id", user.id)
+          .maybeSingle();
+
+        let userRole = profile?.rol?.toLowerCase();
+
+        // Si el usuario no tiene perfil, o si tiene rol 'tecnico' pero fue creado por Google sin estación técnica asignada
+        // (el trigger de la BD por defecto le asignó 'tecnico' erróneamente en vez de 'doctor')
+        const isAccidentalTechnician =
+          userRole === "tecnico" &&
+          !techAssignment &&
+          user.email !== "tecnico@labdent.com" &&
+          isGoogleUser;
+
+        if (!profile || !userRole || isAccidentalTechnician) {
+          userRole = "doctor";
+
+          // Actualizar/Crear perfil con rol 'doctor'
           await supabase.from("profiles").upsert({
             id: user.id,
             nombre: fullName,
@@ -71,27 +100,42 @@ export default function AuthCallbackPage() {
             rol: "doctor",
           });
 
+          // Asegurar registro en la tabla doctores
+          if (!doctorRecord) {
+            await supabase.from("doctores").upsert({
+              profile_id: user.id,
+              nombre: fullName,
+              clinica: `Clínica Dr(a). ${fullName}`,
+              especialidad: "Rehabilitación Oral",
+            });
+          }
+
+          // Disparar correo de bienvenida asegurando entrega antes de redirigir
+          if (user.email && (!profile || isAccidentalTechnician)) {
+            try {
+              await fetch("/api/mailer/welcome", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                keepalive: true,
+                body: JSON.stringify({
+                  to: user.email,
+                  name: fullName,
+                  role: "doctor",
+                  clinic: `Clínica Dr(a). ${fullName}`,
+                }),
+              });
+            } catch (mailErr) {
+              console.warn("No se pudo enviar bienvenida Google:", mailErr);
+            }
+          }
+        } else if (userRole === "doctor" && !doctorRecord) {
+          // Si ya era doctor pero no tenía registro en la tabla doctores
           await supabase.from("doctores").upsert({
             profile_id: user.id,
+            nombre: fullName,
             clinica: `Clínica Dr(a). ${fullName}`,
             especialidad: "Rehabilitación Oral",
           });
-
-          // Disparar correo de bienvenida en segundo plano
-          if (user.email) {
-            fetch("/api/mailer/welcome", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                to: user.email,
-                name: fullName,
-                role: "doctor",
-                clinic: `Clínica Dr(a). ${fullName}`,
-              }),
-            }).catch((e) => console.warn("No se pudo enviar bienvenida Google:", e));
-          }
-
-          userRole = "doctor";
         }
 
         // 3. Redirigir según el rol del usuario

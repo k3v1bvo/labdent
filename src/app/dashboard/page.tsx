@@ -22,18 +22,39 @@ export default function DashboardRedirect() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("rol")
+        .select("rol, nombre")
         .eq("id", user.id)
         .maybeSingle();
 
-      const role = (profile?.rol || "").toLowerCase();
+      let role = (profile?.rol || "").toLowerCase();
+
+      // Si es un usuario registrado con Google sin estación técnica asignada
+      const isGoogleUser =
+        user.app_metadata?.provider === "google" ||
+        user.identities?.some((id: any) => id.provider === "google");
+
+      if (role === "tecnico" && isGoogleUser && user.email !== "tecnico@labdent.com") {
+        const { data: techStation } = await supabase
+          .from("tecnico_estacion")
+          .select("id")
+          .eq("tecnico_id", user.id)
+          .maybeSingle();
+
+        if (!techStation) {
+          role = "doctor";
+          await supabase.from("profiles").update({ rol: "doctor" }).eq("id", user.id);
+          await supabase.from("doctores").upsert({
+            profile_id: user.id,
+            nombre: profile?.nombre || user.user_metadata?.full_name || "Doctor",
+            clinica: `Clínica Dr(a). ${profile?.nombre || user.user_metadata?.full_name || "Doctor"}`,
+            especialidad: "Rehabilitación Oral",
+          });
+        }
+      }
 
       switch (role) {
         case "admin":
           router.replace("/dashboard/admin/overview");
-          break;
-        case "doctor":
-          router.replace("/dashboard/doctors/orders");
           break;
         case "secretary":
         case "secretaria":
@@ -41,8 +62,11 @@ export default function DashboardRedirect() {
           break;
         case "tecnico":
         case "technician":
-        default:
           router.replace("/dashboard/technician");
+          break;
+        case "doctor":
+        default:
+          router.replace("/dashboard/doctors/orders");
           break;
       }
     }

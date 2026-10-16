@@ -294,3 +294,198 @@ export async function sendOrderNotificationEmail({
     html,
   });
 }
+
+interface RoleChangeEmailProps {
+  to: string;
+  name?: string;
+  newRole: string;
+  previousRole?: string;
+}
+
+/**
+ * 🛡️ Notificación por correo cuando un Administrador cambia el rol de un usuario
+ */
+export async function sendRoleChangeEmail({
+  to,
+  name,
+  newRole,
+  previousRole,
+}: RoleChangeEmailProps) {
+  const transporter = getMailerTransport();
+  const loginUrl = process.env.NEXT_PUBLIC_APP_URL
+    ? `${process.env.NEXT_PUBLIC_APP_URL}/login`
+    : "http://localhost:3000/login";
+
+  const roleLabels: Record<string, string> = {
+    admin: "👑 Administrador Global",
+    secretaria: "📋 Secretaría & Recepción",
+    doctor: "🩺 Odontólogo / Clínica Dental",
+    tecnico: "🔬 Técnico de Laboratorio / CAD-CAM",
+  };
+
+  const portalNames: Record<string, string> = {
+    admin: "Consola de Administración y Auditoría",
+    secretaria: "Panel de Recepción y Control de Cajas",
+    doctor: "Portal de Pedidos Clínicos & Tracking",
+    tecnico: "Tablero de Estaciones de Taller",
+  };
+
+  const labelNuevo = roleLabels[newRole.toLowerCase()] || newRole.toUpperCase();
+  const labelAnterior = previousRole ? (roleLabels[previousRole.toLowerCase()] || previousRole.toUpperCase()) : null;
+  const portalName = portalNames[newRole.toLowerCase()] || "Portal Guisela Lab";
+
+  const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f7f5fa; margin: 0; padding: 24px; }
+    .card { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 24px; padding: 40px 32px; box-shadow: 0 10px 30px rgba(60,28,108,0.08); border: 1px solid #ede8f5; }
+    .header { text-align: center; margin-bottom: 28px; }
+    .logo-badge { display: inline-block; background: #3C1C6C; color: #ffffff; padding: 8px 18px; border-radius: 999px; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; }
+    .title { color: #3C1C6C; font-size: 22px; font-weight: 900; margin: 16px 0 8px 0; }
+    .subtitle { color: #7A6899; font-size: 14px; margin: 0; }
+    .content { color: #373340; font-size: 15px; line-height: 1.6; margin: 24px 0; }
+    .info-box { background: #F8F5FC; border-left: 4px solid #3C1C6C; border-radius: 12px; padding: 18px 20px; margin: 24px 0; }
+    .info-row { margin: 8px 0; font-size: 14px; color: #4A3E61; }
+    .btn-container { text-align: center; margin: 32px 0; }
+    .btn { background: linear-gradient(135deg, #3C1C6C 0%, #5E2C9E 100%); color: #ffffff !important; padding: 14px 32px; border-radius: 14px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 15px; box-shadow: 0 6px 20px rgba(60,28,108,0.25); }
+    .footer { text-align: center; color: #9B94A6; font-size: 12px; margin-top: 32px; border-top: 1px solid #F1ECF8; padding-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <span class="logo-badge">🛡️ PERMISOS Y ACCESOS</span>
+      <h1 class="title">Actualización de Rol de Usuario</h1>
+      <p class="subtitle">Guisela Laboratorio Dental</p>
+    </div>
+
+    <div class="content">
+      <p>Hola <b>${name || "Estimado/a usuario"}</b>,</p>
+      <p>
+        Te informamos que la Administración de <b>Guisela Laboratorio Dental</b> ha modificado tus permisos en la plataforma:
+      </p>
+
+      <div class="info-box">
+        <div class="info-row">👤 <b>Usuario:</b> ${to}</div>
+        ${labelAnterior ? `<div class="info-row">⏳ <b>Rol Anterior:</b> ${labelAnterior}</div>` : ""}
+        <div class="info-row">✨ <b>Nuevo Rol Asignado:</b> <b style="color: #3C1C6C;">${labelNuevo}</b></div>
+        <div class="info-row">🖥️ <b>Espacio de Trabajo:</b> ${portalName}</div>
+      </div>
+
+      <p>
+        Tus nuevos accesos ya están activos. Puedes ingresar con tus mismas credenciales para acceder a tu nuevo panel:
+      </p>
+
+      <div class="btn-container">
+        <a href="${loginUrl}" class="btn">Ingresar al Sistema →</a>
+      </div>
+    </div>
+
+    <div class="footer">
+      © Guisela Laboratorio Dental · Sistema Integral CAD/CAM<br>
+      Si consideras que este cambio es un error, por favor contacta con la administración del laboratorio.
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  return transporter.sendMail({
+    from: FROM_HEADER,
+    to,
+    subject: `Actualización de Permisos: Nuevo Rol [${newRole.toUpperCase()}] - Guisela Lab Dental 🛡️`,
+    html,
+  });
+}
+
+interface TemporaryPasswordEmailProps {
+  to: string;
+  name?: string;
+  temporaryPassword: string;
+}
+
+/**
+ * 🔑 Enviar contraseña temporal asignada por el Administrador
+ */
+export async function sendTemporaryPasswordEmail({
+  to,
+  name,
+  temporaryPassword,
+}: TemporaryPasswordEmailProps) {
+  const transporter = getMailerTransport();
+  const loginUrl = process.env.NEXT_PUBLIC_APP_URL
+    ? `${process.env.NEXT_PUBLIC_APP_URL}/login`
+    : "http://localhost:3000/login";
+
+  const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f7f5fa; margin: 0; padding: 24px; }
+    .card { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 24px; padding: 40px 32px; box-shadow: 0 10px 30px rgba(60,28,108,0.08); border: 1px solid #ede8f5; }
+    .header { text-align: center; margin-bottom: 24px; }
+    .logo-badge { display: inline-block; background: #3C1C6C; color: #ffffff; padding: 8px 18px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+    .title { color: #3C1C6C; font-size: 22px; font-weight: 900; margin: 16px 0 8px 0; }
+    .subtitle { color: #7A6899; font-size: 14px; margin: 0; }
+    .content { color: #373340; font-size: 15px; line-height: 1.6; margin: 24px 0; }
+    .cred-box { background: #F8F5FC; border-left: 4px solid #3C1C6C; border-radius: 14px; padding: 20px; margin: 24px 0; }
+    .cred-row { margin: 8px 0; font-size: 15px; color: #3C1C6C; }
+    .cred-code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; background: #FFFFFF; border: 1px solid #D0B9FF; padding: 6px 14px; border-radius: 8px; font-weight: 800; color: #2E1553; font-size: 16px; letter-spacing: 1px; display: inline-block; }
+    .btn-container { text-align: center; margin: 30px 0; }
+    .btn { background: linear-gradient(135deg, #3C1C6C 0%, #5E2C9E 100%); color: #ffffff !important; padding: 14px 32px; border-radius: 14px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 15px; box-shadow: 0 6px 20px rgba(60,28,108,0.25); }
+    .warning-box { background: #FFFBEB; border-left: 4px solid #F59E0B; border-radius: 12px; padding: 14px 18px; font-size: 13px; color: #92400E; margin: 24px 0; }
+    .footer { text-align: center; color: #9B94A6; font-size: 12px; margin-top: 32px; border-top: 1px solid #F1ECF8; padding-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <span class="logo-badge">🔐 RESTABLECIMIENTO DE CLAVE</span>
+      <h1 class="title">Tu Contraseña Temporal de Acceso</h1>
+      <p class="subtitle">Guisela Laboratorio Dental</p>
+    </div>
+
+    <div class="content">
+      <p>Hola <b>${name || "Estimado/a usuario"}</b>,</p>
+      <p>
+        La Administración de <b>Guisela Laboratorio Dental</b> ha restablecido tu contraseña de acceso para que puedas ingresar al sistema inmediatamente:
+      </p>
+
+      <div class="cred-box">
+        <div class="cred-row">👤 <b>Correo de Acceso:</b> ${to}</div>
+        <div class="cred-row">
+          🔑 <b>Contraseña Temporal:</b> <span class="cred-code">${temporaryPassword}</span>
+        </div>
+      </div>
+
+      <div class="warning-box">
+        ⚠️ <b>Recomendación de Seguridad:</b> Por favor ingresa a la plataforma y cambia esta contraseña inmediatamente desde la sección <b>"Mi Perfil"</b> para mantener tu cuenta segura.
+      </div>
+
+      <div class="btn-container">
+        <a href="${loginUrl}" class="btn">Ingresar al Sistema →</a>
+      </div>
+    </div>
+
+    <div class="footer">
+      © Guisela Laboratorio Dental · Sistema Integral CAD/CAM<br>
+      Si no reconoces esta solicitud, contacta de inmediato con la administración del laboratorio.
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  return transporter.sendMail({
+    from: FROM_HEADER,
+    to,
+    subject: `Tu Contraseña Temporal de Acceso - Guisela Laboratorio Dental 🔑`,
+    html,
+  });
+}
+

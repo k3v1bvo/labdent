@@ -86,7 +86,7 @@ SECURITY DEFINER
 SET search_path = public, auth
 AS $$
 DECLARE
-  v_rol public.user_role := 'tecnico';
+  v_rol public.user_role := 'doctor';
   v_raw_rol text;
   v_nombre text;
 BEGIN
@@ -101,12 +101,23 @@ BEGIN
     NEW.raw_user_meta_data->>'nombre',
     NEW.raw_user_meta_data->>'name',
     split_part(NEW.email, '@', 1),
-    'Usuario'
+    'Doctor'
   );
 
   INSERT INTO public.profiles (id, nombre, rol)
   VALUES (NEW.id, v_nombre, v_rol)
   ON CONFLICT (id) DO NOTHING;
+
+  IF v_rol = 'doctor' THEN
+    INSERT INTO public.doctores (profile_id, nombre, clinica, especialidad)
+    VALUES (
+      NEW.id,
+      v_nombre,
+      COALESCE(NEW.raw_user_meta_data->>'clinica', 'Clínica Dr(a). ' || v_nombre),
+      COALESCE(NEW.raw_user_meta_data->>'especialidad', 'Rehabilitación Oral')
+    )
+    ON CONFLICT DO NOTHING;
+  END IF;
 
   RETURN NEW;
 EXCEPTION WHEN OTHERS THEN

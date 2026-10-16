@@ -287,6 +287,49 @@ export default function TechnicianDashboard() {
         return;
       }
 
+      // Validar rol de usuario para proteger el área técnica
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("rol, nombre")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profile?.rol === "doctor") {
+        router.replace("/dashboard/doctors/orders");
+        return;
+      }
+
+      if (profile?.rol === "secretaria") {
+        router.replace("/dashboard/secretary/orders");
+        return;
+      }
+
+      // Si es un usuario de Google sin estación asignada que cayó aquí por error
+      const isGoogleUser =
+        user.app_metadata?.provider === "google" ||
+        user.identities?.some((id: any) => id.provider === "google");
+
+      if (isGoogleUser && user.email !== "tecnico@labdent.com") {
+        const { data: teCheck } = await supabase
+          .from("tecnico_estacion")
+          .select("id")
+          .eq("tecnico_id", user.id)
+          .maybeSingle();
+
+        if (!teCheck) {
+          // Auto-reparar a Doctor
+          await supabase.from("profiles").update({ rol: "doctor" }).eq("id", user.id);
+          await supabase.from("doctores").upsert({
+            profile_id: user.id,
+            nombre: profile?.nombre || user.user_metadata?.full_name || "Doctor",
+            clinica: `Clínica Dr(a). ${profile?.nombre || user.user_metadata?.full_name || "Doctor"}`,
+            especialidad: "Rehabilitación Oral",
+          });
+          router.replace("/dashboard/doctors/orders");
+          return;
+        }
+      }
+
       setUserId(user.id);
 
       const { data: ests, error: estErr } = await supabase

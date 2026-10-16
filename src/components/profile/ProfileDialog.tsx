@@ -23,6 +23,10 @@ import {
   CheckCircle2,
   X,
   ExternalLink,
+  Lock,
+  Eye,
+  EyeOff,
+  Loader2,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -49,10 +53,17 @@ export function ProfileDialog({
 
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [email, setEmail] = useState<string>("");
+  const [mustChangePassword, setMustChangePassword] = useState(false);
 
   const [editMode, setEditMode] = useState(false);
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
+
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPass, setChangingPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
 
   const initial = useMemo(() => {
     const n = (profile?.nombre || "").trim();
@@ -79,6 +90,10 @@ export function ProfileDialog({
       }
 
       setEmail(user.email ?? "");
+      setMustChangePassword(!!user.user_metadata?.must_change_password);
+      if (user.user_metadata?.must_change_password) {
+        setShowPasswordSection(true);
+      }
 
       const res = await supabase
         .from("profiles")
@@ -152,6 +167,39 @@ export function ProfileDialog({
     );
     setEditMode(false);
     onSaved?.();
+  }
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      toast.error("La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Las contraseñas no coinciden");
+      return;
+    }
+
+    setChangingPass(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+        data: { must_change_password: false },
+      });
+
+      if (error) throw error;
+
+      toast.success("✅ ¡Contraseña actualizada exitosamente!");
+      setNewPassword("");
+      setConfirmPassword("");
+      setShowPasswordSection(false);
+      setMustChangePassword(false);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Error al cambiar la contraseña");
+    } finally {
+      setChangingPass(false);
+    }
   }
 
   async function logout() {
@@ -394,6 +442,86 @@ export function ProfileDialog({
                       <ExternalLink className="w-4 h-4 text-[#A57CFA] group-hover:translate-x-0.5 transition-transform" />
                     </Link>
                   )}
+
+                  {/* Sección de Seguridad: Cambiar Contraseña */}
+                  <div className="pt-1">
+                    {mustChangePassword && !showPasswordSection && (
+                      <div className="mb-2 p-3 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-start gap-2">
+                        <Lock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        <span>Tienes una clave temporal asignada. Te recomendamos definir tu propia contraseña personal.</span>
+                      </div>
+                    )}
+
+                    {!showPasswordSection ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowPasswordSection(true)}
+                        className="w-full h-11 rounded-2xl border-purple-200 text-[#3C1C6C] hover:bg-purple-50 font-bold text-xs gap-2 shadow-2xs"
+                      >
+                        <Lock className="w-4 h-4 text-[#A57CFA]" />
+                        Cambiar mi Contraseña
+                      </Button>
+                    ) : (
+                      <form onSubmit={handleChangePassword} className="p-4 rounded-2xl bg-purple-50/60 border border-purple-200 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-[#3C1C6C] flex items-center gap-1.5">
+                            <Lock className="w-3.5 h-3.5 text-[#A57CFA]" /> Cambiar Contraseña
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setShowPasswordSection(false)}
+                            className="text-[11px] text-slate-500 hover:text-slate-700 font-semibold cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+
+                        <div className="relative">
+                          <Input
+                            type={showNewPass ? "text" : "password"}
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            required
+                            minLength={6}
+                            placeholder="Nueva contraseña (mínimo 6 caracteres)"
+                            className="h-10 text-xs pr-9 rounded-xl border-purple-200 bg-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPass((s) => !s)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                          >
+                            {showNewPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+
+                        <Input
+                          type={showNewPass ? "text" : "password"}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          required
+                          minLength={6}
+                          placeholder="Confirmar nueva contraseña"
+                          className="h-10 text-xs rounded-xl border-purple-200 bg-white"
+                        />
+
+                        <Button
+                          type="submit"
+                          disabled={changingPass || newPassword.length < 6}
+                          className="w-full h-9 bg-[#3C1C6C] hover:bg-[#2C1450] text-white font-bold rounded-xl text-xs gap-1.5"
+                        >
+                          {changingPass ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...
+                            </>
+                          ) : (
+                            "Guardar Nueva Contraseña"
+                          )}
+                        </Button>
+                      </form>
+                    )}
+                  </div>
 
                   {/* Botón de Cerrar Sesión */}
                   <div className="pt-2">
