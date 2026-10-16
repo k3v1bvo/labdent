@@ -28,9 +28,21 @@ import {
   Truck,
   Building2,
   MapPin,
+  Check,
 } from "lucide-react";
+import { ClinicLocationPickerModal } from "@/components/location/ClinicLocationPickerModal";
 
 type SuggestionType = "doctor" | "paciente" | "color" | "colimetro";
+
+export interface DoctorSuggestion {
+  nombre: string;
+  telefono?: string;
+  clinica?: string;
+  direccion?: string;
+  latitud?: number;
+  longitud?: number;
+  especialidad?: string;
+}
 
 interface PedidoForm {
   numero_requerimiento: string;
@@ -135,6 +147,12 @@ export default function SecretaryNewOrderPage() {
     colimetro: [],
   });
 
+  const [doctorObjSuggestions, setDoctorObjSuggestions] = useState<DoctorSuggestion[]>([]);
+  const [selectedDoctorObj, setSelectedDoctorObj] = useState<DoctorSuggestion | null>(null);
+  const [mapModalOpen, setMapModalOpen] = useState(false);
+  const [latitudEntrega, setLatitudEntrega] = useState<number | null>(null);
+  const [longitudEntrega, setLongitudEntrega] = useState<number | null>(null);
+
   const [visibleSuggest, setVisibleSuggest] = useState<Record<SuggestionType, boolean>>({
     doctor: false,
     paciente: false,
@@ -207,13 +225,87 @@ export default function SecretaryNewOrderPage() {
     if (name === "colimetro") debouncedSuggestions("colimetro", v);
   }
 
-  // 🔍 Buscar sugerencias (de pedidos previos)
+  // 🔍 Buscar sugerencias (desde tabla doctores y pedidos previos)
   async function fetchSuggestions(type: SuggestionType, query: string) {
-    if (query.trim().length < 2) {
+    const qClean = query.trim();
+    if (qClean.length < 2) {
       setVisibleSuggest((prev) => ({ ...prev, [type]: false }));
+      if (type === "doctor") setDoctorObjSuggestions([]);
       return;
     }
 
+    // 👨‍⚕️ Búsqueda avanzada de Doctores (Tabla doctores + pedidos previos)
+    if (type === "doctor") {
+      const merged: DoctorSuggestion[] = [];
+      const seenNames = new Set<string>();
+
+      try {
+        // 1. Buscar en tabla doctores registrados
+        const { data: regDocs } = await supabase
+          .from("doctores")
+          .select("id, nombre, telefono, clinica, especialidad, profile_id")
+          .ilike("nombre", `%${qClean}%`)
+          .limit(6);
+
+        if (regDocs) {
+          regDocs.forEach((d) => {
+            const clean = normalizePersonName(d.nombre);
+            seenNames.add(clean.toLowerCase());
+            merged.push({
+              nombre: clean,
+              telefono: d.telefono || undefined,
+              clinica: d.clinica || undefined,
+              especialidad: d.especialidad || undefined,
+            });
+          });
+        }
+
+        // 2. Buscar en historial de pedidos para doctores frecuentes
+        const { data: pastOrders } = await supabase
+          .from("pedidos")
+          .select("doctor_nombre, doctor_telefono, observaciones")
+          .ilike("doctor_nombre", `%${qClean}%`)
+          .order("fecha_ingreso", { ascending: false })
+          .limit(8);
+
+        if (pastOrders) {
+          pastOrders.forEach((p) => {
+            const clean = normalizePersonName(p.doctor_nombre || "");
+            if (clean && !seenNames.has(clean.toLowerCase())) {
+              seenNames.add(clean.toLowerCase());
+
+              // Extraer dirección previa de delivery si existió en observaciones
+              let pastDir: string | undefined = undefined;
+              let pastClinica: string | undefined = undefined;
+              if (p.observaciones && p.observaciones.includes("DELIVERY:")) {
+                const matchDir = p.observaciones.match(/Dir:\s*([^|()]+)/);
+                if (matchDir) pastDir = matchDir[1].trim();
+                const matchCli = p.observaciones.match(/DELIVERY:\s*([^|()]+)/);
+                if (matchCli && !matchCli[1].toLowerCase().includes("consultorio")) {
+                  pastClinica = matchCli[1].trim();
+                }
+              }
+
+              merged.push({
+                nombre: clean,
+                telefono: p.doctor_telefono || undefined,
+                clinica: pastClinica,
+                direccion: pastDir,
+              });
+            }
+          });
+        }
+      } catch (err) {
+        console.warn("Error buscando doctores:", err);
+      }
+
+      setDoctorObjSuggestions(merged);
+      setSuggestions((prev) => ({ ...prev, doctor: merged.map((m) => m.nombre) }));
+      setVisibleSuggest((prev) => ({ ...prev, doctor: merged.length > 0 }));
+      return;
+    }
+
+    // 👤 Búsqueda estándar para Paciente, Color, Colímetro
     const columnMap: Record<SuggestionType, string> = {
       doctor: "doctor_nombre",
       paciente: "paciente_nombre",
@@ -222,7 +314,7 @@ export default function SecretaryNewOrderPage() {
     };
     const column = columnMap[type];
 
-    const { data, error } = await supabase.from("pedidos").select(column).ilike(column, `%${query}%`).limit(6);
+    const { data, error } = await supabase.from("pedidos").select(column).ilike(column, `%${qClean}%`).limit(6);
 
     if (error || !data) {
       console.error("fetchSuggestions error:", error);
@@ -237,38 +329,110 @@ export default function SecretaryNewOrderPage() {
     setVisibleSuggest((prev) => ({ ...prev, [type]: unique.length > 0 }));
   }
 
-  // ✅ Seleccionar sugerencia (y rellena teléfono)
+  // ✅ Seleccionar sugerencia completa de Doctor
+  async function handleSelectDoctorObj(doc: DoctorSuggestion) {
+    setVisibleSuggest((prev) => ({ ...prev, doctor: false }));
+    setSelectedDoctorObj(doc);
+
+    const selectedName = normalizePersonName(doc.nombre);
+
+    // Si no tiene dirección guardada en el objeto, buscar la última orden con delivery de este doctor
+    let foundDir = doc.direccion;
+    let foundClinica = doc.clinica;
+    let foundTel = doc.telefono;
+
+    try {
+      const { data: lastOrder } = await supabase
+        .from("pedidos")
+        .select("doctor_telefono, observaciones")
+        .ilike("doctor_nombre", selectedName)
+        .order("fecha_ingreso", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (lastOrder) {
+        if (!foundTel && lastOrder.doctor_telefono) {
+          foundTel = lastOrder.doctor_telefono;
+        }
+        if (!foundDir && lastOrder.observaciones && lastOrder.observaciones.includes("DELIVERY:")) {
+          const match = lastOrder.observaciones.match(/Dir:\s*([^|()]+)/);
+          if (match) foundDir = match[1].trim();
+          const matchCli = lastOrder.observaciones.match(/DELIVERY:\s*([^|()]+)/);
+          if (matchCli && !matchCli[1].toLowerCase().includes("consultorio")) {
+            foundClinica = foundClinica || matchCli[1].trim();
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Lookup past delivery address error:", e);
+    }
+
+    setForm((prev) => {
+      const updated = {
+        ...prev,
+        doctor_nombre: selectedName,
+        doctor_telefono: foundTel ? onlyDigits(foundTel) : prev.doctor_telefono,
+        clinica_nombre: foundClinica || prev.clinica_nombre,
+      };
+
+      if (foundDir) {
+        updated.direccion_entrega = foundDir;
+      }
+      if (foundTel && !updated.telefono_entrega) {
+        updated.telefono_entrega = onlyDigits(foundTel);
+      }
+
+      return updated;
+    });
+
+    if (doc.latitud != null && doc.longitud != null) {
+      setLatitudEntrega(doc.latitud);
+      setLongitudEntrega(doc.longitud);
+    }
+
+    toast.success(`Doctor/a ${selectedName} seleccionado`, {
+      description: foundClinica ? `Clínica: ${foundClinica}` : undefined,
+    });
+
+    setTimeout(() => pacienteRef.current?.focus(), 60);
+  }
+
+  // ✅ Seleccionar sugerencia genérica (paciente, color, colimetro)
   async function handleSelectSuggestion(type: SuggestionType, value: string) {
     setVisibleSuggest((prev) => ({ ...prev, [type]: false }));
 
-    if (type === "doctor" || type === "paciente") {
-      const telefonoCol = type === "doctor" ? "doctor_telefono" : "paciente_telefono";
-      const nombreCol = type === "doctor" ? "doctor_nombre" : "paciente_nombre";
+    if (type === "doctor") {
+      const matched = doctorObjSuggestions.find((d) => d.nombre.toLowerCase() === value.toLowerCase());
+      if (matched) {
+        handleSelectDoctorObj(matched);
+        return;
+      }
+      handleSelectDoctorObj({ nombre: value });
+      return;
+    }
 
+    if (type === "paciente") {
       const selectedName = normalizePersonName(value);
 
       const { data, error } = await supabase
         .from("pedidos")
-        .select(`${telefonoCol}`)
-        .ilike(nombreCol, selectedName)
+        .select("paciente_telefono")
+        .ilike("paciente_nombre", selectedName)
         .order("fecha_ingreso", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (error) console.error("telefono lookup error:", error);
 
-      const telefonoValue = data ? String((data as Record<string, any>)[telefonoCol] ?? "") : "";
+      const telefonoValue = data ? String(data.paciente_telefono ?? "") : "";
 
       setForm((prev) => ({
         ...prev,
-        [nombreCol]: selectedName,
-        [telefonoCol]: onlyDigits(telefonoValue),
+        paciente_nombre: selectedName,
+        paciente_telefono: onlyDigits(telefonoValue),
       }));
 
-      setTimeout(() => {
-        if (type === "doctor") pacienteRef.current?.focus();
-        else trabajoRef.current?.focus();
-      }, 60);
+      setTimeout(() => trabajoRef.current?.focus(), 60);
     } else {
       const col = type === "color" ? "color_pieza" : "colimetro";
       setForm((prev) => ({ ...prev, [col]: value }));
@@ -401,7 +565,11 @@ export default function SecretaryNewOrderPage() {
     // Formatear logística de delivery en observaciones si se activó
     let finalObservaciones = form.observaciones?.trim() || "";
     if (form.requiere_delivery && form.direccion_entrega.trim()) {
-      const deliveryTag = `[🚚 DELIVERY: ${form.clinica_nombre.trim() || "Consultorio"} | Dir: ${form.direccion_entrega.trim()}${form.referencia_entrega.trim() ? ` (Ref: ${form.referencia_entrega.trim()})` : ""}${form.telefono_entrega.trim() ? ` | Contacto: ${form.telefono_entrega.trim()}` : ""}]`;
+      const gpsPart =
+        latitudEntrega != null && longitudEntrega != null
+          ? ` | GPS: ${latitudEntrega.toFixed(5)}, ${longitudEntrega.toFixed(5)}`
+          : "";
+      const deliveryTag = `[🚚 DELIVERY: ${form.clinica_nombre.trim() || "Consultorio"} | Dir: ${form.direccion_entrega.trim()}${form.referencia_entrega.trim() ? ` (Ref: ${form.referencia_entrega.trim()})` : ""}${form.telefono_entrega.trim() ? ` | Contacto: ${form.telefono_entrega.trim()}` : ""}${gpsPart}]`;
       finalObservaciones = finalObservaciones
         ? `${finalObservaciones}\n${deliveryTag}`
         : deliveryTag;
@@ -599,16 +767,44 @@ export default function SecretaryNewOrderPage() {
                   onBlur={() => setTimeout(() => setVisibleSuggest((p) => ({ ...p, doctor: false })), 150)}
                 />
 
-                {visibleSuggest.doctor && suggestions.doctor.length > 0 && (
-                  <div className="absolute top-full left-0 w-full mt-1 z-50 bg-white border rounded-xl shadow-lg overflow-hidden max-h-56 overflow-auto">
-                    {suggestions.doctor.map((d, i) => (
+                {visibleSuggest.doctor && doctorObjSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 w-full mt-1 z-50 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden max-h-64 overflow-y-auto divide-y divide-slate-100 animate-in fade-in duration-150">
+                    {doctorObjSuggestions.map((doc, i) => (
                       <button
                         key={i}
                         type="button"
-                        onClick={() => handleSelectSuggestion("doctor", d)}
-                        className="w-full text-left px-3 py-2 hover:bg-green-50 cursor-pointer text-sm flex items-center gap-2"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleSelectDoctorObj(doc);
+                        }}
+                        className="w-full text-left px-3.5 py-2.5 hover:bg-purple-50/70 cursor-pointer transition-colors flex items-center justify-between gap-2"
                       >
-                        <Stethoscope className="w-4 h-4 text-muted-foreground" /> {d}
+                        <div className="min-w-0">
+                          <p className="font-bold text-sm text-slate-800 flex items-center gap-1.5 truncate">
+                            <Stethoscope className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                            <span>{doc.nombre}</span>
+                          </p>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[11px] text-slate-500">
+                            {doc.clinica && (
+                              <span className="font-medium text-slate-700 bg-slate-100 px-1.5 py-0.2 rounded">
+                                🏥 {doc.clinica}
+                              </span>
+                            )}
+                            {doc.telefono && (
+                              <span className="text-slate-500">
+                                📞 {doc.telefono}
+                              </span>
+                            )}
+                            {doc.direccion && (
+                              <span className="text-purple-600 truncate max-w-[200px]">
+                                📍 {doc.direccion}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold text-purple-700 bg-purple-100/70 px-2 py-0.5 rounded-full shrink-0">
+                          Elegir
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -929,9 +1125,19 @@ export default function SecretaryNewOrderPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-purple-600" /> Dirección de Entrega
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-purple-600" /> Dirección de Entrega
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setMapModalOpen(true)}
+                        className="text-[11px] font-bold text-purple-700 hover:text-purple-900 flex items-center gap-1 cursor-pointer hover:underline"
+                        title="Seleccionar ubicación exacta en el mapa satelital o de calles"
+                      >
+                        <MapPin className="w-3 h-3 text-purple-600" /> Fijar en el Mapa
+                      </button>
+                    </div>
                     <Input
                       name="direccion_entrega"
                       value={form.direccion_entrega}
@@ -939,6 +1145,11 @@ export default function SecretaryNewOrderPage() {
                       placeholder="Ej. Av. Busch #1234, Piso 3, Of. 301"
                       className="h-9 text-xs rounded-xl border-slate-200"
                     />
+                    {latitudEntrega != null && longitudEntrega != null && (
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 inline-flex items-center gap-1 mt-1">
+                        <Check className="w-3 h-3 text-emerald-600" /> GPS fijado: {latitudEntrega.toFixed(4)}, {longitudEntrega.toFixed(4)}
+                      </span>
+                    )}
                   </div>
 
                   <div className="space-y-1">
@@ -1002,6 +1213,24 @@ export default function SecretaryNewOrderPage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Modal Interactivo de Ubicación de Clínica / Delivery */}
+      <ClinicLocationPickerModal
+        open={mapModalOpen}
+        onOpenChange={setMapModalOpen}
+        onConfirm={(res) => {
+          setLatitudEntrega(res.lat);
+          setLongitudEntrega(res.lng);
+          if (res.direccion) {
+            setForm((p) => ({ ...p, direccion_entrega: res.direccion }));
+          }
+          toast.success("📍 Ubicación fijada en el mapa con éxito");
+        }}
+        initialLat={latitudEntrega || -16.4955}
+        initialLng={longitudEntrega || -68.1336}
+        initialAddress={form.direccion_entrega}
+        clinicaNombre={form.clinica_nombre || form.doctor_nombre || "Consultorio Dental"}
+      />
     </div>
   );
 }

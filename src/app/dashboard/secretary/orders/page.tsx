@@ -19,6 +19,7 @@ import {
   ClipboardCheck,
   XCircle,
   Search,
+  Truck,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -395,25 +396,48 @@ export default function SecretaryOrdersPage() {
         <table className="min-w-full text-sm text-left">
           <thead className="bg-[#3C1C6C] text-white uppercase text-xs font-semibold">
             <tr>
-              <th className="px-6 py-4">Paciente</th>
-              <th className="px-6 py-4">Doctor</th>
-              <th className="px-6 py-4">N° Req</th>
-              <th className="px-6 py-4">Estado</th>
-              <th className="px-6 py-4">Creado</th>
-              <th className="px-6 py-4">Entrega</th>
-              <th className="px-6 py-4">Nota</th>
-              <th className="px-6 py-4 text-right">Acciones</th>
+              <th className="px-5 py-4">Paciente</th>
+              <th className="px-5 py-4">Doctor</th>
+              <th className="px-5 py-4">N° Req / Caja</th>
+              <th className="px-5 py-4">Estado</th>
+              <th className="px-5 py-4">Total / Saldo</th>
+              <th className="px-5 py-4">Creado</th>
+              <th className="px-5 py-4">Entrega</th>
+              <th className="px-5 py-4">Nota</th>
+              <th className="px-5 py-4 text-right">Acciones</th>
             </tr>
           </thead>
 
           <tbody>
-            {filteredOrders.map((o) => (
-              <tr key={o.id} className="border-t hover:bg-gray-50">
-                <td className="px-6 py-3 font-medium">{o.paciente_nombre}</td>
-                <td className="px-6 py-3">{o.doctor_nombre || "—"}</td>
-                <td className="px-6 py-3">{o.numero_requerimiento || "—"}</td>
+            {filteredOrders.map((o) => {
+              const saldo = (o.total ?? 0) - (o.anticipo ?? 0);
+              const hasDelivery = o.observaciones && o.observaciones.includes("DELIVERY");
 
-                <td className="px-6 py-3">
+              return (
+              <tr key={o.id} className="border-t hover:bg-gray-50/80 transition-colors">
+                <td className="px-5 py-3 font-semibold text-slate-900">{o.paciente_nombre}</td>
+                <td className="px-5 py-3 text-slate-700">{o.doctor_nombre || "—"}</td>
+                <td className="px-5 py-3">
+                  <div className="flex flex-col gap-1 items-start">
+                    <span className="font-mono text-xs font-bold text-slate-800">
+                      {o.numero_requerimiento || "—"}
+                    </span>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {o.numero_caja && (
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-purple-900 text-white">
+                          Caja #{o.numero_caja}
+                        </span>
+                      )}
+                      {hasDelivery && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-0.5">
+                          <Truck className="w-2.5 h-2.5" /> Delivery
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </td>
+
+                <td className="px-5 py-3">
                   <div className="flex items-center gap-2">
                     {renderBadge(o.estado)}
                   </div>
@@ -424,19 +448,32 @@ export default function SecretaryOrdersPage() {
                   )}
                 </td>
 
-                <td className="px-6 py-3">
+                <td className="px-5 py-3 text-xs">
+                  {o.total != null ? (
+                    <div>
+                      <p className="font-bold text-slate-900">Bs {Number(o.total).toFixed(2)}</p>
+                      <p className={`text-[11px] font-semibold ${saldo <= 0 ? "text-emerald-700" : "text-purple-700"}`}>
+                        {saldo <= 0 ? "✓ Pagado" : `Saldo: Bs ${saldo.toFixed(2)}`}
+                      </p>
+                    </div>
+                  ) : (
+                    <span className="text-slate-400">—</span>
+                  )}
+                </td>
+
+                <td className="px-5 py-3 text-xs text-slate-600">
                   {o.fecha_creacion
                     ? new Date(o.fecha_creacion).toLocaleDateString()
                     : "—"}
                 </td>
 
-                <td className="px-6 py-3">
+                <td className="px-5 py-3 text-xs text-slate-600">
                   {o.fecha_entrega
                     ? new Date(o.fecha_entrega).toLocaleString()
                     : "—"}
                 </td>
 
-                <td className="px-6 py-3">{o.numero_nota_entrega || "—"}</td>
+                <td className="px-5 py-3 text-xs font-mono text-slate-600">{o.numero_nota_entrega || "—"}</td>
 
                 <td className="px-6 py-4 text-right">
                   {o.estado === "pendiente_revision" && (
@@ -474,11 +511,12 @@ export default function SecretaryOrdersPage() {
                   )}
                 </td>
               </tr>
-            ))}
+            );
+          })}
 
             {filteredOrders.length === 0 && (
               <tr>
-                <td className="px-6 py-12 text-center text-sm text-slate-500" colSpan={8}>
+                <td className="px-6 py-12 text-center text-sm text-slate-500" colSpan={9}>
                   No hay pedidos para mostrar en esta categoría.
                 </td>
               </tr>

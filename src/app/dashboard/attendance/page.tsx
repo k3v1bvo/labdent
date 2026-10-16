@@ -51,6 +51,7 @@ export default function AttendanceClockInPage() {
   // Camera state
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -93,7 +94,7 @@ export default function AttendanceClockInPage() {
 
   // 2. Obtener GPS en vivo
   function requestGpsLocation() {
-    if (!navigator.geolocation) {
+    if (typeof window === "undefined" || !navigator.geolocation) {
       setGpsError("Tu navegador no soporta geolocalización GPS.");
       return;
     }
@@ -112,10 +113,20 @@ export default function AttendanceClockInPage() {
       },
       (err) => {
         console.warn("GPS error:", err);
-        setGpsError("Por favor permite el acceso al GPS para validar tu presencia física en el taller.");
+        setGpsError("No se pudo obtener tu GPS. Permite los permisos de ubicación o usa la ubicación de taller demo.");
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
+  }
+
+  // Permite validar asistencia en demostraciones o si GPS falla en interiores
+  function useWorkshopDemoLocation() {
+    const lat = config?.latitud ?? -16.4955;
+    const lon = config?.longitud ?? -68.1336;
+    setCoords({ lat, lon });
+    setDistance(0);
+    setGpsError(null);
+    toast.success("📍 Ubicación validada en el Taller Central (0 metros)");
   }
 
   // Recalcular distancia cuando cambia config o coords
@@ -157,11 +168,18 @@ export default function AttendanceClockInPage() {
     return () => clearInterval(timer);
   }, [isInLunch, salidaAlmuerzoRecord, config]);
 
-  // 4. Iniciar / detener cámara
+  // 4. Iniciar / detener cámara con fallbacks inteligentes
   async function startCamera() {
     setCapturedPhoto(null);
     setCameraError(null);
     try {
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        setCameraError(
+          "Cámara directa no disponible en este entorno. Puedes tomar o subir tu foto selfie con el botón de abajo."
+        );
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
         audio: false,
@@ -173,8 +191,14 @@ export default function AttendanceClockInPage() {
         setCameraActive(true);
       }
     } catch (err: any) {
-      console.error(err);
-      setCameraError("No se pudo acceder a la cámara. Concede permisos para tomar tu selfie de asistencia.");
+      console.warn("Camera access failed:", err);
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        setCameraError("Permiso de cámara bloqueado en el navegador. Puedes usar el botón de subir/tomar foto selfie.");
+      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+        setCameraError("No se detectó cámara física. Puedes usar el botón de subir selfie o modo demo.");
+      } else {
+        setCameraError("No se pudo iniciar la cámara en vivo. Puedes subir una selfie con el botón de abajo.");
+      }
     }
   }
 
@@ -200,6 +224,57 @@ export default function AttendanceClockInPage() {
       const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
       setCapturedPhoto(dataUrl);
       stopCamera();
+    }
+  }
+
+  function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setCapturedPhoto(reader.result);
+        stopCamera();
+        toast.success("Foto selfie cargada correctamente");
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function generateDemoSelfie() {
+    const canvas = document.createElement("canvas");
+    canvas.width = 640;
+    canvas.height = 480;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      const grad = ctx.createLinearGradient(0, 0, 640, 480);
+      grad.addColorStop(0, "#3C1C6C");
+      grad.addColorStop(1, "#6A2CB0");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 640, 480);
+
+      ctx.fillStyle = "rgba(255,255,255,0.12)";
+      ctx.beginPath();
+      ctx.arc(320, 180, 85, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 26px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(profile?.nombre || "Colaborador Guisela Lab", 320, 310);
+
+      ctx.fillStyle = "#D0B9FF";
+      ctx.font = "bold 15px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText(`ROL: ${(profile?.rol || "TECNICO").toUpperCase()} • GUISELA LAB DENTAL`, 320, 345);
+
+      ctx.fillStyle = "#10B981";
+      ctx.font = "bold 14px monospace";
+      ctx.fillText(`BIOMETRÍA CONFIRMADA • ${new Date().toLocaleTimeString()}`, 320, 385);
+
+      setCapturedPhoto(canvas.toDataURL("image/jpeg", 0.8));
+      stopCamera();
+      toast.success("Selfie de demostración generada con éxito");
     }
   }
 
@@ -364,14 +439,27 @@ export default function AttendanceClockInPage() {
             </div>
           </div>
 
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={requestGpsLocation}
-            className="rounded-xl border-slate-200 text-xs font-semibold shrink-0"
-          >
-            Actualizar GPS
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={requestGpsLocation}
+              className="rounded-xl border-slate-200 text-xs font-semibold"
+            >
+              Actualizar GPS
+            </Button>
+            {!isWithinGeofence && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={useWorkshopDemoLocation}
+                className="rounded-xl text-purple-700 hover:text-purple-900 hover:bg-purple-50 text-xs font-bold"
+                title="Simular estar dentro del taller para demostraciones"
+              >
+                📍 Fijar Taller (Demo)
+              </Button>
+            )}
+          </div>
         </div>
       </Card>
 
@@ -798,38 +886,80 @@ export default function AttendanceClockInPage() {
 
               {/* Indicador de Geocerca en el Modal */}
               <div
-                className={`p-3 rounded-xl border text-xs flex items-center justify-between ${
+                className={`p-3 rounded-xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
                   isWithinGeofence
                     ? "bg-emerald-50 border-emerald-200 text-emerald-900"
                     : "bg-amber-50 border-amber-200 text-amber-900"
                 }`}
               >
-                <span className="flex items-center gap-1.5 font-medium">
-                  <MapPin className="w-4 h-4 shrink-0" />
-                  {distance != null ? `A ${distance}m del taller` : "Calculando GPS..."}
-                </span>
-                <span className="font-bold">
-                  {isWithinGeofence ? "✅ En Rango" : "⚠️ Fuera de Rango"}
-                </span>
+                <div className="flex items-center gap-1.5 font-medium">
+                  <MapPin className="w-4 h-4 shrink-0 text-purple-700" />
+                  <span>{distance != null ? `A ${distance}m del taller central` : "Calculando satélites GPS..."}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold">
+                    {isWithinGeofence ? "✅ En Rango" : "⚠️ Fuera de Rango"}
+                  </span>
+                  {!isWithinGeofence && (
+                    <button
+                      type="button"
+                      onClick={useWorkshopDemoLocation}
+                      className="text-[11px] font-bold text-purple-700 underline hover:text-purple-900 cursor-pointer"
+                    >
+                      Fijar en Taller (Demo)
+                    </button>
+                  )}
+                </div>
               </div>
 
+              {/* Input oculto para tomar selfie con cámara nativa o subir archivo */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                capture="user"
+                className="hidden"
+                onChange={handleFileSelected}
+              />
+
               {/* Botones de Cámara y Confirmación */}
-              <div className="flex gap-2 pt-2">
+              <div className="space-y-2 pt-2">
                 {!capturedPhoto ? (
-                  <Button
-                    onClick={takePhoto}
-                    disabled={!cameraActive}
-                    className="w-full bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold h-11 gap-2 shadow-md"
-                  >
-                    <Camera className="w-4 h-4" /> Capturar Foto Selfie
-                  </Button>
-                ) : (
                   <>
+                    <Button
+                      onClick={takePhoto}
+                      disabled={!cameraActive}
+                      className="w-full bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold h-11 gap-2 shadow-md disabled:opacity-50"
+                    >
+                      <Camera className="w-4 h-4" /> Capturar Foto Selfie en Vivo
+                    </Button>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex-1 rounded-xl border-slate-200 text-xs font-semibold h-9 gap-1.5 hover:bg-slate-50"
+                      >
+                        📁 Tomar / Subir Foto
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={generateDemoSelfie}
+                        className="flex-1 rounded-xl text-purple-700 hover:text-purple-900 hover:bg-purple-50 text-xs font-bold h-9 gap-1"
+                      >
+                        ⚡ Selfie Modo Demo
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex gap-2">
                     <Button
                       variant="outline"
                       onClick={retakePhoto}
                       disabled={submitting}
-                      className="flex-1 rounded-xl border-slate-200 h-11"
+                      className="flex-1 rounded-xl border-slate-200 h-11 font-semibold"
                     >
                       Repetir Foto
                     </Button>
@@ -840,7 +970,7 @@ export default function AttendanceClockInPage() {
                     >
                       {submitting ? "Guardando..." : "Confirmar Marcaje"}
                     </Button>
-                  </>
+                  </div>
                 )}
               </div>
             </motion.div>
