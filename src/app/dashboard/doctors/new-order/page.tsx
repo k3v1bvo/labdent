@@ -526,6 +526,26 @@ export default function DoctorNewOrderPage() {
       return;
     }
 
+    // 🔔 Notificación en tiempo real para secretaría y administración
+    try {
+      await supabase.from("notificaciones").insert([
+        {
+          tipo: "secretaria",
+          mensaje: `Nuevo pedido clínico #${form.numero_requerimiento.trim()} de Dr(a). ${form.doctor_nombre || "Doctor"} (Paciente: ${pacienteNombreClean}).`,
+          emisor_id: user.id,
+          leida: false,
+        },
+        {
+          tipo: "admin",
+          mensaje: `Nuevo pedido #${form.numero_requerimiento.trim()} recibido de Dr(a). ${form.doctor_nombre || "Doctor"}.`,
+          emisor_id: user.id,
+          leida: false,
+        },
+      ]);
+    } catch (notifErr) {
+      console.warn("Aviso notificacion nuevo pedido:", notifErr);
+    }
+
     // ✅ Mantener tu overlay
     toast.success("✅ Guardado con éxito, en revisión");
     setShowSuccess(true);

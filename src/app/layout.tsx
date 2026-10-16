@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LabDent - Sistema Integral de Laboratorio Dental",
-  description: "Gestión moderna de pedidos, tracking de estaciones de trabajo, doctores y técnicos para laboratorios dentales.",
+  title: "Guisela Laboratorio Dental - Sistema Integral & CAD/CAM",
+  description: "Plataforma digital para odontólogos y clínicas. Gestión de pedidos en tiempo real, trazabilidad por estación de taller y prótesis de alta precisión.",
 };
 
 export default function RootLayout({

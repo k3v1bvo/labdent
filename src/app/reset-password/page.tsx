@@ -68,7 +68,16 @@ export default function ResetPasswordPage() {
       }, 3000);
     } catch (err: any) {
       console.error(err);
-      toast.error(err?.message || "Error al actualizar la contraseña");
+      const msg = String(err?.message || "");
+      if (
+        msg.toLowerCase().includes("session") ||
+        msg.toLowerCase().includes("token") ||
+        msg.toLowerCase().includes("missing")
+      ) {
+        toast.error("El enlace de recuperación es inválido o ha expirado. Por favor solicita uno nuevo desde la pantalla de login.");
+      } else {
+        toast.error(msg || "Error al actualizar la contraseña");
+      }
     } finally {
       setLoading(false);
     }

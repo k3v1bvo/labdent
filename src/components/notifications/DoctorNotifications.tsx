@@ -19,11 +19,13 @@ interface Notificacion {
   mensaje: string;
   leida: boolean;
   creada_en: string;
+  receptor_id?: string;
 }
 
 export default function DoctorNotifications() {
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
   async function fetchNotificaciones() {
     setLoading(true);
@@ -34,10 +36,11 @@ export default function DoctorNotifications() {
       setLoading(false);
       return;
     }
+    setUserId(user.id);
 
     const { data, error } = await supabase
       .from("notificaciones")
-      .select("id, mensaje, leida, creada_en")
+      .select("id, mensaje, leida, creada_en, receptor_id")
       .eq("receptor_id", user.id)
       .order("creada_en", { ascending: false })
       .limit(10);
@@ -63,23 +66,42 @@ export default function DoctorNotifications() {
   }
 
   useEffect(() => {
-    fetchNotificaciones();
+    let activeChannel: any = null;
 
-    const channel = supabase
-      .channel("doctor-notifications-realtime")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "notificaciones" },
-        (payload) => {
-          const nueva = payload.new as Notificacion;
-          setNotificaciones((prev) => [nueva, ...prev.slice(0, 9)]);
-          toast.info("🔔 Nueva actualización de pedido dental");
-        }
-      )
-      .subscribe();
+    async function init() {
+      await fetchNotificaciones();
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      activeChannel = supabase
+        .channel(`doctor-notifications-${user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "notificaciones",
+            filter: `receptor_id=eq.${user.id}`,
+          },
+          (payload) => {
+            const nueva = payload.new as Notificacion;
+            if (nueva.receptor_id && nueva.receptor_id !== user.id) return;
+            setNotificaciones((prev) => [nueva, ...prev.slice(0, 9)]);
+            toast.info("🔔 Actualización de tu orden dental", {
+              description: nueva.mensaje,
+            });
+          }
+        )
+        .subscribe();
+    }
+
+    init();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (activeChannel) supabase.removeChannel(activeChannel);
     };
   }, []);
 

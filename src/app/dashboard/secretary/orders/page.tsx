@@ -243,6 +243,42 @@ export default function SecretaryOrdersPage() {
       motivo: `Entrega física registrada bajo Nota N°: ${notaEntrega.trim()}`,
     });
 
+    // 🔔 Notificación in-app y correo de entrega al doctor
+    try {
+      const { data: pedInfo } = await supabase
+        .from("pedidos")
+        .select("creado_por, doctor_nombre, paciente_nombre, numero_requerimiento, numero_caja, trabajo_realizar")
+        .eq("id", selectedOrder.id)
+        .single();
+
+      if (pedInfo?.creado_por) {
+        await supabase.from("notificaciones").insert({
+          tipo: "doctor",
+          receptor_id: pedInfo.creado_por,
+          pedido_id: selectedOrder.id,
+          mensaje: `Tu pedido #${selectedOrder.numero_requerimiento || ""} (${selectedOrder.paciente_nombre}) ha sido entregado exitosamente bajo la Nota N° ${notaEntrega.trim()}.`,
+          leida: false,
+        });
+      }
+
+      fetch("/api/mailer/order-notification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pedidoId: selectedOrder.id,
+          doctorName: selectedOrder.doctor_nombre || pedInfo?.doctor_nombre,
+          pacienteNombre: selectedOrder.paciente_nombre,
+          numeroRequerimiento: selectedOrder.numero_requerimiento,
+          numeroCaja: selectedOrder.numero_caja || pedInfo?.numero_caja,
+          estado: "entregado",
+          trabajoRealizar: pedInfo?.trabajo_realizar,
+        }),
+      }).catch((e) => console.warn("Aviso email entrega:", e));
+    } catch (e) {
+      console.warn("Aviso notificacion entrega:", e);
+    }
+
+    toast.success("✅ Entrega registrada y notificada al doctor.");
     setSuccessEntregaAnim(true);
     setNotaEntrega("");
     fetchOrders();

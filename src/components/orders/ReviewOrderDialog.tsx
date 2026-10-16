@@ -170,7 +170,51 @@ export function ReviewOrderDialog({ open, onOpenChange, order, onUpdated }: Prop
       motivo: isPendingReview ? "Aprobación inicial de requerimiento clínico" : "Modificación aprobada por administrador",
     });
 
-    toast.success("✅ Aprobado. Enviado a producción y registrado en auditoría.");
+    // 🔔 Notificaciones en vivo para el doctor y taller
+    const targetCaja = (caja?.trim() || "00").slice(0, 2);
+    try {
+      const { data: pedInfo } = await supabase
+        .from("pedidos")
+        .select("creado_por, doctor_id, doctor_nombre, paciente_nombre, numero_requerimiento, trabajo_realizar")
+        .eq("id", order.id)
+        .single();
+
+      if (pedInfo?.creado_por) {
+        await supabase.from("notificaciones").insert({
+          tipo: "doctor",
+          receptor_id: pedInfo.creado_por,
+          pedido_id: order.id,
+          mensaje: `Tu orden #${order.numero_requerimiento || ""} (${order.paciente_nombre}) fue aprobada y pasó a producción (Caja #${targetCaja}). Total: Bs ${totalNum}.`,
+          leida: false,
+        });
+      }
+
+      await supabase.from("notificaciones").insert({
+        tipo: "tecnico",
+        pedido_id: order.id,
+        mensaje: `Nueva orden #${order.numero_requerimiento || ""} (${order.paciente_nombre}) ingresó a producción (Caja #${targetCaja}).`,
+        leida: false,
+      });
+
+      // Disparar correo al odontólogo en segundo plano
+      fetch("/api/mailer/order-notification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pedidoId: order.id,
+          doctorName: order.doctor_nombre || pedInfo?.doctor_nombre,
+          pacienteNombre: order.paciente_nombre,
+          numeroRequerimiento: order.numero_requerimiento,
+          numeroCaja: targetCaja,
+          estado: "en_proceso",
+          trabajoRealizar: pedInfo?.trabajo_realizar,
+        }),
+      }).catch((e) => console.warn("Aviso email aprobacion:", e));
+    } catch (notifErr) {
+      console.warn("No se pudo insertar notificación:", notifErr);
+    }
+
+    toast.success("✅ Aprobado. Enviado a producción y notificado al doctor.");
     setSuccessAnim(true);
     onUpdated?.();
 
@@ -278,7 +322,41 @@ export function ReviewOrderDialog({ open, onOpenChange, order, onUpdated }: Prop
       motivo: motivo,
     });
 
-    toast.success("❌ Pedido rechazado y auditado");
+    // 🔔 Notificación in-app y correo al doctor
+    try {
+      const { data: pedInfo } = await supabase
+        .from("pedidos")
+        .select("creado_por, doctor_nombre, paciente_nombre, numero_requerimiento")
+        .eq("id", order.id)
+        .single();
+
+      if (pedInfo?.creado_por) {
+        await supabase.from("notificaciones").insert({
+          tipo: "doctor",
+          receptor_id: pedInfo.creado_por,
+          pedido_id: order.id,
+          mensaje: `Tu pedido #${order.numero_requerimiento || ""} (${order.paciente_nombre}) fue observado o rechazado: ${motivo}`,
+          leida: false,
+        });
+      }
+
+      fetch("/api/mailer/order-notification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pedidoId: order.id,
+          doctorName: order.doctor_nombre || pedInfo?.doctor_nombre,
+          pacienteNombre: order.paciente_nombre,
+          numeroRequerimiento: order.numero_requerimiento,
+          estado: "rechazado",
+          trabajoRealizar: `Observación de Secretaría: ${motivo}`,
+        }),
+      }).catch((e) => console.warn("Aviso email rechazo:", e));
+    } catch (notifErr) {
+      console.warn("Aviso notificacion rechazo:", notifErr);
+    }
+
+    toast.success("❌ Pedido observado y notificado al doctor.");
     onUpdated?.();
     onOpenChange(false);
   }

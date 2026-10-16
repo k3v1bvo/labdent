@@ -99,11 +99,18 @@ export async function getWorkshopConfig(): Promise<WorkshopConfig> {
       } catch (e) {}
     }
 
+    if (!data) {
+      return {
+        ...defaultConfig,
+        horarios_personal: horariosPersonal || {},
+      };
+    }
+
     return {
       ...defaultConfig,
       ...data,
-      latitud: Number(data.latitud),
-      longitud: Number(data.longitud),
+      latitud: data.latitud != null ? Number(data.latitud) : defaultConfig.latitud,
+      longitud: data.longitud != null ? Number(data.longitud) : defaultConfig.longitud,
       horarios_personal: horariosPersonal || {},
     };
   } catch (err) {

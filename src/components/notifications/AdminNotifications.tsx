@@ -48,22 +48,38 @@ export default function AdminNotifications() {
 
   // 🔹 Suscribirse a notificaciones nuevas
   useEffect(() => {
-    fetchNotificaciones();
+    let activeChannel: any = null;
 
-    const channel = supabase
-      .channel("admin-notifications")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "notificaciones" },
-        (payload) => {
-          setNotificaciones((prev) => [payload.new as Notificacion, ...prev]);
-          toast.info("🔔 Nueva notificación para administrador");
-        }
-      )
-      .subscribe();
+    async function init() {
+      await fetchNotificaciones();
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      activeChannel = supabase
+        .channel(`admin-notifications-${user.id}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "notificaciones" },
+          (payload) => {
+            const nueva = payload.new as any;
+            if (nueva.receptor_id === user.id || nueva.tipo === "admin") {
+              setNotificaciones((prev) => [nueva as Notificacion, ...prev]);
+              toast.info("🔔 Notificación de Administración", {
+                description: nueva.mensaje,
+              });
+            }
+          }
+        )
+        .subscribe();
+    }
+
+    init();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (activeChannel) supabase.removeChannel(activeChannel);
     };
   }, []);
 

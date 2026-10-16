@@ -207,15 +207,19 @@ export default function DoctorOrdersPage() {
 
     const { primary, fallback } = await getDoctorKey(user.id);
 
-    async function queryPedidos(doctorIdValue: string) {
-      return supabase
-        .from("pedidos")
-        .select("id,paciente_nombre,numero_requerimiento,estado,fecha_creacion,fecha_entrega")
-        .eq("doctor_id", doctorIdValue)
-        .order("fecha_creacion", { ascending: false });
+    // Buscar pedidos por doctor_id o creado_por para máxima fiabilidad
+    let query = supabase
+      .from("pedidos")
+      .select("id,paciente_nombre,numero_requerimiento,estado,fecha_creacion,fecha_entrega")
+      .order("fecha_creacion", { ascending: false });
+
+    if (fallback && fallback !== primary) {
+      query = query.or(`doctor_id.eq.${primary},doctor_id.eq.${fallback},creado_por.eq.${user.id}`);
+    } else {
+      query = query.or(`doctor_id.eq.${primary},creado_por.eq.${user.id}`);
     }
 
-    let pedidosRes = await queryPedidos(primary);
+    let pedidosRes = await query;
 
     if (pedidosRes.error) {
       console.error(pedidosRes.error);
@@ -223,14 +227,6 @@ export default function DoctorOrdersPage() {
       setRows([]);
       setLoading(false);
       return;
-    }
-
-    // fallback si doctor_id guarda profile_id
-    if ((pedidosRes.data || []).length === 0 && fallback) {
-      const secondTry = await queryPedidos(fallback);
-      if (!secondTry.error && (secondTry.data || []).length > 0) {
-        pedidosRes = secondTry as any;
-      }
     }
 
     const pedidos = ((pedidosRes.data as any) || []) as PedidoBase[];

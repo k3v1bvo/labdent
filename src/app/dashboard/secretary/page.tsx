@@ -26,8 +26,10 @@ import { toast } from "sonner";
 type Notificacion = {
   id: string;
   mensaje: string | null;
-  created_at: string | null;
-  leido: boolean | null;
+  creada_en: string | null;
+  created_at?: string | null;
+  leida: boolean | null;
+  tipo?: string | null;
 };
 
 type PedidoRow = {
@@ -75,13 +77,13 @@ export default function SecretariaDashboard() {
     try {
       setRefreshing(true);
 
-      // Notificaciones secretaría
+      // Notificaciones secretaría (usando columnas reales del schema: tipo, leida, creada_en)
       const { data: notifData, error: notifErr } = await supabase
         .from("notificaciones")
-        .select("id, mensaje, created_at, leido")
-        .eq("destinatario_rol", "secretaria")
-        .eq("leido", false)
-        .order("created_at", { ascending: false });
+        .select("id, mensaje, creada_en, leida, tipo")
+        .eq("tipo", "secretaria")
+        .eq("leida", false)
+        .order("creada_en", { ascending: false });
 
       if (notifErr) {
         console.error("notifErr:", notifErr);
@@ -116,11 +118,13 @@ export default function SecretariaDashboard() {
   }, []);
 
   const marcarLeidas = async () => {
+    const ids = notificaciones.map((n) => n.id);
+    if (ids.length === 0) return;
+
     const { error } = await supabase
       .from("notificaciones")
-      .update({ leido: true })
-      .eq("destinatario_rol", "secretaria")
-      .eq("leido", false);
+      .update({ leida: true })
+      .in("id", ids);
 
     if (error) {
       toast.error("No se pudieron marcar como leídas");
@@ -361,8 +365,8 @@ export default function SecretariaDashboard() {
                   >
                     <p className="font-medium text-slate-800 leading-snug">{n.mensaje || "—"}</p>
                     <div className="flex items-center justify-between text-[10px] text-slate-400">
-                      <span>{formatDateTime(n.created_at)}</span>
-                      <span>{timeAgo(n.created_at)}</span>
+                      <span>{formatDateTime(n.creada_en || n.created_at)}</span>
+                      <span>{timeAgo(n.creada_en || n.created_at)}</span>
                     </div>
                   </div>
                 ))}

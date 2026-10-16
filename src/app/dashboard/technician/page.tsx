@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 import StationPickerDialog, { Station } from "@/components/stations/StationPickerDialog";
 
@@ -225,7 +226,7 @@ export default function TechnicianDashboard() {
     if (!commentTaskId) return;
     const txt = commentText.trim();
     if (!txt) {
-      alert("Escribe un comentario.");
+      toast.warning("Escribe un comentario antes de guardar.");
       return;
     }
 
@@ -236,7 +237,7 @@ export default function TechnicianDashboard() {
 
     if (error) {
       console.error(error);
-      alert(`Error guardando comentario: ${error.message}`);
+      toast.error(`Error guardando comentario: ${error.message}`);
       return;
     }
 
@@ -256,7 +257,7 @@ export default function TechnicianDashboard() {
 
     if (error) {
       console.error(error);
-      alert(`❌ No se pudo completar: ${error.message}`);
+      toast.error(`❌ No se pudo completar: ${error.message}`);
       return;
     }
 
@@ -295,7 +296,7 @@ export default function TechnicianDashboard() {
 
       if (estErr) {
         console.error("estErr:", estErr);
-        alert("❌ Error cargando estaciones");
+        toast.error("❌ Error cargando estaciones");
         setLoading(false);
         return;
       }
@@ -400,7 +401,7 @@ export default function TechnicianDashboard() {
 
     if (mineErr) {
       console.error("mineErr:", mineErr);
-      alert("❌ Error cargando tus tareas");
+      toast.error("❌ Error cargando tus tareas");
       return;
     }
     setMyTasks((mine as any) || []);
@@ -444,7 +445,7 @@ export default function TechnicianDashboard() {
 
     if (qErr) {
       console.error("qErr:", qErr);
-      alert("❌ Error cargando cola de tu estación");
+      toast.error("❌ Error cargando cola de tu estación");
       return;
     }
     setQueueTasks((queue as any) || []);
@@ -457,7 +458,7 @@ export default function TechnicianDashboard() {
 
     if (error) {
       console.error("rpc_tomar_tarea error:", error);
-      alert(`❌ No se pudo tomar: ${error.message}`);
+      toast.error(`❌ No se pudo tomar: ${error.message}`);
       return;
     }
 
@@ -473,7 +474,7 @@ export default function TechnicianDashboard() {
 
     if (error) {
       console.error("rpc_soltar_tarea error:", error);
-      alert(`❌ No se pudo soltar: ${error.message}`);
+      toast.error(`❌ No se pudo soltar: ${error.message}`);
       return;
     }
 

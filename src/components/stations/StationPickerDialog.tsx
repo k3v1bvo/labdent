@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -62,13 +63,14 @@ export default function StationPickerDialog({
 
       if (error) {
         console.error("rpc_cambiar_estacion error:", error);
-        alert(
+        toast.error(
           error.message ||
-            "No se pudo cambiar la estación. Revisa consola para más detalle."
+            "No se pudo cambiar la estación. Verifica tus permisos."
         );
         return;
       }
 
+      toast.success("✅ Estación de trabajo actualizada");
       onChanged?.(selectedStationId);
       setOpen(false);
     } finally {

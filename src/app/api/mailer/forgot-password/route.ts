@@ -15,10 +15,13 @@ export async function POST(req: NextRequest) {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // 1. Obtener la URL base de la aplicación (producción o desarrollo)
+    // 1. Obtener la URL base de la aplicación (producción o desarrollo dinámico)
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+    const proto = req.headers.get("x-forwarded-proto") || "http";
     const origin =
-      process.env.NEXT_PUBLIC_APP_URL ||
       req.headers.get("origin") ||
+      (host ? `${proto}://${host}` : null) ||
+      process.env.NEXT_PUBLIC_APP_URL ||
       "http://localhost:3000";
 
     const redirectTo = `${origin}/reset-password`;

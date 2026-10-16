@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 type Estacion = { id: string; nombre: string; orden: number };
 
@@ -85,27 +86,37 @@ export default function TechnicianStationsPage() {
     const { error } = await supabase.rpc("rpc_tomar_tarea", {
       p_historial_id: historialId,
     });
-    if (error) return alert(`❌ ${error.message}`);
+    if (error) {
+      toast.error(`❌ No se pudo tomar: ${error.message}`);
+      return;
+    }
+    toast.success("✅ Tarea asignada a ti");
     await fetchAll();
   }
 
   async function soltar(historialId: string) {
-    const comentario = prompt("Comentario (opcional):") ?? null;
     const { error } = await supabase.rpc("rpc_soltar_tarea", {
       p_historial_id: historialId,
-      p_comentario: comentario,
+      p_comentario: null,
     });
-    if (error) return alert(`❌ ${error.message}`);
+    if (error) {
+      toast.error(`❌ No se pudo soltar: ${error.message}`);
+      return;
+    }
+    toast.success("Tarea devuelta a la cola de espera");
     await fetchAll();
   }
 
   async function completar(historialId: string) {
-    const comentario = prompt("Comentario (opcional):") ?? null;
     const { error } = await supabase.rpc("rpc_completar_y_avanzar", {
       p_historial_id: historialId,
-      p_comentario: comentario,
+      p_comentario: null,
     });
-    if (error) return alert(`❌ ${error.message}`);
+    if (error) {
+      toast.error(`❌ No se pudo completar: ${error.message}`);
+      return;
+    }
+    toast.success("✅ Estación completada y avanzada");
     await fetchAll();
   }
 
