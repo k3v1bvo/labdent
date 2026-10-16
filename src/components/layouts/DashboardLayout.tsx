@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabaseClient";
 import dynamic from "next/dynamic";
 import {
   Menu,
+  ChevronLeft,
   X,
   LayoutDashboard,
   Users,
@@ -124,42 +125,62 @@ export default function DashboardLayout({ children }: Props) {
           open ? "w-68" : "w-20"
         } bg-[#0F081D] border-r border-purple-950/60 text-slate-200 transition-all duration-300 flex-col z-30 shrink-0 shadow-xl`}
       >
-        {/* Toggle */}
-        <button
-          onClick={() => setOpen(!open)}
-          className="absolute -right-3.5 top-7 z-40 bg-[#1E0E38] hover:bg-[#3C1C6C] border border-[#A57CFA]/40 text-white rounded-full p-1.5 shadow-lg transition-colors cursor-pointer"
-          aria-label={open ? "Colapsar menú" : "Expandir menú"}
-          type="button"
-        >
-          <Menu className="w-3.5 h-3.5" />
-        </button>
-
         {/* Brand Logo Oficial Guisela */}
-        <div className="h-18 flex items-center px-4 border-b border-purple-950/60 gap-3 bg-[#130A24]/70">
-          <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-[#3C1C6C] via-[#4D248B] to-[#6329B7] p-1.5 flex items-center justify-center border border-[#A57CFA]/40 shadow-md shadow-purple-950/40 shrink-0">
-            <Image
-              src="/images/brand/guisela-emblem-silver.png"
-              alt="Guisela Dental"
-              width={38}
-              height={38}
-              className="w-full h-full object-contain drop-shadow-sm"
-              unoptimized
-            />
-          </div>
-          {open && (
-            <div className="flex flex-col min-w-0">
-              <span className="font-black text-base tracking-tight text-white flex items-center gap-2 leading-none">
-                Guisela
-                <span className="text-[9px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full bg-[#A57CFA]/25 text-[#E0D2FE] border border-[#A57CFA]/40 shadow-xs">
-                  ADMIN
+        {open ? (
+          <div className="h-18 flex items-center justify-between px-3.5 border-b border-purple-950/60 bg-[#130A24]/70">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative w-10 h-10 rounded-xl bg-white/10 backdrop-blur-xs p-1.5 flex items-center justify-center border border-white/15 shadow-md shadow-purple-950/40 shrink-0">
+                <Image
+                  src="/images/brand/guisela-icon-clean.png"
+                  alt="Guisela Dental"
+                  width={36}
+                  height={36}
+                  className="w-full h-full object-contain drop-shadow-sm"
+                  unoptimized
+                />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="font-black text-base tracking-tight text-white flex items-center gap-2 leading-none">
+                  Guisela
+                  <span className="text-[9px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full bg-[#A57CFA]/25 text-[#E0D2FE] border border-[#A57CFA]/40 shadow-xs">
+                    ADMIN
+                  </span>
                 </span>
-              </span>
-              <span className="text-[11px] text-purple-200/80 truncate font-semibold mt-1">
-                Laboratorio Dental CAD/CAM
-              </span>
+                <span className="text-[11px] text-purple-200/90 truncate font-semibold mt-1">
+                  Control de Laboratorio
+                </span>
+              </div>
             </div>
-          )}
-        </div>
+
+            <button
+              onClick={() => setOpen(false)}
+              className="text-purple-300/70 hover:text-white p-1.5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+              title="Colapsar menú lateral"
+              aria-label="Colapsar menú lateral"
+              type="button"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="h-18 flex items-center justify-center px-2 border-b border-purple-950/60 bg-[#130A24]/70">
+            <button
+              onClick={() => setOpen(true)}
+              className="relative w-10 h-10 rounded-xl bg-white/10 backdrop-blur-xs p-1.5 flex items-center justify-center border border-white/15 shadow-md hover:border-[#A57CFA]/50 transition-all cursor-pointer group"
+              title="Expandir menú lateral"
+              type="button"
+            >
+              <Image
+                src="/images/brand/guisela-icon-clean.png"
+                alt="Guisela Dental"
+                width={36}
+                height={36}
+                className="w-full h-full object-contain drop-shadow-sm group-hover:scale-105 transition-transform"
+                unoptimized
+              />
+            </button>
+          </div>
+        )}
 
         {/* Nav list con Secciones Claras */}
         <nav className="flex-1 space-y-4 px-3 py-4 overflow-y-auto">
@@ -262,9 +283,9 @@ export default function DashboardLayout({ children }: Props) {
             {/* Header del Drawer Móvil */}
             <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800">
               <div className="flex items-center gap-3">
-                <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-[#3C1C6C] via-[#4D248B] to-[#6329B7] p-1.5 flex items-center justify-center border border-[#A57CFA]/40 shadow-md shrink-0">
+                <div className="relative w-9 h-9 rounded-xl bg-white/10 backdrop-blur-xs p-1 flex items-center justify-center border border-white/20 shadow-md shrink-0">
                   <Image
-                    src="/images/brand/guisela-emblem-silver.png"
+                    src="/images/brand/guisela-icon-clean.png"
                     alt="Guisela Dental"
                     width={32}
                     height={32}
@@ -275,11 +296,11 @@ export default function DashboardLayout({ children }: Props) {
                 <div className="flex flex-col">
                   <span className="font-black text-sm text-white flex items-center gap-1.5 leading-none">
                     Guisela
-                    <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-[#A57CFA]/20 text-[#D0B9FF] border border-[#A57CFA]/30">
+                    <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-[#A57CFA]/25 text-[#E0D2FE] border border-[#A57CFA]/30">
                       ADMIN
                     </span>
                   </span>
-                  <span className="text-[11px] text-purple-200/80 mt-0.5">Panel de Control</span>
+                  <span className="text-[11px] text-purple-200/90 mt-0.5">Control de Laboratorio</span>
                 </div>
               </div>
 
@@ -385,8 +406,19 @@ export default function DashboardLayout({ children }: Props) {
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
-              className="md:hidden p-2 -ml-1 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+              className="md:hidden p-2 -ml-1 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
               aria-label="Abrir menú de navegación"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            {/* Toggle para Desktop (>= md) */}
+            <button
+              type="button"
+              onClick={() => setOpen(!open)}
+              className="hidden md:flex p-2 -ml-1 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+              aria-label={open ? "Colapsar menú lateral" : "Expandir menú lateral"}
+              title={open ? "Colapsar menú" : "Expandir menú"}
             >
               <Menu className="w-5 h-5" />
             </button>

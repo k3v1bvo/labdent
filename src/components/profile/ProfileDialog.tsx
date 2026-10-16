@@ -422,17 +422,17 @@ export function ProfileDialog({
         ) : (
           <div className="flex flex-col">
             {/* 1. Header Banner Superior con Gradiente Real Guisela */}
-            <div className="relative h-32 bg-gradient-to-r from-[#1B0B2E] via-[#3C1C6C] to-[#6329B7] p-5 pr-14 flex items-start justify-between text-white overflow-hidden shrink-0">
+            <div className="relative h-28 bg-gradient-to-r from-[#1B0B2E] via-[#3C1C6C] to-[#6329B7] p-5 pr-16 flex items-start justify-between text-white overflow-hidden shrink-0">
               <div className="absolute -top-10 -right-10 w-44 h-44 bg-[#A57CFA]/20 rounded-full blur-2xl pointer-events-none" />
 
-              <div className="flex items-center gap-2.5 relative z-10">
-                <div className="relative w-8 h-8 rounded-xl bg-white/15 p-1 flex items-center justify-center border border-white/25 shadow-xs shrink-0">
+              <div className="flex items-center gap-3 relative z-10">
+                <div className="relative w-9 h-9 rounded-xl bg-white/15 backdrop-blur-md p-1 flex items-center justify-center border border-white/25 shadow-sm shrink-0">
                   <Image
-                    src="/images/brand/guisela-emblem-silver.png"
+                    src="/images/brand/guisela-icon-clean.png"
                     alt="Guisela Dental"
-                    width={28}
-                    height={28}
-                    className="w-full h-full object-contain drop-shadow-xs"
+                    width={32}
+                    height={32}
+                    className="w-full h-full object-contain drop-shadow-sm"
                     unoptimized
                   />
                 </div>
@@ -440,29 +440,25 @@ export function ProfileDialog({
                   <span className="text-xs font-black tracking-wider text-white uppercase block leading-tight">
                     Guisela Dental
                   </span>
-                  <span className="text-[10px] text-purple-200/80 font-medium block leading-tight">
+                  <span className="text-[11px] text-purple-200/90 font-medium block leading-tight">
                     Sistema Integral & CAD/CAM
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 relative z-10 mr-1">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 text-[11px] font-bold text-emerald-300 border border-emerald-400/30 backdrop-blur-xs shadow-xs">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  Sesión Activa
-                </span>
-              </div>
+              {/* Espacio reservado despejado para el botón (X) de cierre */}
+              <div className="w-10 h-10" aria-hidden="true" />
             </div>
 
             {/* 2. Avatar Flotante e Identidad */}
             <div className="px-6 pt-0 pb-6 relative">
-              <div className="flex items-end justify-between -mt-12 mb-4">
+              <div className="flex items-end justify-between -mt-10 mb-4">
                 <div className="relative">
-                  <div className="w-22 h-22 rounded-3xl bg-gradient-to-br from-[#3C1C6C] to-[#6329B7] text-white flex items-center justify-center text-3xl font-black border-4 border-white shadow-xl shadow-purple-950/30">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#3C1C6C] to-[#6329B7] text-white flex items-center justify-center text-3xl font-black border-4 border-white shadow-xl shadow-purple-950/30 aspect-square shrink-0">
                     {initial}
                   </div>
                   <div
-                    className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-emerald-500 border-2 border-white shadow-md flex items-center justify-center"
+                    className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-2 border-white shadow-md flex items-center justify-center"
                     title="En línea"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 text-white stroke-[3]" />
@@ -482,17 +478,21 @@ export function ProfileDialog({
                 )}
               </div>
 
-              {/* Nombre y Rol */}
+              {/* Nombre, Rol, Estado y Email */}
               <div className="text-left">
                 <h3 className="text-xl font-black text-slate-900 tracking-tight leading-snug">
                   {profile?.nombre || "Usuario"}
                 </h3>
-                <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                <div className="flex flex-wrap items-center gap-2 mt-2">
                   <span
                     className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold border ${roleMeta.badgeColor}`}
                   >
                     <span>{roleMeta.icon}</span>
                     <span>{roleMeta.label}</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 shadow-2xs">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    Sesión Activa
                   </span>
                   <span className="text-xs text-slate-500 flex items-center gap-1 font-medium">
                     <Mail className="w-3.5 h-3.5 text-slate-400" />
