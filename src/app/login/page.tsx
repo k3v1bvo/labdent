@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -21,6 +21,7 @@ import {
   Loader2,
   ArrowLeft,
 } from "lucide-react";
+import { SecretTechnicianRegisterModal } from "@/components/auth/SecretTechnicianRegisterModal";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -29,7 +30,18 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [technicianModalOpen, setTechnicianModalOpen] = useState(false);
+  const lastTapRef = useRef<number>(0);
   const router = useRouter();
+
+  function handleLogoTap() {
+    const now = Date.now();
+    if (now - lastTapRef.current < 400) {
+      setTechnicianModalOpen(true);
+      toast.info("🔧 Acceso técnico activado");
+    }
+    lastTapRef.current = now;
+  }
 
   const canSubmit = useMemo(() => {
     return email.trim().length > 3 && password.length >= 6 && !loading && !googleLoading;
@@ -193,13 +205,21 @@ export default function LoginPage() {
 
           <Card className="rounded-3xl shadow-xl shadow-purple-950/10 border border-purple-100 bg-white overflow-hidden">
             <CardHeader className="space-y-2 pt-6 sm:pt-8 pb-3 sm:pb-4 text-center px-4 sm:px-8">
-              {/* Logo Guisela Primario en tarjeta de login */}
-              <div className="relative h-14 sm:h-16 w-48 sm:w-52 mx-auto mb-1">
+              {/* Logo Guisela Primario en tarjeta de login (Doble clic / doble tap abre registro secreto de técnicos) */}
+              <div
+                className="relative h-14 sm:h-16 w-48 sm:w-52 mx-auto mb-1 cursor-pointer select-none transition-transform active:scale-95"
+                onDoubleClick={() => {
+                  setTechnicianModalOpen(true);
+                  toast.info("🔧 Acceso técnico activado");
+                }}
+                onClick={handleLogoTap}
+                title="Portal Guisela Dental"
+              >
                 <Image
                   src="/images/brand/guisela-logo-primary.png"
                   alt="Guisela Laboratorio Dental"
                   fill
-                  className="object-contain"
+                  className="object-contain pointer-events-none"
                   priority
                   unoptimized
                 />
@@ -342,6 +362,12 @@ export default function LoginPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal Secreto para Registro Directo de Técnicos de Taller */}
+      <SecretTechnicianRegisterModal
+        open={technicianModalOpen}
+        onOpenChange={setTechnicianModalOpen}
+      />
     </div>
   </div>
   );

@@ -30,10 +30,19 @@ import {
   Building2,
   MapPin,
   Check,
+  Box,
+  FileCode,
+  QrCode,
+  ImageIcon,
+  UploadCloud,
+  Trash2,
+  Send,
+  Paperclip,
 } from "lucide-react";
 import { ClinicLocationPickerModal } from "@/components/location/ClinicLocationPickerModal";
 import { TrabajoSelector } from "@/components/orders/TrabajoSelector";
 import { ControlComponentes, ComponenteItem } from "@/components/orders/ControlComponentes";
+import { uploadToImgbb } from "@/lib/imgbb";
 
 type SuggestionType = "paciente" | "color" | "colimetro";
 
@@ -140,6 +149,13 @@ export default function DoctorNewOrderPage() {
   const [longitudEntrega, setLongitudEntrega] = useState<number | null>(null);
   const [componentesCaja, setComponentesCaja] = useState<ComponenteItem[]>([]);
 
+  // 🦷 Archivo 3D Digital (STL, OBJ, PLY, ZIP) para despacho a Telegram
+  const [file3D, setFile3D] = useState<File | null>(null);
+
+  // 💳 Comprobante de Pago QR / Anticipo con ImgBB
+  const [qrImageUrl, setQrImageUrl] = useState<string>("");
+  const [uploadingQr, setUploadingQr] = useState<boolean>(false);
+
   const [suggestions, setSuggestions] = useState<Record<SuggestionType, string[]>>({
     paciente: [],
     color: [],
@@ -151,6 +167,28 @@ export default function DoctorNewOrderPage() {
     color: false,
     colimetro: false,
   });
+
+  async function handleQrImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingQr(true);
+    toast.loading("Subiendo comprobante QR a ImgBB...", { id: "qr-upload" });
+
+    try {
+      const res = await uploadToImgbb(file, `qr_${Date.now()}`);
+      if (res.success && res.url) {
+        setQrImageUrl(res.url);
+        toast.success("✅ Comprobante QR verificado y alojado en ImgBB", { id: "qr-upload" });
+      } else {
+        toast.error(res.error || "No se pudo subir a ImgBB", { id: "qr-upload" });
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Error al subir comprobante", { id: "qr-upload" });
+    } finally {
+      setUploadingQr(false);
+    }
+  }
 
   // refs para focus pro
   const reqRef = useRef<HTMLInputElement | null>(null);
@@ -405,6 +443,8 @@ export default function DoctorNewOrderPage() {
       requiere_delivery: false,
     }));
     setComponentesCaja([]);
+    setFile3D(null);
+    setQrImageUrl("");
     // mover focus al requerimiento
     setTimeout(() => reqRef.current?.focus(), 60);
   }
@@ -519,6 +559,23 @@ export default function DoctorNewOrderPage() {
         : compTag;
     }
 
+    // Formatear comprobante QR en observaciones
+    if (qrImageUrl) {
+      const qrTag = `[📸 COMPROBANTE QR: ${qrImageUrl}]`;
+      finalObservaciones = finalObservaciones
+        ? `${finalObservaciones}\n${qrTag}`
+        : qrTag;
+    }
+
+    // Formatear archivo 3D en observaciones
+    if (file3D) {
+      const sizeMb = (file3D.size / (1024 * 1024)).toFixed(2);
+      const fileTag = `[📦 ESCANEO 3D CAD/CAM: ${file3D.name} (${sizeMb} MB) - Sincronizado a Telegram]`;
+      finalObservaciones = finalObservaciones
+        ? `${finalObservaciones}\n${fileTag}`
+        : fileTag;
+    }
+
     // 3) Insertar pedido EN REVISIÓN
     const { error: insertErr } = await supabase.from("pedidos").insert([
       {
@@ -572,6 +629,39 @@ export default function DoctorNewOrderPage() {
       ]);
     } catch (notifErr) {
       console.warn("Aviso notificacion nuevo pedido:", notifErr);
+    }
+
+    // 🚀 Sincronización automática con Telegram Bot (Ficha de pedido + Archivo 3D STL/OBJ)
+    try {
+      const formData = new FormData();
+      formData.append(
+        "orderData",
+        JSON.stringify({
+          numeroRequerimiento: form.numero_requerimiento.trim(),
+          doctorNombre: form.doctor_nombre,
+          doctorTelefono: form.doctor_telefono,
+          pacienteNombre: pacienteNombreClean,
+          pacienteTelefono: form.paciente_telefono,
+          trabajoRealizar: form.trabajo_realizar.trim(),
+          piezaNumero: form.pieza_numero.trim(),
+          colorPieza: form.color_pieza.trim() || null,
+          colimetro: form.colimetro.trim() || null,
+          observaciones: finalObservaciones,
+          delivery: form.requiere_delivery,
+          direccionEntrega: form.direccion_entrega,
+          fileName3D: file3D ? file3D.name : null,
+        })
+      );
+      if (file3D) {
+        formData.append("file3d", file3D);
+      }
+
+      fetch("/api/telegram/send-order", {
+        method: "POST",
+        body: formData,
+      }).catch((e) => console.warn("Aviso Telegram:", e));
+    } catch (tgErr) {
+      console.warn("Fallo envio Telegram:", tgErr);
     }
 
     // ✅ Mantener tu overlay
@@ -974,6 +1064,151 @@ export default function DoctorNewOrderPage() {
                 value={componentesCaja}
                 onChange={setComponentesCaja}
               />
+            </div>
+
+            {/* 🦷 Adjuntos de Escaneo 3D Digital (STL / OBJ / Servidor Telegram) */}
+            <div className="lg:col-span-3 border border-purple-200/80 rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-purple-50/40 via-white to-purple-50/20 space-y-3 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-100 pb-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-[#3C1C6C] text-white flex items-center justify-center shadow-xs shrink-0">
+                    <Box className="w-5 h-5 text-purple-200" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+                      Escaneo Digital CAD/CAM (STL, OBJ, PLY, ZIP)
+                      <span className="text-[10px] font-extrabold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full uppercase">
+                        Sincronización Telegram
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Adjunta escaneos intraorales o de modelos para enviarlos directamente al servidor y canal de Telegram del taller.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {!file3D ? (
+                <label className="border-2 border-dashed border-purple-200 hover:border-purple-400 bg-white hover:bg-purple-50/30 rounded-2xl p-4 sm:p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors group">
+                  <input
+                    type="file"
+                    accept=".stl,.obj,.ply,.zip,.rar"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) {
+                        setFile3D(f);
+                        toast.success(`Archivo 3D cargado: ${f.name} (${(f.size / (1024 * 1024)).toFixed(2)} MB)`);
+                      }
+                    }}
+                  />
+                  <div className="w-12 h-12 rounded-2xl bg-purple-100 group-hover:bg-purple-200 text-[#3C1C6C] flex items-center justify-center mb-2 transition-colors">
+                    <UploadCloud className="w-6 h-6" />
+                  </div>
+                  <p className="text-xs sm:text-sm font-bold text-slate-800">
+                    Arrastra o haz clic para subir tu archivo 3D
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Formatos compatibles: .STL, .OBJ, .PLY, .ZIP (hasta 50 MB)
+                  </p>
+                </label>
+              ) : (
+                <div className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-purple-200 shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-purple-100 text-[#3C1C6C] flex items-center justify-center font-black text-xs shrink-0">
+                      <FileCode className="w-5 h-5 text-purple-700" />
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm font-bold text-slate-800 truncate max-w-[200px] sm:max-w-md">
+                        {file3D.name}
+                      </p>
+                      <p className="text-[11px] text-purple-700 font-semibold">
+                        {(file3D.size / (1024 * 1024)).toFixed(2)} MB · Listo para enviar al Bot de Telegram
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFile3D(null)}
+                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl h-8 px-2.5 text-xs font-semibold"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 mr-1" /> Quitar
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* 💳 Anticipo & Comprobante de Pago QR (Alojamiento en ImgBB) */}
+            <div className="lg:col-span-3 border border-slate-200 rounded-2xl p-4 sm:p-5 bg-white space-y-3 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                    <QrCode className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+                      Comprobante de Pago QR / Anticipo
+                      <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                        Opcional · ImgBB
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Adjunta la captura del pago QR o transferencia. Se alojará en ImgBB guardando solo el enlace en el sistema.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {!qrImageUrl ? (
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                  <label className="w-full sm:w-auto px-4 py-2.5 bg-slate-50 hover:bg-purple-50/50 border border-slate-200 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-slate-700 cursor-pointer transition-colors shadow-xs">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploadingQr}
+                      onChange={handleQrImageUpload}
+                    />
+                    <UploadCloud className="w-4 h-4 text-purple-700" />
+                    {uploadingQr ? "Subiendo a ImgBB..." : "Seleccionar Captura de Comprobante QR"}
+                  </label>
+                  <span className="text-[11px] text-slate-400">
+                    Formatos: JPG, PNG, WEBP.
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between p-3 bg-emerald-50/60 rounded-xl border border-emerald-200">
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-emerald-200 shrink-0 bg-white">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={qrImageUrl} alt="Comprobante QR" className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-emerald-600" /> Comprobante QR alojado en ImgBB
+                      </p>
+                      <a
+                        href={qrImageUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] text-emerald-700 underline truncate max-w-[200px] sm:max-w-xs block"
+                      >
+                        {qrImageUrl}
+                      </a>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setQrImageUrl("")}
+                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl h-8 px-2.5 text-xs font-semibold"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 mr-1" /> Eliminar
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* 🚚 Logística de Despacho & Consultorio Dental (Opcional) */}

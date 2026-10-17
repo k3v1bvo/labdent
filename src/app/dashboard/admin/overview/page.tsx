@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { ExchangeRateConfigDialog } from "@/components/admin/ExchangeRateConfigDialog";
+import { TelegramConfigDialog } from "@/components/admin/TelegramConfigDialog";
 import { getCachedExchangeRate } from "@/lib/currency";
 import {
   RefreshCcw,
@@ -23,6 +24,7 @@ import {
   Wrench,
   Timer,
   FileDown,
+  Send,
   Activity,
   Award,
   Trophy,
@@ -430,6 +432,7 @@ export default function AdminOverviewPage() {
   const [modalItems, setModalItems] = useState<PedidoLite[]>([]);
   const [modalSearch, setModalSearch] = useState("");
   const [showRateModal, setShowRateModal] = useState(false);
+  const [showTelegramModal, setShowTelegramModal] = useState(false);
   const [currentRate, setCurrentRate] = useState<number>(getCachedExchangeRate());
 
   useEffect(() => {
@@ -975,7 +978,16 @@ export default function AdminOverviewPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <Button
+            variant="outline"
+            onClick={() => setShowTelegramModal(true)}
+            className="flex items-center gap-2 border-sky-300 bg-sky-50/90 hover:bg-sky-100 text-sky-800 font-semibold shadow-xs"
+          >
+            <Send className="w-4 h-4 text-sky-600" />
+            Bot de Telegram
+          </Button>
+
           <Button
             variant="outline"
             onClick={() => setShowRateModal(true)}
@@ -1939,6 +1951,11 @@ export default function AdminOverviewPage() {
           setCurrentRate(newRate);
           refreshAll();
         }}
+      />
+
+      <TelegramConfigDialog
+        open={showTelegramModal}
+        onOpenChange={setShowTelegramModal}
       />
     </div>
   );

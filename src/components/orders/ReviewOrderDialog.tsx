@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { CheckCircle, Lock, ShieldAlert, AlertTriangle } from "lucide-react";
+import { CheckCircle, Lock, ShieldAlert, AlertTriangle, ExternalLink, QrCode, UploadCloud, ImageIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { uploadToImgbb } from "@/lib/imgbb";
 
 export type ReviewOrder = {
   id: string;
@@ -49,6 +50,7 @@ export function ReviewOrderDialog({ open, onOpenChange, order, onUpdated }: Prop
   const [motivoAdmin, setMotivoAdmin] = useState("");
 
   const [motivoRechazo, setMotivoRechazo] = useState("Rechazado por falta de pago inicial");
+  const [uploadingVoucher, setUploadingVoucher] = useState(false);
 
   // Cargar rol del usuario al abrir
   useEffect(() => {
@@ -487,6 +489,83 @@ export function ReviewOrderDialog({ open, onOpenChange, order, onUpdated }: Prop
                       className={`rounded-xl border-slate-200 ${isReadOnly ? "bg-slate-100 text-slate-500 cursor-not-allowed" : ""}`}
                     />
                   </div>
+
+                  {/* 📸 VISOR & SUBIDA DE COMPROBANTE QR / ANTICIPO (ImgBB) */}
+                  {(() => {
+                    const qrMatch = obs.match(/\[📸 COMPROBANTE QR:\s*(https?:\/\/[^\s\]]+)\]/i) || obs.match(/(https?:\/\/(?:i\.)?ibb\.co\/[^\s]+)/i);
+                    const qrUrl = qrMatch ? qrMatch[1] || qrMatch[0] : null;
+
+                    return (
+                      <div className="mt-3 p-3 bg-purple-50/50 border border-purple-100 rounded-xl space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <QrCode className="w-3.5 h-3.5 text-purple-700" /> Comprobante de Pago QR / Anticipo:
+                          </span>
+                          {!isReadOnly && (
+                            <label className="text-[11px] font-bold text-purple-700 hover:text-purple-900 cursor-pointer flex items-center gap-1">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                disabled={uploadingVoucher}
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  setUploadingVoucher(true);
+                                  toast.loading("Subiendo comprobante a ImgBB...", { id: "rev-qr" });
+                                  const res = await uploadToImgbb(file, `voucher_${order?.numero_requerimiento || Date.now()}`);
+                                  setUploadingVoucher(false);
+                                  if (res.success && res.url) {
+                                    setObs((prev) => `${prev} [📸 COMPROBANTE QR: ${res.url}]`);
+                                    toast.success("✅ Comprobante adjuntado con éxito", { id: "rev-qr" });
+                                  } else {
+                                    toast.error(res.error || "Error al subir comprobante", { id: "rev-qr" });
+                                  }
+                                }}
+                              />
+                              <UploadCloud className="w-3.5 h-3.5" />
+                              {uploadingVoucher ? "Subiendo..." : "Adjuntar Comprobante"}
+                            </label>
+                          )}
+                        </div>
+
+                        {qrUrl ? (
+                          <div className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-purple-200 shadow-2xs">
+                            <div className="flex items-center gap-2.5">
+                              <div className="relative w-10 h-10 rounded-md overflow-hidden border border-slate-200 shrink-0 bg-slate-50">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={qrUrl} alt="Comprobante QR" className="w-full h-full object-cover" />
+                              </div>
+                              <div>
+                                <p className="text-[11px] font-bold text-slate-800">Comprobante verificado en ImgBB</p>
+                                <a
+                                  href={qrUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-[10px] text-purple-700 font-semibold hover:underline flex items-center gap-1"
+                                >
+                                  <ExternalLink className="w-3 h-3" /> Ver imagen completa
+                                </a>
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="text-xs h-7 rounded-lg text-purple-800 border-purple-200 hover:bg-purple-50"
+                              onClick={() => window.open(qrUrl, "_blank")}
+                            >
+                              Abrir
+                            </Button>
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-slate-400 italic">
+                            No hay comprobante QR adjunto para esta orden.
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* CAMPO DE JUSTIFICACIÓN SI EL ADMIN ESTÁ MODIFICANDO UNA ORDEN YA EN CURSO */}
                   {!isPendingReview && isAdmin && (

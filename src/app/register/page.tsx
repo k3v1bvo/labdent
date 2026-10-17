@@ -75,64 +75,44 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: {
-          data: {
-            nombre: nombre.trim(),
-            rol: "doctor",
-            clinica: clinica.trim() || `Clínica Dr(a). ${nombre.trim()}`,
-            telefono: telefono.trim() || null,
-            especialidad: especialidad.trim(),
-          },
-        },
+      // 1. Usar endpoint robusto de servidor para garantizar creación de perfil completo y doctores
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+          nombre: nombre.trim(),
+          telefono: telefono.trim() || null,
+          clinica: clinica.trim() || `Clínica Dr(a). ${nombre.trim()}`,
+          especialidad: especialidad.trim(),
+          rol: "doctor",
+        }),
       });
 
-      if (error) {
-        toast.error(`Error en registro: ${error.message}`);
+      const resData = await res.json();
+
+      if (!res.ok || !resData.success) {
+        toast.error(resData.error || "Error al registrar cuenta de clínica");
         setLoading(false);
         return;
       }
 
-      // Si el usuario se creó exitosamente, asegurar que exista su perfil y registro en doctores
-      if (data?.user) {
-        // Intentar inserción o actualización de perfil
-        await supabase
-          .from("profiles")
-          .upsert({
-            id: data.user.id,
-            nombre: nombre.trim(),
-            telefono: telefono.trim() || null,
-            rol: "doctor",
-          });
+      toast.success("✅ Cuenta de clínica registrada con éxito. Iniciando sesión...");
 
-        // Registrar en doctores
-        await supabase
-          .from("doctores")
-          .insert({
-            profile_id: data.user.id,
-            clinica: clinica.trim() || `Clínica Dr(a). ${nombre.trim()}`,
-            especialidad: especialidad.trim(),
-          });
+      // 2. Iniciar sesión automáticamente
+      const loginRes = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-        // 📧 Disparar correo propio de bienvenida con logo del laboratorio (segundo plano)
-        fetch("/api/mailer/welcome", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            to: email.trim(),
-            name: nombre.trim(),
-            role: "doctor",
-            clinic: clinica.trim() || `Clínica Dr(a). ${nombre.trim()}`,
-          }),
-        }).catch((err) =>
-          console.warn("Aviso: No se pudo enviar correo de bienvenida", err)
-        );
+      if (loginRes.error) {
+        toast.info("Cuenta creada. Ingresa con tus credenciales en el login.");
+        router.push("/login");
+        return;
       }
 
-      toast.success("✅ Cuenta de clínica registrada con éxito.");
-      router.push("/login");
+      router.push("/dashboard/doctors/orders");
     } catch (err: any) {
       console.error(err);
       toast.error(err?.message || "Ocurrió un error inesperado al registrarse");
