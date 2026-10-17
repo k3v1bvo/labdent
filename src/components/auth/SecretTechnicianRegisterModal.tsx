@@ -27,6 +27,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
+import { Combobox } from "@/components/ui/combobox";
 
 interface Props {
   open: boolean;
@@ -198,18 +199,17 @@ export function SecretTechnicianRegisterModal({ open, onOpenChange }: Props) {
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
                 <Layers className="w-3.5 h-3.5 text-purple-700" /> Estación Principal
               </label>
-              <select
+              <Combobox
                 value={estacionId}
-                onChange={(e) => setEstacionId(e.target.value)}
+                onChange={setEstacionId}
                 disabled={loadingEstaciones}
-                className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#3C1C6C]"
-              >
-                {estaciones.map((est) => (
-                  <option key={est.id} value={est.id}>
-                    {est.orden}. {est.nombre}
-                  </option>
-                ))}
-              </select>
+                options={estaciones.map((est) => ({
+                  value: est.id,
+                  label: `${est.orden}. ${est.nombre}`,
+                }))}
+                placeholder="Seleccionar estación técnica..."
+                searchable={false}
+              />
             </div>
           </div>
 

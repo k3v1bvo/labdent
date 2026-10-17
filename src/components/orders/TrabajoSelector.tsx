@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
-import { ItemCatalogo, CATALOGO_OFICIAL, fetchCatalogo, calculateTrabajoPrice } from "@/lib/catalog";
+import {
+  ItemCatalogo,
+  CATALOGO_OFICIAL,
+  CATALOGO_UNITEPC,
+  CATALOGO_UNIVALLE,
+  fetchCatalogo,
+  calculateTrabajoPrice,
+} from "@/lib/catalog";
 import { getCachedExchangeRate } from "@/lib/currency";
 import { Input } from "@/components/ui/input";
 import { DualPrice } from "@/components/common/DualPrice";
@@ -95,17 +102,32 @@ export function TrabajoSelector({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const [tarifaSource, setTarifaSource] = useState<"clinica" | "unitepc" | "univalle">(() => {
+    if (tipoTarifa === "unitepc" || tipoTarifa === "institucional_unitepc") return "unitepc";
+    if (tipoTarifa === "univalle" || tipoTarifa === "institucional_univalle") return "univalle";
+    return "clinica";
+  });
+
+  const exchangeRate = getCachedExchangeRate();
+
+  // Catálogo activo según la tarifa seleccionada
+  const activeCatalogList = useMemo(() => {
+    if (tarifaSource === "unitepc") return CATALOGO_UNITEPC;
+    if (tarifaSource === "univalle") return CATALOGO_UNIVALLE;
+    return catalogo;
+  }, [tarifaSource, catalogo]);
+
   // Filtrado de trabajos
   const filteredItems = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return catalogo.slice(0, 30);
-    return catalogo.filter(
+    if (!q) return activeCatalogList.slice(0, 35);
+    return activeCatalogList.filter(
       (it) =>
         it.nombre.toLowerCase().includes(q) ||
         (it.marca && it.marca.toLowerCase().includes(q)) ||
         it.categoria.toLowerCase().includes(q)
     );
-  }, [query, catalogo]);
+  }, [query, activeCatalogList]);
 
   // Cálculo automático del precio
   const pricing = useMemo(() => {
@@ -114,11 +136,11 @@ export function TrabajoSelector({
       customNombre: query,
       customPrecioUsd: customPriceUsd,
       cantidadPiezas: piezasCount,
-      tipoTarifa,
+      tipoTarifa: tarifaSource,
       descuentoPorcentaje,
-      tipoCambio: getCachedExchangeRate(),
+      tipoCambio: exchangeRate,
     });
-  }, [selectedItem, isCustom, query, customPriceUsd, piezasCount, tipoTarifa, descuentoPorcentaje]);
+  }, [selectedItem, isCustom, query, customPriceUsd, piezasCount, tarifaSource, descuentoPorcentaje, exchangeRate]);
 
   // Notificar al componente padre
   useEffect(() => {
@@ -147,19 +169,81 @@ export function TrabajoSelector({
 
   return (
     <div ref={containerRef} className={`space-y-3 ${className}`}>
+      {/* Selector de Tipo de Tarifa (Clínicas Privadas en $ vs Universidades en Bs) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 rounded-2xl bg-purple-50/70 border border-purple-200">
+        <div className="flex items-center gap-1.5">
+          <GraduationCap className="w-4 h-4 text-[#3C1C6C]" />
+          <span className="text-xs font-black uppercase tracking-wider text-[#3C1C6C]">
+            Arancel / Tipo de Tarifa:
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-purple-100 shadow-2xs">
+          <button
+            type="button"
+            onClick={() => {
+              setTarifaSource("clinica");
+              setSelectedItem(null);
+              setQuery("");
+            }}
+            className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+              tarifaSource === "clinica"
+                ? "bg-[#3C1C6C] text-white shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            🏥 Clínicas Privadas ($)
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setTarifaSource("unitepc");
+              setSelectedItem(null);
+              setQuery("");
+            }}
+            className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+              tarifaSource === "unitepc"
+                ? "bg-purple-700 text-white shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            🎓 Convenio UNITEPC (Bs)
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setTarifaSource("univalle");
+              setSelectedItem(null);
+              setQuery("");
+            }}
+            className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+              tarifaSource === "univalle"
+                ? "bg-amber-600 text-white shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            🎓 Convenio UNIVALLE (Bs)
+          </button>
+        </div>
+      </div>
+
       {/* Selector de Catálogo o Personalizado */}
       <div className="relative">
         <label className="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-between">
           <span className="flex items-center gap-1.5">
             <Sparkles className="w-4 h-4 text-purple-600" />
-            <span>Trabajo Dental (Catálogo Oficial de Precios)</span>
+            <span>Trabajo Dental (Catálogo Oficial)</span>
             <span className="text-red-500">*</span>
           </span>
-          {tipoTarifa === "institucional_universidad" && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-2 py-0.5 rounded-full">
-              <GraduationCap className="w-3.5 h-3.5" /> Convenio Institucional (Univalle)
-            </span>
-          )}
+          <span className="text-[11px] font-bold text-slate-500">
+            {tarifaSource === "unitepc"
+              ? "Lista de Aranceles Oficiales UNITEPC en Bs"
+              : tarifaSource === "univalle"
+              ? "Lista de Aranceles Oficiales UNIVALLE en Bs"
+              : "Catálogo General en Dólares ($ USD)"}
+          </span>
         </label>
 
         {!isCustom ? (
@@ -173,8 +257,14 @@ export function TrabajoSelector({
                   setIsOpen(true);
                 }}
                 onFocus={() => setIsOpen(true)}
-                placeholder="Buscar trabajo en catálogo (ej: Corona Metal Cerámica, Carilla Emax...)"
-                className="pr-10 font-medium"
+                placeholder={
+                  tarifaSource === "unitepc"
+                    ? "Buscar en lista UNITEPC (ej: Corona Metal Cerámica, Placa Total, Emax...)"
+                    : tarifaSource === "univalle"
+                    ? "Buscar en lista UNIVALLE (ej: Corona Jacket, Incrustación, Perno...)"
+                    : "Buscar trabajo en catálogo (ej: Corona Zirconio, Carilla Emax...)"
+                }
+                className="pr-10 font-medium rounded-xl border-slate-200"
               />
               <button
                 type="button"
@@ -188,7 +278,14 @@ export function TrabajoSelector({
             {isOpen && (
               <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 animate-in fade-in duration-150">
                 <div className="p-2 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between text-xs text-slate-500">
-                  <span>{filteredItems.length} trabajos disponibles</span>
+                  <span className="font-bold text-[#3C1C6C]">
+                    {filteredItems.length} opciones en arancel{" "}
+                    {tarifaSource === "unitepc"
+                      ? "UNITEPC"
+                      : tarifaSource === "univalle"
+                      ? "UNIVALLE"
+                      : "General Clínicas"}
+                  </span>
                   <button
                     type="button"
                     onMouseDown={(e) => {
@@ -203,6 +300,8 @@ export function TrabajoSelector({
 
                 {filteredItems.map((item) => {
                   const isSelected = selectedItem?.id === item.id;
+                  const isUniversity = tarifaSource === "unitepc" || tarifaSource === "univalle";
+
                   return (
                     <button
                       key={item.id}
@@ -231,12 +330,25 @@ export function TrabajoSelector({
                       </div>
 
                       <div className="text-right shrink-0">
-                        <p className="font-extrabold text-sm text-purple-700 dark:text-purple-400">
-                          ${item.precioUsd.toFixed(2)} USD
-                        </p>
-                        <p className="text-[11px] font-medium text-slate-500">
-                          Bs {item.precioBs.toFixed(2)}
-                        </p>
+                        {isUniversity ? (
+                          <>
+                            <p className="font-extrabold text-sm text-purple-800 dark:text-purple-300">
+                              Bs {item.precioBs.toFixed(2)}
+                            </p>
+                            <p className="text-[11px] font-medium text-slate-400">
+                              ~${(item.precioBs / exchangeRate).toFixed(2)} USD
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="font-extrabold text-sm text-purple-700 dark:text-purple-400">
+                              ${item.precioUsd.toFixed(2)} USD
+                            </p>
+                            <p className="text-[11px] font-medium text-slate-500">
+                              Bs {(item.precioUsd * exchangeRate).toFixed(2)}
+                            </p>
+                          </>
+                        )}
                       </div>
                     </button>
                   );
@@ -244,7 +356,7 @@ export function TrabajoSelector({
 
                 {filteredItems.length === 0 && (
                   <div className="p-4 text-center text-sm text-slate-500">
-                    <p>No se encontró &quot;{query}&quot; en el catálogo.</p>
+                    <p>No se encontró &quot;{query}&quot; en esta tarifa.</p>
                     <button
                       type="button"
                       onMouseDown={(e) => {

@@ -43,6 +43,7 @@ import { ClinicLocationPickerModal } from "@/components/location/ClinicLocationP
 import { TrabajoSelector } from "@/components/orders/TrabajoSelector";
 import { ControlComponentes, ComponenteItem } from "@/components/orders/ControlComponentes";
 import { uploadToImgbb } from "@/lib/imgbb";
+import { toBoliviaYMD, formatBoliviaTime } from "@/lib/dateUtils";
 
 type SuggestionType = "paciente" | "color" | "colimetro";
 
@@ -199,14 +200,14 @@ export default function DoctorNewOrderPage() {
   // Debounce sugerencias (evita spamear supabase)
   const suggTimers = useRef<Record<string, any>>({});
 
-  // 🕒 Fecha y hora automáticas
+  // 🕒 Fecha y hora automáticas (Cochabamba, Bolivia GMT-4)
   useEffect(() => {
     const now = new Date();
     setForm((prev) => {
       const next = {
         ...prev,
-        fecha_ingreso: now.toISOString().split("T")[0],
-        hora_ingreso: now.toTimeString().slice(0, 5),
+        fecha_ingreso: toBoliviaYMD(now),
+        hora_ingreso: formatBoliviaTime(now, false),
       };
       return next;
     });
@@ -431,8 +432,8 @@ export default function DoctorNewOrderPage() {
     setForm((prev) => ({
       ...prev,
       numero_requerimiento: "",
-      fecha_ingreso: now.toISOString().split("T")[0],
-      hora_ingreso: now.toTimeString().slice(0, 5),
+      fecha_ingreso: toBoliviaYMD(now),
+      hora_ingreso: formatBoliviaTime(now, false),
       paciente_nombre: "",
       paciente_telefono: "",
       trabajo_realizar: "",

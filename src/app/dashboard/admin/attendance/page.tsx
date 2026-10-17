@@ -12,6 +12,7 @@ import {
 } from "@/lib/attendanceService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toBoliviaYMD } from "@/lib/dateUtils";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import {
@@ -56,9 +57,7 @@ export default function AdminAttendancePage() {
   const [savingConfig, setSavingConfig] = useState(false);
 
   // Filtros
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
-  );
+  const [selectedDate, setSelectedDate] = useState<string>(toBoliviaYMD());
   const [selectedFilter, setSelectedFilter] = useState<string>("TODOS");
   const [searchTerm, setSearchTerm] = useState("");
 

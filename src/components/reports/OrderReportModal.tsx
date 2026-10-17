@@ -21,6 +21,7 @@ import {
 import Image from "next/image";
 import { formatDualCurrency, getCachedExchangeRate } from "@/lib/currency";
 import { LISTA_COMPONENTES_OFICIAL } from "@/components/orders/ControlComponentes";
+import { formatBoliviaDate } from "@/lib/dateUtils";
 
 export interface OrderReportData {
   id: string;
@@ -293,7 +294,7 @@ export function OrderReportModal({ open, onOpenChange, order }: Props) {
                     </span>
                     <span className="font-medium">
                       {order.fecha_ingreso
-                        ? new Date(order.fecha_ingreso).toLocaleDateString("es-BO")
+                        ? formatBoliviaDate(order.fecha_ingreso)
                         : "—"}
                     </span>
                   </div>
@@ -303,7 +304,7 @@ export function OrderReportModal({ open, onOpenChange, order }: Props) {
                     </span>
                     <span className="font-medium text-purple-950">
                       {order.fecha_entrega
-                        ? new Date(order.fecha_entrega).toLocaleDateString("es-BO")
+                        ? formatBoliviaDate(order.fecha_entrega)
                         : "Programada"}
                     </span>
                   </div>

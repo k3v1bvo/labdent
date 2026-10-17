@@ -26,6 +26,7 @@ import {
   Sparkles,
   CheckCircle2,
 } from "lucide-react";
+import { Combobox } from "@/components/ui/combobox";
 import {
   Dialog,
   DialogContent,
@@ -252,17 +253,20 @@ export default function UsersAdminPage() {
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <span className="text-xs text-slate-500 whitespace-nowrap">Filtrar por rol:</span>
-            <select
+            <Combobox
+              size="sm"
               value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-none focus:border-[#3C1C6C]"
-            >
-              <option value="all">Todos los roles ({users.length})</option>
-              <option value="admin">Administrador</option>
-              <option value="secretaria">Secretaría</option>
-              <option value="doctor">Doctor</option>
-              <option value="tecnico">Técnico</option>
-            </select>
+              onChange={setRoleFilter}
+              options={[
+                { value: "all", label: `Todos los roles (${users.length})` },
+                { value: "admin", label: "Administrador", icon: <ShieldCheck className="w-3.5 h-3.5 text-purple-600" /> },
+                { value: "secretaria", label: "Secretaría", icon: <UserCheck className="w-3.5 h-3.5 text-blue-600" /> },
+                { value: "doctor", label: "Doctor", icon: <Stethoscope className="w-3.5 h-3.5 text-emerald-600" /> },
+                { value: "tecnico", label: "Técnico", icon: <Wrench className="w-3.5 h-3.5 text-amber-600" /> },
+              ]}
+              className="w-52"
+              searchable={false}
+            />
           </div>
         </CardContent>
       </Card>
@@ -337,23 +341,21 @@ export default function UsersAdminPage() {
                         </span>
                       </div>
 
-                      <div className="pt-1">
-                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border ${currentRole.color} w-full justify-between`}>
-                          <span className="flex items-center gap-1.5">
-                            <RoleIcon className="w-3.5 h-3.5" />
-                            <span>Rol:</span>
-                          </span>
-                          <select
-                            value={u.rol || "tecnico"}
-                            onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                            className="bg-transparent font-bold border-none focus:outline-none cursor-pointer text-xs"
-                          >
-                            <option value="admin">Administrador</option>
-                            <option value="secretaria">Secretaría</option>
-                            <option value="doctor">Doctor</option>
-                            <option value="tecnico">Técnico</option>
-                          </select>
-                        </div>
+                      <div className="pt-1 flex items-center justify-between gap-2">
+                        <span className="text-xs text-slate-500 font-semibold">Rol Asignado:</span>
+                        <Combobox
+                          size="sm"
+                          value={u.rol || "tecnico"}
+                          onChange={(val) => handleRoleChange(u.id, val)}
+                          options={[
+                            { value: "admin", label: "Administrador", icon: <ShieldCheck className="w-3 h-3 text-purple-600" /> },
+                            { value: "secretaria", label: "Secretaría", icon: <UserCheck className="w-3 h-3 text-blue-600" /> },
+                            { value: "doctor", label: "Doctor", icon: <Stethoscope className="w-3 h-3 text-emerald-600" /> },
+                            { value: "tecnico", label: "Técnico", icon: <Wrench className="w-3 h-3 text-amber-600" /> },
+                          ]}
+                          className="w-40"
+                          searchable={false}
+                        />
                       </div>
                     </div>
                   );
@@ -402,19 +404,19 @@ export default function UsersAdminPage() {
                             )}
                           </td>
                           <td className="px-6 py-4">
-                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${currentRole.color}`}>
-                              <RoleIcon className="w-3.5 h-3.5" />
-                              <select
-                                value={u.rol || "tecnico"}
-                                onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                                className="bg-transparent font-semibold border-none focus:outline-none cursor-pointer"
-                              >
-                                <option value="admin">Administrador</option>
-                                <option value="secretaria">Secretaría</option>
-                                <option value="doctor">Doctor</option>
-                                <option value="tecnico">Técnico</option>
-                              </select>
-                            </div>
+                            <Combobox
+                              size="sm"
+                              value={u.rol || "tecnico"}
+                              onChange={(val) => handleRoleChange(u.id, val)}
+                              options={[
+                                { value: "admin", label: "Administrador", icon: <ShieldCheck className="w-3 h-3 text-purple-600" /> },
+                                { value: "secretaria", label: "Secretaría", icon: <UserCheck className="w-3 h-3 text-blue-600" /> },
+                                { value: "doctor", label: "Doctor", icon: <Stethoscope className="w-3 h-3 text-emerald-600" /> },
+                                { value: "tecnico", label: "Técnico", icon: <Wrench className="w-3 h-3 text-amber-600" /> },
+                              ]}
+                              className="w-40"
+                              searchable={false}
+                            />
                           </td>
                           <td className="px-6 py-4 text-xs text-slate-500">
                             {u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"}

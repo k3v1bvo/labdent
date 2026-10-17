@@ -42,6 +42,7 @@ import {
   Receipt,
   HelpCircle,
 } from "lucide-react";
+import { Combobox } from "@/components/ui/combobox";
 
 import {
   ResponsiveContainer,
@@ -1760,17 +1761,19 @@ export default function AdminOverviewPage() {
                   <label className="text-xs font-semibold text-slate-600 flex items-center gap-1.5 mb-1.5">
                     <Filter className="w-3.5 h-3.5 text-slate-400" /> Estado
                   </label>
-                  <select
+                  <Combobox
+                    size="sm"
                     value={estadoFilter}
-                    onChange={(e) => setEstadoFilter(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-1.5 bg-white text-xs h-9 focus:ring-1 focus:ring-purple-400"
-                  >
-                    <option value="all">Todos los estados</option>
-                    <option value="pendiente">Pendiente</option>
-                    <option value="en_proceso">En Proceso</option>
-                    <option value="finalizado">Finalizado</option>
-                    <option value="entregado">Entregado</option>
-                  </select>
+                    onChange={setEstadoFilter}
+                    options={[
+                      { value: "all", label: "Todos los estados" },
+                      { value: "pendiente", label: "Pendiente", badge: "⏳ Pendiente", badgeColor: "bg-slate-100 text-slate-800" },
+                      { value: "en_proceso", label: "En Proceso", badge: "⚙️ Proceso", badgeColor: "bg-blue-100 text-blue-800" },
+                      { value: "finalizado", label: "Finalizado", badge: "✨ Listo", badgeColor: "bg-emerald-100 text-emerald-800" },
+                      { value: "entregado", label: "Entregado", badge: "📦 Entregado", badgeColor: "bg-purple-100 text-purple-800" },
+                    ]}
+                    searchable={false}
+                  />
                 </div>
 
                 <div>

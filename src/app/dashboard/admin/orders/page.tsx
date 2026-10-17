@@ -55,6 +55,9 @@ import {
   Building2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+import { OrderStatusSelect } from "@/components/orders/OrderStatusSelect";
+import { toBoliviaYMD, getBoliviaNow } from "@/lib/dateUtils";
 
 type PedidoRow = {
   id: string;
@@ -298,6 +301,67 @@ export default function AdminOrdersPage() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [allRegisteredDoctors, orders]);
 
+  const doctorComboboxOptions = useMemo<ComboboxOption[]>(() => {
+    return [
+      {
+        value: "all",
+        label: "Todos los Doctores",
+        description: "Sin filtro de clínica",
+        icon: <Stethoscope className="w-3.5 h-3.5 text-purple-600" />,
+      },
+      ...doctorOptions.map((d) => ({
+        value: d,
+        label: `Dr(a). ${d}`,
+        icon: <Stethoscope className="w-3.5 h-3.5 text-slate-500" />,
+      })),
+    ];
+  }, [doctorOptions]);
+
+  const statusComboboxOptions: ComboboxOption[] = [
+    {
+      value: "all",
+      label: "Todos los Estados",
+      description: "Vista global de órdenes",
+      icon: <Clock className="w-3.5 h-3.5 text-purple-600" />,
+    },
+    {
+      value: "pendiente_revision",
+      label: "En Revisión (Por Aprobar)",
+      badge: "📋 Revisión",
+      badgeColor: "bg-amber-100 text-amber-900 border-amber-200",
+    },
+    {
+      value: "pendiente",
+      label: "Pendiente (Cola de Taller)",
+      badge: "⏳ Pendiente",
+      badgeColor: "bg-slate-100 text-slate-800 border-slate-200",
+    },
+    {
+      value: "en_proceso",
+      label: "En Proceso CAD/CAM",
+      badge: "⚙️ Proceso",
+      badgeColor: "bg-blue-100 text-blue-900 border-blue-200",
+    },
+    {
+      value: "finalizado",
+      label: "Finalizado (Listo para Entrega)",
+      badge: "✨ Finalizado",
+      badgeColor: "bg-emerald-100 text-emerald-900 border-emerald-200",
+    },
+    {
+      value: "entregado",
+      label: "Entregado a Clínica",
+      badge: "📦 Entregado",
+      badgeColor: "bg-purple-100 text-purple-900 border-purple-200",
+    },
+    {
+      value: "rechazado",
+      label: "Rechazado",
+      badge: "❌ Rechazado",
+      badgeColor: "bg-rose-100 text-rose-900 border-rose-200",
+    },
+  ];
+
   // Buscador local multivariable
   const filteredOrders = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -327,31 +391,31 @@ export default function AdminOrdersPage() {
     });
   }, [orders, q]);
 
-  // Acciones de fecha rápida
+  // Acciones de fecha rápida (Sincronizadas con Bolivia GMT-4)
   function setHoy() {
-    const d = new Date().toISOString().slice(0, 10);
+    const d = toBoliviaYMD();
     setDesde(d);
     setHasta(d);
   }
 
   function setSemana() {
-    const now = new Date();
+    const now = getBoliviaNow();
     const day = now.getDay();
     const diff = (day === 0 ? -6 : 1) - day;
     const mon = new Date(now);
     mon.setDate(now.getDate() + diff);
     const sun = new Date(mon);
     sun.setDate(mon.getDate() + 6);
-    setDesde(mon.toISOString().slice(0, 10));
-    setHasta(sun.toISOString().slice(0, 10));
+    setDesde(toBoliviaYMD(mon));
+    setHasta(toBoliviaYMD(sun));
   }
 
   function setMes() {
-    const now = new Date();
+    const now = getBoliviaNow();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
     const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    setDesde(start.toISOString().slice(0, 10));
-    setHasta(end.toISOString().slice(0, 10));
+    setDesde(toBoliviaYMD(start));
+    setHasta(toBoliviaYMD(end));
   }
 
   function limpiarFiltros() {
@@ -487,22 +551,13 @@ export default function AdminOrdersPage() {
                 <Clock className="w-3.5 h-3.5 text-[#A57CFA]" />
                 Estado del Pedido
               </label>
-              <div className="relative">
-                <select
-                  value={estado}
-                  onChange={(e) => setEstado(e.target.value)}
-                  className="w-full appearance-none rounded-xl border border-slate-200/90 bg-slate-50/60 hover:bg-white focus:bg-white hover:border-[#A57CFA]/60 focus:border-[#3C1C6C] focus:ring-2 focus:ring-[#A57CFA]/20 px-3.5 py-2.5 pr-9 text-xs font-bold text-slate-700 shadow-2xs transition-all cursor-pointer h-10 truncate"
-                >
-                  <option value="all">⚡ Todos los Estados</option>
-                  <option value="pendiente_revision">📋 En Revisión (Por Aprobar)</option>
-                  <option value="pendiente">⏳ Pendiente (Cola de Taller)</option>
-                  <option value="en_proceso">⚙️ En Proceso CAD/CAM</option>
-                  <option value="finalizado">✨ Finalizado (Control Calidad)</option>
-                  <option value="entregado">📦 Entregado a Clínica</option>
-                  <option value="rechazado">❌ Rechazado</option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
-              </div>
+              <Combobox
+                value={estado}
+                onChange={setEstado}
+                options={statusComboboxOptions}
+                placeholder="Filtrar por estado..."
+                searchable={false}
+              />
             </div>
 
             {/* Combobox de Doctor con diseño corporativo */}
@@ -511,21 +566,14 @@ export default function AdminOrdersPage() {
                 <Stethoscope className="w-3.5 h-3.5 text-[#A57CFA]" />
                 Odontólogo / Clínica
               </label>
-              <div className="relative">
-                <select
-                  value={doctor}
-                  onChange={(e) => setDoctor(e.target.value)}
-                  className="w-full appearance-none rounded-xl border border-slate-200/90 bg-slate-50/60 hover:bg-white focus:bg-white hover:border-[#A57CFA]/60 focus:border-[#3C1C6C] focus:ring-2 focus:ring-[#A57CFA]/20 px-3.5 py-2.5 pr-9 text-xs font-bold text-slate-700 shadow-2xs transition-all cursor-pointer h-10 truncate"
-                >
-                  <option value="all">🩺 Todos los Doctores</option>
-                  {doctorOptions.map((d) => (
-                    <option key={d} value={d}>
-                      Dr(a). {d}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
-              </div>
+              <Combobox
+                value={doctor}
+                onChange={setDoctor}
+                options={doctorComboboxOptions}
+                placeholder="Buscar doctor..."
+                searchPlaceholder="Escribe el nombre del doctor..."
+                searchable={true}
+              />
             </div>
 
             {/* Rango de Fechas */}
@@ -849,30 +897,17 @@ export default function AdminOrdersPage() {
                             <span>Ver</span>
                           </Button>
 
-                          {/* Combobox inline con estilo moderno */}
-                          <div className="relative inline-block">
-                            <select
-                              value={o.estado}
-                              onChange={(e) => {
-                                const newStatus = e.target.value;
-                                if (newStatus === "entregado") {
-                                  openEntregaModal(o);
-                                  return;
-                                }
-                                updateOrderStatus(o.id, newStatus);
-                              }}
-                              className="appearance-none rounded-lg border border-slate-200 bg-white hover:border-[#A57CFA] focus:border-[#3C1C6C] text-[11px] font-bold px-2 py-1 pr-6 text-slate-700 shadow-2xs cursor-pointer transition-all h-8"
-                              title="Cambiar estado"
-                            >
-                              <option value="pendiente_revision">📋 Revisión</option>
-                              <option value="pendiente">⏳ Pendiente</option>
-                              <option value="en_proceso">⚙️ En Proceso</option>
-                              <option value="finalizado">✨ Finalizado</option>
-                              <option value="entregado">📦 Entregado</option>
-                              <option value="rechazado">❌ Rechazado</option>
-                            </select>
-                            <ChevronDown className="w-3 h-3 text-slate-400 pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2" />
-                          </div>
+                          {/* Selector de estado moderno con pastilla y menú */}
+                          <OrderStatusSelect
+                            status={o.estado}
+                            onChange={(newStatus) => {
+                              if (newStatus === "entregado") {
+                                openEntregaModal(o);
+                                return;
+                              }
+                              updateOrderStatus(o.id, newStatus);
+                            }}
+                          />
 
                           {/* Botón Registrar Entrega Rápido */}
                           {o.estado === "finalizado" && (
@@ -1048,28 +1083,17 @@ export default function AdminOrdersPage() {
                       Ver Detalle
                     </Button>
 
-                    <div className="relative inline-block">
-                      <select
-                        value={o.estado}
-                        onChange={(e) => {
-                          const newStatus = e.target.value;
-                          if (newStatus === "entregado") {
-                            openEntregaModal(o);
-                            return;
-                          }
-                          updateOrderStatus(o.id, newStatus);
-                        }}
-                        className="appearance-none rounded-xl border border-slate-200 bg-white hover:border-[#A57CFA] focus:border-[#3C1C6C] text-xs font-bold px-3 py-2 pr-8 text-slate-700 shadow-2xs cursor-pointer transition-all h-9"
-                      >
-                        <option value="pendiente_revision">📋 En revisión</option>
-                        <option value="pendiente">⏳ Pendiente</option>
-                        <option value="en_proceso">⚙️ En proceso</option>
-                        <option value="finalizado">✨ Finalizado</option>
-                        <option value="entregado">📦 Entregado</option>
-                        <option value="rechazado">❌ Rechazado</option>
-                      </select>
-                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
-                    </div>
+                    <OrderStatusSelect
+                      size="md"
+                      status={o.estado}
+                      onChange={(newStatus) => {
+                        if (newStatus === "entregado") {
+                          openEntregaModal(o);
+                          return;
+                        }
+                        updateOrderStatus(o.id, newStatus);
+                      }}
+                    />
 
                     {o.estado === "finalizado" && (
                       <Button

@@ -30,6 +30,7 @@ import {
   Building2,
   MapPin,
 } from "lucide-react";
+import { toBoliviaYMD, getBoliviaCurrentTimeString } from "@/lib/dateUtils";
 
 type SuggestionType = "doctor" | "paciente" | "color" | "colimetro";
 
@@ -167,13 +168,12 @@ export default function AdminNewOrderPage() {
   // debounce sugerencias
   const suggTimers = useRef<Record<string, any>>({});
 
-  // 🕒 Fecha y hora automáticas
+  // 🕒 Fecha y hora automáticas (Cochabamba, Bolivia GMT-4)
   useEffect(() => {
-    const now = new Date();
     setForm((prev) => ({
       ...prev,
-      fecha_ingreso: now.toISOString().split("T")[0],
-      hora_ingreso: now.toTimeString().slice(0, 5),
+      fecha_ingreso: toBoliviaYMD(),
+      hora_ingreso: getBoliviaCurrentTimeString(false),
     }));
     setTimeout(() => reqRef.current?.focus(), 80);
   }, []);
@@ -331,11 +331,10 @@ export default function AdminNewOrderPage() {
   }
 
   function clearAll() {
-    const now = new Date();
     setForm({
       ...emptyForm,
-      fecha_ingreso: now.toISOString().split("T")[0],
-      hora_ingreso: now.toTimeString().slice(0, 5),
+      fecha_ingreso: toBoliviaYMD(),
+      hora_ingreso: getBoliviaCurrentTimeString(false),
     });
     setMostrarAnticipo(false);
     setNumError("");

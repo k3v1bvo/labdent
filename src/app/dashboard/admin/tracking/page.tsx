@@ -39,6 +39,7 @@ import {
   Truck,
   Check,
 } from "lucide-react";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 
 type Estacion = {
   id: string;
@@ -519,6 +520,22 @@ export default function TrackingPage() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [rows]);
 
+  const doctorComboboxOptions = useMemo<ComboboxOption[]>(() => {
+    return [
+      {
+        value: "all",
+        label: "Todos los doctores",
+        description: "Sin filtro de odontólogo",
+        icon: <Stethoscope className="w-3.5 h-3.5 text-purple-600" />,
+      },
+      ...doctorOptions.map((d) => ({
+        value: d,
+        label: `Dr(a). ${d}`,
+        icon: <Stethoscope className="w-3.5 h-3.5 text-slate-500" />,
+      })),
+    ];
+  }, [doctorOptions]);
+
   const estacionOptions = useMemo(() => {
     const set = new Set<string>();
     rows.forEach((r) => {
@@ -527,6 +544,55 @@ export default function TrackingPage() {
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [rows]);
+
+  const estacionComboboxOptions = useMemo<ComboboxOption[]>(() => {
+    return [
+      {
+        value: "all",
+        label: "Todas las estaciones",
+        description: "Sin filtro de estación",
+        icon: <MapPin className="w-3.5 h-3.5 text-purple-600" />,
+      },
+      ...estacionOptions.map((e) => ({
+        value: e,
+        label: e,
+        icon: <MapPin className="w-3.5 h-3.5 text-slate-500" />,
+      })),
+    ];
+  }, [estacionOptions]);
+
+  const estadoPipelineComboboxOptions: ComboboxOption[] = [
+    {
+      value: "all",
+      label: "Todos los estados",
+      description: "Vista de todo el pipeline",
+      icon: <Filter className="w-3.5 h-3.5 text-purple-600" />,
+    },
+    {
+      value: "en_fabricacion",
+      label: "En Fabricación (E1 - E4)",
+      badge: "⚡ Producción",
+      badgeColor: "bg-blue-100 text-blue-800 border-blue-200",
+    },
+    {
+      value: "calidad",
+      label: "En Control de Calidad (E5)",
+      badge: "🛡️ Calidad",
+      badgeColor: "bg-amber-100 text-amber-800 border-amber-200",
+    },
+    {
+      value: "finalizado",
+      label: "Terminados / Listos para Entrega",
+      badge: "✅ Listo",
+      badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-200",
+    },
+    {
+      value: "cola",
+      label: "En Cola de Asignación",
+      badge: "📥 Cola",
+      badgeColor: "bg-slate-100 text-slate-800 border-slate-200",
+    },
+  ];
 
   // Acciones rápidas de fecha
   function setHoy() {
@@ -752,20 +818,13 @@ export default function TrackingPage() {
             <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5 mb-1.5">
               <Filter className="w-3.5 h-3.5 text-[#3C1C6C]" /> Estado de Producción
             </label>
-            <div className="relative">
-              <select
-                value={estadoFilter}
-                onChange={(e) => setEstadoFilter(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 py-2 pr-8 text-xs sm:text-sm font-medium text-slate-800 shadow-xs hover:border-purple-300 focus:outline-none focus:ring-2 focus:ring-[#3C1C6C]/20 transition-all cursor-pointer"
-              >
-                <option value="all">Todos los estados</option>
-                <option value="en_fabricacion">⚡ En Fabricación (E1 - E4)</option>
-                <option value="calidad">🛡️ En Control de Calidad (E5)</option>
-                <option value="finalizado">✅ Terminados / Listos para Entrega</option>
-                <option value="cola">📥 En Cola de Asignación</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            </div>
+            <Combobox
+              value={estadoFilter}
+              onChange={setEstadoFilter}
+              options={estadoPipelineComboboxOptions}
+              placeholder="Todos los estados..."
+              searchable={false}
+            />
           </div>
 
           {/* Doctor */}
@@ -773,21 +832,14 @@ export default function TrackingPage() {
             <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5 mb-1.5">
               <Stethoscope className="w-3.5 h-3.5 text-[#3C1C6C]" /> Doctor
             </label>
-            <div className="relative">
-              <select
-                value={doctor}
-                onChange={(e) => setDoctor(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 py-2 pr-8 text-xs sm:text-sm font-medium text-slate-800 shadow-xs hover:border-purple-300 focus:outline-none focus:ring-2 focus:ring-[#3C1C6C]/20 transition-all cursor-pointer"
-              >
-                <option value="all">Todos los doctores</option>
-                {doctorOptions.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            </div>
+            <Combobox
+              value={doctor}
+              onChange={setDoctor}
+              options={doctorComboboxOptions}
+              placeholder="Buscar doctor..."
+              searchPlaceholder="Escribe el nombre del doctor..."
+              searchable={true}
+            />
           </div>
 
           {/* Estación Técnica */}
@@ -795,21 +847,13 @@ export default function TrackingPage() {
             <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5 mb-1.5">
               <MapPin className="w-3.5 h-3.5 text-[#3C1C6C]" /> Estación Actual
             </label>
-            <div className="relative">
-              <select
-                value={estacion}
-                onChange={(e) => setEstacion(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 py-2 pr-8 text-xs sm:text-sm font-medium text-slate-800 shadow-xs hover:border-purple-300 focus:outline-none focus:ring-2 focus:ring-[#3C1C6C]/20 transition-all cursor-pointer"
-              >
-                <option value="all">Todas las estaciones</option>
-                {estacionOptions.map((e) => (
-                  <option key={e} value={e}>
-                    {e}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            </div>
+            <Combobox
+              value={estacion}
+              onChange={setEstacion}
+              options={estacionComboboxOptions}
+              placeholder="Todas las estaciones..."
+              searchable={false}
+            />
           </div>
         </div>
 

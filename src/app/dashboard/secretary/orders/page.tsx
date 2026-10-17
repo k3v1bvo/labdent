@@ -34,6 +34,7 @@ import { OrderReportModal } from "@/components/reports/OrderReportModal";
 import { DoctorKardexReportModal } from "@/components/reports/DoctorKardexReportModal";
 import { DualPrice } from "@/components/common/DualPrice";
 import { parseComponentesFromObservaciones } from "@/components/orders/ControlComponentes";
+import { getBoliviaCurrentTimeString, formatBoliviaDateTime } from "@/lib/dateUtils";
 
 type PedidoRow = {
   id: string;
@@ -255,7 +256,7 @@ export default function SecretaryOrdersPage() {
         estado: "entregado",
         numero_nota_entrega: notaEntrega.trim(),
         fecha_entrega: now.toISOString(),
-        hora_entrega: now.toTimeString().slice(0, 8),
+        hora_entrega: getBoliviaCurrentTimeString(true),
       })
       .eq("id", selectedOrder.id);
 

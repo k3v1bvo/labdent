@@ -35,6 +35,7 @@ import { ClinicLocationPickerModal } from "@/components/location/ClinicLocationP
 import { TrabajoSelector } from "@/components/orders/TrabajoSelector";
 import { DualPrice } from "@/components/common/DualPrice";
 import { ControlComponentes, ComponenteItem } from "@/components/orders/ControlComponentes";
+import { toBoliviaYMD, getBoliviaCurrentTimeString } from "@/lib/dateUtils";
 
 type SuggestionType = "doctor" | "paciente" | "color" | "colimetro";
 
@@ -178,13 +179,12 @@ export default function SecretaryNewOrderPage() {
   // debounce sugerencias
   const suggTimers = useRef<Record<string, any>>({});
 
-  // 🕒 Fecha y hora automáticas
+  // 🕒 Fecha y hora automáticas (Cochabamba, Bolivia GMT-4)
   useEffect(() => {
-    const now = new Date();
     setForm((prev) => ({
       ...prev,
-      fecha_ingreso: now.toISOString().split("T")[0],
-      hora_ingreso: now.toTimeString().slice(0, 5),
+      fecha_ingreso: toBoliviaYMD(),
+      hora_ingreso: getBoliviaCurrentTimeString(false),
     }));
     setTimeout(() => reqRef.current?.focus(), 80);
   }, []);
@@ -462,11 +462,10 @@ export default function SecretaryNewOrderPage() {
   }
 
   function clearAll() {
-    const now = new Date();
     setForm({
       ...emptyForm,
-      fecha_ingreso: now.toISOString().split("T")[0],
-      hora_ingreso: now.toTimeString().slice(0, 5),
+      fecha_ingreso: toBoliviaYMD(),
+      hora_ingreso: getBoliviaCurrentTimeString(false),
     });
     setMostrarAnticipo(false);
     setComponentesCaja([]);

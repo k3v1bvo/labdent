@@ -44,6 +44,7 @@ import { ClinicLocationPickerModal } from "@/components/location/ClinicLocationP
 import { ClinicLocationNavigatorModal } from "@/components/location/ClinicLocationNavigatorModal";
 import { ExchangeRateConfigDialog } from "@/components/admin/ExchangeRateConfigDialog";
 import { getExchangeRate } from "@/lib/currency";
+import { Combobox } from "@/components/ui/combobox";
 
 type ProfileRow = {
   id: string;
@@ -620,19 +621,20 @@ export function ProfileDialog({
                           <Wrench className="w-3.5 h-3.5 text-[#A57CFA]" />
                           Área / Especialidad en Laboratorio
                         </label>
-                        <select
+                        <Combobox
                           value={areaTaller}
-                          onChange={(e) => setAreaTaller(e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 focus:border-[#3C1C6C] bg-white text-sm h-11 px-3"
-                        >
-                          <option value="Cerámica y Porcelana">Cerámica y Porcelana Dental</option>
-                          <option value="Prótesis Removible y Acrílicos">Prótesis Removible y Acrílicos</option>
-                          <option value="CAD/CAM y Diseño 3D">CAD/CAM y Diseño 3D</option>
-                          <option value="Yesos, Modelos y Vaciado">Yesos, Modelos y Vaciado</option>
-                          <option value="Metales y Estructuras">Metales y Estructuras</option>
-                          <option value="Ortodoncia y Placas">Ortodoncia y Placas</option>
-                          <option value="Control de Calidad y Pulido">Control de Calidad y Pulido</option>
-                        </select>
+                          onChange={setAreaTaller}
+                          options={[
+                            { value: "Cerámica y Porcelana", label: "Cerámica y Porcelana Dental" },
+                            { value: "Prótesis Removible y Acrílicos", label: "Prótesis Removible y Acrílicos" },
+                            { value: "CAD/CAM y Diseño 3D", label: "CAD/CAM y Diseño 3D" },
+                            { value: "Yesos, Modelos y Vaciado", label: "Yesos, Modelos y Vaciado" },
+                            { value: "Metales y Estructuras", label: "Metales y Estructuras" },
+                            { value: "Ortodoncia y Placas", label: "Ortodoncia y Placas" },
+                            { value: "Control de Calidad y Pulido", label: "Control de Calidad y Pulido" },
+                          ]}
+                          searchable={false}
+                        />
                       </div>
 
                       <div className="space-y-1">

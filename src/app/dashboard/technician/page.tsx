@@ -64,6 +64,7 @@ import {
   ChevronRight,
   ExternalLink,
 } from "lucide-react";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 
 type PedidoLite = {
   id: string;
@@ -1087,16 +1088,19 @@ export default function TechnicianDashboard() {
                 className="w-32 h-8 text-xs rounded-xl"
               />
 
-              <select
+              <Combobox
+                size="sm"
                 value={myStatus}
-                onChange={(e) => setMyStatus(e.target.value as any)}
-                className="h-8 px-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-700 cursor-pointer"
-              >
-                <option value="">Todos los estados</option>
-                <option value="en_proceso">En proceso</option>
-                <option value="completado">Completados</option>
-                <option value="devuelto">Devueltos</option>
-              </select>
+                onChange={(v) => setMyStatus(v as any)}
+                options={[
+                  { value: "", label: "Todos los estados" },
+                  { value: "en_proceso", label: "En proceso", badge: "⚙️ Proceso", badgeColor: "bg-blue-100 text-blue-800" },
+                  { value: "completado", label: "Completados", badge: "✅ Listo", badgeColor: "bg-emerald-100 text-emerald-800" },
+                  { value: "devuelto", label: "Devueltos", badge: "❌ Devuelto", badgeColor: "bg-rose-100 text-rose-800" },
+                ]}
+                className="w-44"
+                searchable={false}
+              />
             </div>
 
             <div className="flex items-center gap-1.5">
@@ -1284,18 +1288,24 @@ export default function TechnicianDashboard() {
                 <label className="text-xs font-black uppercase tracking-wider text-[#3C1C6C] block">
                   ENVIAR TRABAJO A:
                 </label>
-                <select
+                <Combobox
                   value={targetStationId}
-                  onChange={(e) => setTargetStationId(e.target.value)}
-                  className="w-full text-xs font-bold p-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                >
-                  <option value="">Siguiente Estación en Secuencia de Taller</option>
-                  {stations.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.nombre} {s.descripcion ? `— ${s.descripcion}` : ""}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setTargetStationId}
+                  options={[
+                    {
+                      value: "",
+                      label: "Siguiente Estación en Secuencia",
+                      description: "Flujo automático de taller",
+                    },
+                    ...stations.map((s) => ({
+                      value: s.id,
+                      label: s.nombre,
+                      description: s.descripcion || undefined,
+                    })),
+                  ]}
+                  placeholder="Seleccionar estación técnica..."
+                  searchable={stations.length > 5}
+                />
                 <p className="text-[11px] text-slate-500">
                   Selecciona la estación técnica de destino en el laboratorio o déjalo en secuencia automática.
                 </p>

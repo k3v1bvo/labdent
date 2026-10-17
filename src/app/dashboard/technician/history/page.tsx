@@ -30,6 +30,7 @@ import {
   Box,
   MessageSquareText,
 } from "lucide-react";
+import { Combobox } from "@/components/ui/combobox";
 
 type PedidoLite = {
   id: string;
@@ -327,18 +328,20 @@ export default function TechnicianHistoryPage() {
               </div>
 
               <div>
-                <p className="text-xs text-muted-foreground">Estado</p>
-                <select
+                <p className="text-xs text-muted-foreground mb-1">Estado</p>
+                <Combobox
                   value={status}
-                  onChange={(e) => setStatus(e.target.value as any)}
-                  className="border rounded-md px-3 py-2 text-sm bg-white min-w-[180px]"
-                >
-                  <option value="">Todos</option>
-                  <option value="pendiente">pendiente</option>
-                  <option value="en_proceso">en_proceso</option>
-                  <option value="completado">completado</option>
-                  <option value="devuelto">devuelto</option>
-                </select>
+                  onChange={(v) => setStatus(v as any)}
+                  options={[
+                    { value: "", label: "Todos los estados" },
+                    { value: "pendiente", label: "Pendiente", badge: "⏳ Pendiente", badgeColor: "bg-slate-100 text-slate-800" },
+                    { value: "en_proceso", label: "En proceso", badge: "⚙️ Proceso", badgeColor: "bg-blue-100 text-blue-800" },
+                    { value: "completado", label: "Completado", badge: "✅ Conforme", badgeColor: "bg-emerald-100 text-emerald-800" },
+                    { value: "devuelto", label: "Devuelto", badge: "❌ Observado", badgeColor: "bg-rose-100 text-rose-800" },
+                  ]}
+                  className="w-48"
+                  searchable={false}
+                />
               </div>
             </div>
 
