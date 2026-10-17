@@ -30,6 +30,10 @@ import {
   MapPin,
   Check,
   GraduationCap,
+  Box,
+  FileCode,
+  UploadCloud,
+  Trash2,
 } from "lucide-react";
 import { ClinicLocationPickerModal } from "@/components/location/ClinicLocationPickerModal";
 import { TrabajoSelector } from "@/components/orders/TrabajoSelector";
@@ -150,6 +154,7 @@ export default function SecretaryNewOrderPage() {
   const [pagoMetodo, setPagoMetodo] = useState<"efectivo" | "qr_transferencia">("efectivo");
   const [pagoComprobanteUrl, setPagoComprobanteUrl] = useState<string | null>(null);
   const [pagoFecha, setPagoFecha] = useState<string>("");
+  const [file3D, setFile3D] = useState<File | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [numError, setNumError] = useState("");
@@ -500,6 +505,8 @@ export default function SecretaryNewOrderPage() {
     setPagoMoneda("BOB");
     setPagoMetodo("efectivo");
     setPagoComprobanteUrl(null);
+    setPagoFecha("");
+    setFile3D(null);
     setComponentesCaja([]);
     setNumError("");
     setTimeout(() => reqRef.current?.focus(), 60);
@@ -699,6 +706,41 @@ export default function SecretaryNewOrderPage() {
     toast.success("✅ Guardado con éxito (Producción)");
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 1800);
+
+    // 🚀 Sincronización automática con Telegram Bot (Ficha de pedido + Archivo 3D en Telegram Cloud)
+    try {
+      const formData = new FormData();
+      formData.append(
+        "orderData",
+        JSON.stringify({
+          numeroRequerimiento: form.numero_requerimiento.trim(),
+          doctorNombre: doctorNombreClean,
+          doctorTelefono: form.doctor_telefono,
+          pacienteNombre: pacienteNombreClean,
+          pacienteTelefono: form.paciente_telefono,
+          trabajoRealizar: form.trabajo_realizar.trim(),
+          piezaNumero: form.pieza_numero.trim(),
+          colorPieza: form.color_pieza.trim() || null,
+          colimetro: form.colimetro.trim() || null,
+          observaciones: finalObservaciones,
+          delivery: form.requiere_delivery,
+          direccionEntrega: form.direccion_entrega,
+          fileName3D: file3D ? file3D.name : null,
+          totalBs: totalNum,
+          anticipoBs: anticipoNum,
+        })
+      );
+      if (file3D) {
+        formData.append("file3d", file3D);
+      }
+
+      fetch("/api/telegram/send-order", {
+        method: "POST",
+        body: formData,
+      }).catch((e) => console.warn("Aviso Telegram:", e));
+    } catch (tgErr) {
+      console.warn("Fallo envio Telegram:", tgErr);
+    }
 
     clearAll();
   }
@@ -1225,6 +1267,79 @@ export default function SecretaryNewOrderPage() {
                 <span>Opcional</span>
                 <span>{(form.observaciones || "").length} caracteres</span>
               </div>
+            </div>
+
+            {/* 🦷 Adjuntos de Escaneo 3D Digital (STL / OBJ / Telegram Cloud Drive) */}
+            <div className="lg:col-span-3 border border-purple-200/80 rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-purple-50/40 via-white to-purple-50/20 space-y-3 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-100 pb-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-[#3C1C6C] text-white flex items-center justify-center shadow-xs shrink-0">
+                    <Box className="w-5 h-5 text-purple-200" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+                      Escaneo Digital CAD/CAM (STL, OBJ, PLY, ZIP)
+                      <span className="text-[10px] font-extrabold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full uppercase">
+                        Telegram Cloud Drive
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Almacenamiento ilimitado en la nube de Telegram para que los técnicos descarguen el modelo y diseñen en Exocad / 3Shape.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {!file3D ? (
+                <label className="border-2 border-dashed border-purple-200 hover:border-purple-400 bg-white hover:bg-purple-50/30 rounded-2xl p-4 sm:p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors group">
+                  <input
+                    type="file"
+                    accept=".stl,.obj,.ply,.zip,.rar"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) {
+                        setFile3D(f);
+                        toast.success(`Archivo 3D cargado: ${f.name} (${(f.size / (1024 * 1024)).toFixed(2)} MB)`);
+                      }
+                    }}
+                  />
+                  <div className="w-12 h-12 rounded-2xl bg-purple-100 group-hover:bg-purple-200 text-[#3C1C6C] flex items-center justify-center mb-2 transition-colors">
+                    <UploadCloud className="w-6 h-6" />
+                  </div>
+                  <p className="text-xs sm:text-sm font-bold text-slate-800">
+                    Arrastra o haz clic para adjuntar el escaneo digital 3D
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Formatos compatibles: .STL, .OBJ, .PLY, .ZIP (hasta 50 MB)
+                  </p>
+                </label>
+              ) : (
+                <div className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-purple-200 shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-purple-100 text-[#3C1C6C] flex items-center justify-center font-black text-xs shrink-0">
+                      <FileCode className="w-5 h-5 text-purple-700" />
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm font-bold text-slate-800 truncate max-w-[200px] sm:max-w-md">
+                        {file3D.name}
+                      </p>
+                      <p className="text-[11px] text-purple-700 font-semibold">
+                        {(file3D.size / (1024 * 1024)).toFixed(2)} MB · Listo para enviar a Telegram Cloud
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFile3D(null)}
+                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl h-8 px-2.5 text-xs font-semibold"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 mr-1" /> Quitar
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* 🚚 Logística de Despacho & Delivery (Opcional) */}

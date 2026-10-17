@@ -29,6 +29,8 @@ import {
   History,
   Lock,
   Truck,
+  FileCode,
+  Download,
 } from "lucide-react";
 import { OrderReportModal } from "@/components/reports/OrderReportModal";
 import { DualPrice } from "@/components/common/DualPrice";
@@ -330,19 +332,49 @@ export default function OrderDetailPage() {
             </div>
           )}
 
-          {order.modelo_3d_link && (
-            <div className="flex items-center gap-2 text-xs pt-2">
-              <span className="text-slate-500">Modelo Digital 3D (STL/PLY):</span>
-              <a
-                href={order.modelo_3d_link}
-                target="_blank"
-                rel="noreferrer"
-                className="font-semibold text-[#3C1C6C] hover:underline inline-flex items-center gap-1"
-              >
-                Abrir archivo digital <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-          )}
+          {/* 📦 Archivo Digital 3D CAD/CAM (Telegram Cloud / Supabase) */}
+          {(() => {
+            const rawObs = order.observaciones || "";
+            const tgMatch = rawObs.match(/\[📦 TELEGRAM 3D:\s*file_id=([^|\s\]]+)(?:\s*\|\s*name=([^\]]+))?\]/i);
+            const tgFileId = tgMatch ? tgMatch[1] : null;
+            const tgFileName = (tgMatch && tgMatch[2]) ? tgMatch[2].trim() : "escaneo_3d_clinico.stl";
+
+            const downloadUrl = order.modelo_3d_link || (tgFileId
+              ? `/api/telegram/download?fileId=${encodeURIComponent(tgFileId)}&fileName=${encodeURIComponent(tgFileName)}`
+              : null);
+
+            if (!downloadUrl && !tgMatch) return null;
+
+            return (
+              <div className="p-3.5 bg-gradient-to-r from-purple-50 via-white to-indigo-50/50 rounded-2xl border border-purple-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#3C1C6C] text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
+                    <FileCode className="w-5 h-5 text-purple-200" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                      Modelo Digital 3D (CAD/CAM): <code className="text-purple-800 font-mono font-bold">{tgFileName}</code>
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      Alojado en Telegram Cloud (servidor de alta capacidad sin costo para el laboratorio)
+                    </p>
+                  </div>
+                </div>
+
+                {downloadUrl && (
+                  <a
+                    href={downloadUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    download={tgFileName}
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl text-xs font-bold shadow-xs transition-colors shrink-0"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Descargar Archivo 3D (STL/OBJ)
+                  </a>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Trazabilidad por Estaciones */}

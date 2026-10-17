@@ -32,10 +32,11 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    const cleanFileName = fileName.replace(/["\r\n\/\\]/g, "_");
     const headers = new Headers();
     headers.set(
       "Content-Disposition",
-      `attachment; filename="${encodeURIComponent(fileName)}"`
+      `attachment; filename="${cleanFileName}"; filename*=UTF-8''${encodeURIComponent(cleanFileName)}`
     );
     headers.set("Content-Type", "application/octet-stream");
     const cl = tgRes.headers.get("content-length");

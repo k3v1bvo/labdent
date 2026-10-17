@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { CheckCircle, Lock, ShieldAlert, AlertTriangle, ExternalLink, QrCode, UploadCloud, ImageIcon } from "lucide-react";
+import { CheckCircle, Lock, ShieldAlert, AlertTriangle, ExternalLink, QrCode, UploadCloud, ImageIcon, Box, FileCode, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { uploadToImgbb } from "@/lib/imgbb";
 
@@ -563,6 +563,65 @@ export function ReviewOrderDialog({ open, onOpenChange, order, onUpdated }: Prop
                             No hay comprobante QR adjunto para esta orden.
                           </p>
                         )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* 📦 Archivo Digital 3D CAD/CAM (Telegram Cloud Drive) */}
+                  {(() => {
+                    const rawObs = obs || "";
+                    const tgMatch = rawObs.match(/\[📦 TELEGRAM 3D:\s*file_id=([^|\s\]]+)(?:\s*\|\s*name=([^\]]+))?\]/i);
+                    const linkMatch = rawObs.match(/\[🔗 ENLACE 3D:\s*(https?:\/\/[^\s\]]+)\]/i);
+                    const nameMatch = rawObs.match(/\[📦 ESCANEO 3D CAD\/CAM:\s*([^(\]]+)/i);
+
+                    const tgFileId = tgMatch ? tgMatch[1] : null;
+                    const tgFileName = (tgMatch && tgMatch[2]) ? tgMatch[2].trim() : (nameMatch ? nameMatch[1].trim() : "escaneo_3d_clinico.stl");
+                    const directUrl = linkMatch ? linkMatch[1] : null;
+
+                    const downloadUrl = tgFileId
+                      ? `/api/telegram/download?fileId=${encodeURIComponent(tgFileId)}&fileName=${encodeURIComponent(tgFileName)}`
+                      : directUrl;
+
+                    if (!downloadUrl && !tgMatch && !nameMatch) return null;
+
+                    return (
+                      <div className="mt-3 p-3 bg-purple-50/70 rounded-xl border border-purple-200 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <Box className="w-3.5 h-3.5 text-purple-700" /> Escaneo 3D Digital (CAD/CAM):
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">
+                            Telegram Cloud Drive
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-purple-200">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-9 h-9 rounded-lg bg-[#3C1C6C] text-white flex items-center justify-center font-black text-xs shrink-0">
+                              <FileCode className="w-4 h-4 text-purple-200" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-slate-800 truncate">
+                                {tgFileName}
+                              </p>
+                              <p className="text-[10px] text-slate-500">
+                                Archivo clínico listo para diseño en Exocad / 3Shape
+                              </p>
+                            </div>
+                          </div>
+
+                          {downloadUrl && (
+                            <a
+                              href={downloadUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              download={tgFileName}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-lg text-xs font-bold shrink-0 transition-colors"
+                            >
+                              <Download className="w-3.5 h-3.5" /> Descargar 3D
+                            </a>
+                          )}
+                        </div>
                       </div>
                     );
                   })()}
