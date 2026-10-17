@@ -42,6 +42,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { ClinicLocationPickerModal } from "@/components/location/ClinicLocationPickerModal";
 import { ClinicLocationNavigatorModal } from "@/components/location/ClinicLocationNavigatorModal";
+import { ExchangeRateConfigDialog } from "@/components/admin/ExchangeRateConfigDialog";
+import { getExchangeRate } from "@/lib/currency";
 
 type ProfileRow = {
   id: string;
@@ -98,6 +100,8 @@ export function ProfileDialog({
 
   // Campos específicos de Admin
   const [cargoAdmin, setCargoAdmin] = useState("Dirección General de Laboratorio");
+  const [showRateDialog, setShowRateDialog] = useState(false);
+  const [currentExchangeRate, setCurrentExchangeRate] = useState<number>(8);
 
   const initial = useMemo(() => {
     const n = (profile?.nombre || "").trim();
@@ -106,6 +110,7 @@ export function ProfileDialog({
 
   useEffect(() => {
     if (!open) return;
+    getExchangeRate().then((r) => setCurrentExchangeRate(r));
 
     (async () => {
       setLoading(true);
@@ -927,6 +932,30 @@ export function ProfileDialog({
                         </div>
                       </div>
 
+                      {/* Configuración rápida de Tipo de Cambio */}
+                      <button
+                        type="button"
+                        onClick={() => setShowRateDialog(true)}
+                        className="w-full flex items-center justify-between p-3 rounded-2xl bg-emerald-50/90 hover:bg-emerald-100 border border-emerald-300 text-left transition-all cursor-pointer group shadow-2xs"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-sm shadow-xs">
+                            $
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider block">
+                              Tipo de Cambio Oficial (USD / Bs)
+                            </span>
+                            <p className="text-xs font-bold text-slate-800">
+                              1 USD = <span className="text-emerald-700 font-extrabold text-sm">{currentExchangeRate.toFixed(2)} Bs</span>
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-[11px] font-bold text-emerald-700 bg-white px-2.5 py-1 rounded-lg border border-emerald-300 shadow-2xs group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                          Ajustar Tasa
+                        </span>
+                      </button>
+
                       <div className="grid grid-cols-2 gap-2 pt-1">
                         <Link
                           href="/dashboard/admin/users"
@@ -1111,6 +1140,14 @@ export function ProfileDialog({
           direccion={direccionConsultorio}
           lat={latitudClinica}
           lng={longitudClinica}
+        />
+      )}
+
+      {profile?.rol === "admin" && (
+        <ExchangeRateConfigDialog
+          open={showRateDialog}
+          onOpenChange={setShowRateDialog}
+          onRateUpdated={(newRate) => setCurrentExchangeRate(newRate)}
         />
       )}
     </Dialog>

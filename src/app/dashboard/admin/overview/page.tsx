@@ -7,6 +7,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { ExchangeRateConfigDialog } from "@/components/admin/ExchangeRateConfigDialog";
+import { getCachedExchangeRate } from "@/lib/currency";
 import {
   RefreshCcw,
   Search,
@@ -427,6 +429,8 @@ export default function AdminOverviewPage() {
   const [modalTitle, setModalTitle] = useState("Detalle");
   const [modalItems, setModalItems] = useState<PedidoLite[]>([]);
   const [modalSearch, setModalSearch] = useState("");
+  const [showRateModal, setShowRateModal] = useState(false);
+  const [currentRate, setCurrentRate] = useState<number>(getCachedExchangeRate());
 
   useEffect(() => {
     if (preset === "custom") return;
@@ -972,6 +976,15 @@ export default function AdminOverviewPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            onClick={() => setShowRateModal(true)}
+            className="flex items-center gap-2 border-emerald-300 bg-emerald-50/90 hover:bg-emerald-100 text-emerald-800 font-semibold shadow-xs"
+          >
+            <BadgeDollarSign className="w-4 h-4 text-emerald-600" />
+            Tipo de Cambio: <span className="font-extrabold underline">{currentRate.toFixed(2)} Bs/$</span>
+          </Button>
+
           <Button
             variant="outline"
             onClick={refreshAll}
@@ -1918,6 +1931,15 @@ export default function AdminOverviewPage() {
           </Modal>
         </>
       )}
+
+      <ExchangeRateConfigDialog
+        open={showRateModal}
+        onOpenChange={setShowRateModal}
+        onRateUpdated={(newRate) => {
+          setCurrentRate(newRate);
+          refreshAll();
+        }}
+      />
     </div>
   );
 }
