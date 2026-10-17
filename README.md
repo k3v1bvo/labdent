@@ -3,19 +3,20 @@
 # 🦷 LabDent — Guisela Laboratorio Dental
 ### Sistema Integral de Gestión de Laboratorio Dental, Taller CAD/CAM & Control Anti-Fraude
 
-[![Next.js 15](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16.1.6-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Supabase](https://img.shields.io/badge/Supabase-Database-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
-[![ImgBB API](https://img.shields.io/badge/ImgBB-Cloud_Storage-0080FF?style=for-the-badge)](https://imgbb.com/)
+[![Telegram Cloud](https://img.shields.io/badge/Telegram_Bot-3D_Cloud_Storage-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://core.telegram.org/bots/api)
+[![ImgBB API](https://img.shields.io/badge/ImgBB-Image_Cloud-0080FF?style=for-the-badge)](https://imgbb.com/)
 [![Vercel](https://img.shields.io/badge/Vercel-Deployment-black?style=for-the-badge&logo=vercel)](https://vercel.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg?style=for-the-badge)](LICENSE)
 
 <p align="center">
-  Plataforma web integral diseñada para laboratorios dentales de alta precisión. Administra el ciclo completo de órdenes clínicas, trazabilidad en taller robótico CAD/CAM, auditoría forense inmutable para prevención de fraudes y marcación biométrica de personal con GPS.
+  Plataforma web médica de alta precisión para la gestión completa de órdenes protésicas, trazabilidad robótica CAD/CAM, almacenamiento ilimitado de modelos 3D en Telegram Cloud, control de caja diaria bimonetaria, blindaje forense anti-fraude y control de asistencia GPS para <b>Guisela Laboratorio Dental</b> (Cochabamba & La Paz, Bolivia).
 </p>
 
-[Demostración](#-demostración) • [Módulos Clave](#-módulos-clave-del-sistema) • [Arquitectura](#-arquitectura--stack-tecnológico) • [Instalación](#-instalación-y-configuración-local) • [Despliegue](#-despliegue-en-vercel) • [Licencia](#-licencia)
+[Módulos Principales](#-módulos-principales-del-sistema) • [Arquitectura](#-arquitectura--stack-tecnológico) • [Estructura](#-estructura-del-proyecto) • [Instalación](#-instalación-y-configuración-local) • [Base de Datos](#-base-de-datos-y-migraciones-supabase) • [Roles y Permisos](#-roles-y-matriz-de-permisos) • [Manual de Doctores](#-manual-operativo-para-doctores) • [Licencia](#-licencia)
 
 </div>
 
@@ -23,65 +24,86 @@
 
 ## 📋 Tabla de Contenidos
 
-1. [Módulos Clave del Sistema](#-módulos-clave-del-sistema)
+1. [Módulos Principales del Sistema](#-módulos-principales-del-sistema)
 2. [Arquitectura & Stack Tecnológico](#-arquitectura--stack-tecnológico)
 3. [Estructura del Proyecto](#-estructura-del-proyecto)
 4. [Instalación y Configuración Local](#-instalación-y-configuración-local)
-5. [Base de Datos (Supabase)](#-base-de-datos-supabase)
-6. [Integración con ImgBB](#-integración-con-imgbb)
-7. [Despliegue en Vercel](#-despliegue-en-vercel)
-8. [Roles y Permisos](#-roles-y-permisos-del-sistema)
+5. [Variables de Entorno](#-variables-de-entorno)
+6. [Base de Datos y Migraciones (Supabase)](#-base-de-datos-y-migraciones-supabase)
+7. [Roles y Matriz de Permisos](#-roles-y-matriz-de-permisos)
+8. [Manual Operativo para Doctores y Flujo de Datos](#-manual-operativo-para-doctores)
 9. [Licencia](#-licencia)
 
 ---
 
-## 🚀 Módulos Clave del Sistema
+## 🚀 Módulos Principales del Sistema
 
-### 1. 🛡️ Sistema de Auditoría Forense & Blindaje Anti-Fraude
-* **Inmutabilidad de Órdenes**: Una vez que un pedido pasa de revisión a producción, los montos (`total`, `anticipo`, `saldo`) y especificaciones quedan bloqueados con candado digital 🔒 para roles de secretaria.
-* **Registro de Auditoría Append-Only (`auditoria_pedidos`)**: Cada cambio de estado, modificación autorizada de precio o entrega física queda registrado con responsable, rol, timestamp exacto, valores antes/después y motivo obligatorio.
-* **Panel de Seguridad para Administrador (`/dashboard/admin/audit`)**: Detección en tiempo real de alteraciones de montos, pedidos entregados y feed cronológico de eventos.
+### 1. 💰 Precios Duales en Tiempo Real (Bs Grande / $us Pequeño)
+* **Regla de Visualización Financiera**: Todos los montos en el sistema se despliegan con el precio en **Bolivianos (Bs) en tipografía grande y destacada**, acompañado de la cotización equivalente en **Dólares ($us) en tipografía pequeña y elegante**.
+* **Gestión de Tipo de Cambio Dinámico**: Servicio centralizado (`src/lib/currency.ts`) con sincronización en tiempo real y persistencia en Supabase (`configuracion_taller.tipo_cambio_usd`).
+* **Resaltado de Deudas**: Cualquier saldo pendiente por cobrar se resalta automáticamente en color rojo carmesí (`text-rose-600`) para alerta visual inmediata en caja y reportes.
 
-### 2. 📍 Control de Asistencia Biométrica & Geocerca GPS
-* **Geocerca de Precisión (100 metros)**: Utiliza la API de geolocalización del navegador y la fórmula de Haversine para verificar que el empleado esté físicamente en el taller. Marcaciones fuera de rango son catalogadas automáticamente como `FUERA_DE_RANGO`.
-* **Selfie en Vivo con Guía Facial**: Captura fotográfica obligatoria en tiempo real con la cámara del dispositivo (`navigator.mediaDevices`), impidiendo el uso de imágenes precargadas de la galería.
-* **Control de Tolerancia de Entrada**: Configuración de hora de ingreso con 20 minutos de tolerancia antes de registrar `TARDANZA`.
-* **Cronómetro de Almuerzo en Tiempo Real**: Marcaje de salida a refrigerio que activa un cronómetro regresivo de 60 minutos con margen de 10 minutos (70 min totales).
-* **Consola de Configuración de Taller (`/dashboard/admin/attendance`)**: Permite al administrador definir las coordenadas del taller con un botón de un clic (*"Usar Mi Ubicación Actual"*), tolerancias y horarios.
+### 2. 🕒 Sincronización Horaria Oficial de Bolivia (GMT-4)
+* **Zero Server Clock Drift**: Todo el sistema opera bajo el huso horario oficial de **Bolivia (America/La_Paz, GMT-4)** mediante utilidades en `src/lib/dateUtils.ts`.
+* Evita discrepancias entre servidores en la nube (UTC) y la hora real de ingreso, entregas, marcaciones de personal y cortes de caja en Cochabamba y La Paz.
 
-### 3. ☁️ Almacenamiento Cero Costo con ImgBB
-* Todas las fotos (selfies de asistencia, registros clínicos y archivos visuales) se suben automáticamente a **ImgBB** mediante su API REST v1.
-* En Supabase se almacena únicamente la URL directa (`https://i.ibb.co/...`), evitando sobrecostos de almacenamiento y ancho de banda en la base de datos.
+### 3. 🏷️ Gestión de Tarifas & Convenios por Odontólogo
+* **Tarifas Asignables por Doctor** (configurables en `/dashboard/admin/doctors` y `/dashboard/secretary/doctors`):
+  * 🏥 **Precios Regulares**: Catálogo estándar del laboratorio.
+  * 🎓 **Convenio UNITEPC**: Precios institucionales fijos en Bolivianos (inmunes a fluctuaciones del dólar).
+  * 🎓 **Convenio UNIVALLE**: Precios institucionales fijos en Bolivianos.
+  * 🏷️ **Descuento Personalizado (%)**: Porcentaje exclusivo asignado a la clínica o doctor.
+* **Auto-aplicación en Nuevas Órdenes**: Al seleccionar al doctor en el selector de pedidos, `TrabajoSelector` carga de inmediato sus precios asignados y aplica el descuento en automático.
 
-### 4. 🔬 Taller Técnico & Estaciones CAD/CAM
-* Flujo por estaciones de trabajo:
-  1. *Recepción & Digitalización CAD 3D*
-  2. *Fresado Robótico & Sinterizado de Zirconio*
-  3. *Estratificación Cerámica & Arte Biomimético*
-  4. *Terminado, Glaseado & Pulido*
-  5. *Control de Calidad Final & Empaque*
-* Registro de tiempos de fabricación por estación y asignación de técnicos.
+### 4. 📦 Almacenamiento Ilimitado 3D CAD/CAM en Telegram Cloud
+* **Cero Consumo de Cuota en Supabase Storage**: Los archivos pesados de escaneo intraoral (`.STL`, `.OBJ`, `.PLY`, `.ZIP` de 20MB a 80MB) se despachan directamente a un canal privado de **Telegram Cloud** a través del bot oficial (`/api/telegram/send-order`).
+* **Streaming de Descarga Transparente**: En Supabase solo se almacena la referencia del `file_id`. Cuando los técnicos de taller hacen clic en **"Descargar Archivo 3D"**, la API (`/api/telegram/download`) transmite el archivo en streaming conservando su nombre clínico original, listo para abrir en **Exocad, 3Shape o Blender**.
 
-### 5. 📦 Gestión Clínica y Despacho
-* Seguimiento de cajas odontológicas numeradas (`numero_caja`).
-* Registro de entrega contra nota numerada (`numero_nota_entrega`).
-* Ficha técnica detallada imprimible con firmas de conformidad y maestro ceramista.
+### 5. 📱 Pago por QR Simple Bolivia & Subida de Comprobantes ImgBB
+* **Modal de Pago QR en Alta Resolución**: Los doctores y secretarias pueden hacer clic en **"Ver y Descargar QR"** para ver el QR bancario oficial (Banco Unión / BCP / Simple QR) y descargarlo directo a su celular para pagar desde su banca móvil.
+* **Gestor de QR para el Administrador**: El Administrador puede actualizar la imagen del QR oficial directamente desde la interfaz con subida instantánea a **ImgBB** sin tocar código.
+* **Registro de Pago**: Registro de fecha y hora exacta de la transferencia bancaria y subida de la captura del comprobante con enlace de verificación original.
+
+### 6. 🗃️ Control Físico de Componentes en Caja (15 Aditamentos)
+* Verificación física estandarizada de los **15 aditamentos oficiales** de laboratorio:
+  * *Tornillo de fijación, Tornillo de cicatrización, Análogo, Poste de impresión, Transfer de cubeta, Interfase de titanio, Base de cromo, Multi-Unit, Calcinable, Malla de titanio, Muñón artificial, Articulador plástico, Modelo antagonista, Registro de mordida y Cubeta individual*.
+* Conteo de entrada y salida para evitar pérdidas de insumos quirúrgicos y protésicos de alto valor.
+
+### 7. 💵 Módulo de Caja Diaria & Flujo de Efectivo
+* **Apertura y Cierre de Sesión de Caja**: Registro de responsable, saldo inicial en Bs/USD, ingresos por anticipos y saldo final en caja física.
+* **Movimientos Bimonetarios**: Soporte para cobros tanto en Efectivo (Bs / USD) como en QR Bancario.
+* **Arqueo y Exportación**: Balance automático de sesión, detección de sobrantes/faltantes y conciliación con pedidos.
+
+### 8. 🛡️ Auditoría Forense & Blindaje Anti-Fraude
+* **Candado de Inmutabilidad 🔒**: Una vez que un pedido es aprobado, los montos (`total`, `anticipo`, `saldo`) y especificaciones quedan bloqueados contra edición para secretarias y usuarios operativos.
+* **Bitácora Inmutable Append-Only (`auditoria_pedidos`)**: Cualquier corrección autorizada por el Administrador requiere un motivo explícito y queda firmada con timestamp, rol, IP y valores anteriores vs nuevos.
+
+### 9. 📍 Marcación Biométrica con Geocerca GPS & Selfie en Vivo
+* **Geocerca de Taller (100 metros)**: Verificación física mediante geolocalización del navegador y fórmula de Haversine.
+* **Selfie en Tiempo Real**: Captura obligatoria por cámara (`navigator.mediaDevices`), impidiendo fotos precargadas de galería.
+* **Control de Tiempos**: Tolerancia de entrada de 20 minutos y cronómetro regresivo de almuerzo de 60 minutos con 10 min de tolerancia.
+
+### 10. 📄 Hoja de Remisión Oficial A4 & Kardex Odontológico
+* **Hoja de Remisión Técnica A4**: Documento formal listo para imprimir en papel membretado o guardar en PDF, con marca de agua institucional de seguridad, código de barras simulado, resumen de cuenta bimonetario con saldo en rojo, detalle de componentes y certificado de garantía de biomateriales biocompatibles.
+* **Kardex por Doctor**: Reporte financiero acumulado de cuenta corriente para cada odontólogo con balance histórico.
 
 ---
 
 ## 🛠️ Arquitectura & Stack Tecnológico
 
-| Capa | Tecnología | Descripción |
+| Componente | Tecnología | Propósito |
 | :--- | :--- | :--- |
-| **Frontend** | [Next.js 15 (App Router)](https://nextjs.org/) | Framework React para producción con Server & Client Components |
-| **Lenguaje** | [TypeScript](https://www.typescriptlang.org/) | Tipado estricto para alta mantenibilidad y seguridad |
-| **Estilos** | [Tailwind CSS](https://tailwindcss.com/) | Diseño responsivo, utility-first con paleta institucional |
-| **Animaciones** | [Framer Motion](https://www.framer.com/motion/) | Transiciones fluidas y micro-interacciones |
-| **Íconos** | [Lucide React](https://lucide.dev/) | Iconografía SVG moderna y consistente |
-| **Base de Datos** | [Supabase (PostgreSQL)](https://supabase.com/) | Base de datos relacional con Row Level Security (RLS) |
-| **Autenticación** | Supabase Auth | Manejo de sesiones seguras por JWT |
-| **Imágenes** | [ImgBB API v1](https://api.imgbb.com/) | Alojamiento en la nube de imágenes y selfies |
-| **Hosting** | [Vercel](https://vercel.com/) | Despliegue continuo con edge network global |
+| **Framework Web** | [Next.js 16.1.6 (App Router)](https://nextjs.org/) | Arquitectura híbrida Server/Client Components, API Routes y Server Actions |
+| **Lenguaje** | [TypeScript 5.0](https://www.typescriptlang.org/) | Tipado estático estricto de extremo a extremo |
+| **Diseño & CSS** | [Tailwind CSS 3.4](https://tailwindcss.com/) | Sistema de diseño profesional con paleta corporativa morada (`#3C1C6C`) |
+| **Animaciones** | [Framer Motion](https://www.framer.com/motion/) | Transiciones fluidas, modales y micro-interacciones |
+| **Iconografía** | [Lucide React](https://lucide.dev/) | Iconos vectoriales limpios y consistentes |
+| **Base de Datos** | [Supabase (PostgreSQL)](https://supabase.com/) | Base de datos relacional con RLS, triggers y funciones SQL |
+| **Autenticación** | Supabase Auth (JWT) | Sesiones basadas en tokens criptográficos con control de roles |
+| **Almacenamiento 3D** | [Telegram Bot API](https://core.telegram.org/bots/api) | Almacenamiento gratuito e ilimitado de modelos CAD/CAM (`.stl`, `.obj`) |
+| **Alojamiento Imágenes**| [ImgBB API v1](https://api.imgbb.com/) | Hosting en la nube de comprobantes de pago y fotos de asistencia |
+| **Mapas & Geocodificación**| [OpenStreetMap / Nominatim](https://nominatim.openstreetmap.org/) | Georreferenciación de clínicas y cálculo de rutas de delivery |
+| **Despliegue** | [Vercel](https://vercel.com/) | CI/CD automático con Edge Network global |
 
 ---
 
@@ -89,130 +111,165 @@
 
 ```text
 labdent/
-├── public/                      # Recursos estáticos y logotipos oficiales
+├── public/                                # Imágenes institucionales, logos y emblemas
 ├── src/
 │   ├── app/
+│   │   ├── api/
+│   │   │   ├── auth/register/             # Registro asistido de doctores
+│   │   │   ├── location/reverse/          # Geocodificación inversa OpenStreetMap
+│   │   │   ├── mailer/                    # Envío de correos transaccionales (SMTP)
+│   │   │   ├── telegram/
+│   │   │   │   ├── download/              # Proxy de descarga de archivos 3D desde Telegram
+│   │   │   │   ├── send-order/            # Despacho de ficha y archivo 3D a Telegram Bot
+│   │   │   │   └── test/                  # Verificación de conexión con Telegram
+│   │   │   └── upload-imgbb/              # API proxy de subida segura a ImgBB
 │   │   ├── dashboard/
-│   │   │   ├── admin/           # Métricas, pedidos, auditoría y control de asistencia
-│   │   │   │   ├── attendance/  # Panel de asistencia y configuración de geocerca
-│   │   │   │   ├── audit/       # Centro forense anti-fraude
-│   │   │   │   ├── orders/      # Gestión general de pedidos
-│   │   │   │   ├── stations/    # Gestión de estaciones CAD/CAM
-│   │   │   │   └── users/       # Administración de personal
-│   │   │   ├── attendance/      # Reloj biométrico para técnicos y secretarias (GPS + Selfie)
-│   │   │   ├── secretary/       # Recepción clínica, doctores y entrega con nota
-│   │   │   └── technician/      # Estación de taller técnico en tiempo real
-│   │   ├── login/               # Autenticación segura
-│   │   └── page.tsx             # Landing page institucional del laboratorio
+│   │   │   ├── admin/                     # Consola integral de Administrador
+│   │   │   │   ├── attendance/            # Marcaciones y configuración de geocerca GPS
+│   │   │   │   ├── audit/                 # Centro forense anti-fraude
+│   │   │   │   ├── cash/                  # Control de caja diaria y arqueo
+│   │   │   │   ├── doctors/               # Directorio y asignación de tarifas por doctor
+│   │   │   │   ├── new-order/             # Registro express directo a producción
+│   │   │   │   ├── orders/                # Listado de órdenes con filtros y detalle ([id])
+│   │   │   │   └── stations/              # Configuración de estaciones técnicas
+│   │   │   ├── attendance/                # Reloj biométrico de empleados (Selfie + GPS)
+│   │   │   ├── doctors/                   # Portal exclusivo de Odontólogos
+│   │   │   │   ├── new-order/             # Creación de pedidos con STL y tarifas auto
+│   │   │   │   └── orders/                # Tracking en vivo de trabajos
+│   │   │   ├── secretary/                 # Recepción, caja, validación y entrega
+│   │   │   └── technician/                # Mesa técnica de taller con descarga de STL
+│   │   ├── login/                         # Pantalla de acceso
+│   │   └── page.tsx                       # Landing page corporativa
 │   ├── components/
-│   │   ├── layouts/             # DashboardLayout con navegación por roles
-│   │   ├── orders/              # ReviewOrderDialog con candado anti-edición
-│   │   └── ui/                  # Componentes reutilizables (Botones, Cards, Dialogs)
+│   │   ├── common/DualPrice.tsx           # Componente universal de precios Bs/$us
+│   │   ├── location/                      # Selector de ubicación en mapa satelital
+│   │   ├── orders/
+│   │   │   ├── ControlComponentes.tsx     # Checkbox de 15 aditamentos en caja
+│   │   │   ├── LabPaymentQrModal.tsx      # Modal de QR oficial con descarga
+│   │   │   ├── PaymentMethodSelector.tsx  # Selector Efectivo vs QR + ImgBB
+│   │   │   ├── ReviewOrderDialog.tsx      # Revisión con candado y visor 3D
+│   │   │   └── TrabajoSelector.tsx        # Catálogo interactivo con tarifas UNITEPC/UNIVALLE
+│   │   ├── reports/
+│   │   │   ├── DoctorKardexReportModal.tsx # Kardex de cuenta corriente de doctores
+│   │   │   └── OrderReportModal.tsx       # Hoja de Remisión Oficial A4 con garantía
+│   │   └── technician/TaskDetailsDialog.tsx # Detalle técnico y descarga directa de 3D
 │   └── lib/
-│       ├── attendanceService.ts # Servicio de geocerca Haversine y cálculo de tolerancias
-│       ├── auditLogger.ts       # Logger append-only para auditoría inmutable
-│       ├── imgbb.ts             # Cliente de subida a ImgBB API
-│       ├── supabaseClient.ts    # Conexión centralizada de Supabase
-│       └── getUserProfile.ts    # Proveedor de sesión y rol actual
-├── MIGRACION_SUPABASE_COMPLETA.sql # Script SQL maestro unificado para Supabase
-├── .env.example                 # Plantilla de variables de entorno
-├── LICENSE                      # Licencia MIT
-└── package.json                 # Dependencias y scripts
+│       ├── currency.ts                    # Tipo de cambio en vivo y formateo bimonetario
+│       ├── dateUtils.ts                   # Normalizador horario de Bolivia (GMT-4)
+│       ├── qrPaymentService.ts            # Servicio de QR oficial de pago
+│       ├── telegram.ts                    # Cliente Telegram Bot API (Send & Download)
+│       ├── cashService.ts                 # Operaciones de caja diaria y arqueo
+│       └── supabaseClient.ts              # Conexión Supabase
+├── MIGRACION_QR_PAGO_Y_TARIFAS.sql        # Script SQL para columnas de tarifas y QR
+├── MIGRACION_SUPABASE_COMPLETA.sql        # Script SQL maestro integral de la base de datos
+├── .env.example                           # Plantilla de variables de entorno
+├── LICENSE                                # Licencia MIT
+└── package.json                           # Dependencias y scripts
 ```
 
 ---
 
 ## 💻 Instalación y Configuración Local
 
-### 1. Clonar el repositorio
+### 1. Clonar el Repositorio
 ```bash
-git clone https://github.com/tu-usuario/labdent.git
+git clone https://github.com/k3v1bvo/labdent.git
 cd labdent
 ```
 
-### 2. Instalar dependencias
+### 2. Instalar Dependencias
 ```bash
 npm install
-# o con pnpm:
-pnpm install
 ```
 
-### 3. Configurar variables de entorno
-Copia la plantilla `.env.example` a `.env.local`:
+### 3. Configurar Variables de Entorno
+Copia el archivo `.env.example` creando `.env.local`:
 ```bash
 cp .env.example .env.local
 ```
 
-Configura tus credenciales:
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-clave-anonima-publica
-SUPABASE_SERVICE_ROLE_KEY=tu-clave-service-role
-NEXT_PUBLIC_IMGBB_API_KEY=tu-clave-de-imgbb
-```
-
-### 4. Iniciar el servidor de desarrollo
+### 4. Iniciar el Servidor de Desarrollo
 ```bash
 npm run dev
 ```
 Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
----
-
-## 🗄️ Base de Datos (Supabase)
-
-El proyecto incluye el script maestro de configuración listo para producción:
-👉 `MIGRACION_SUPABASE_COMPLETA.sql`
-
-### Pasos para migrar a un nuevo proyecto:
-1. Crea tu proyecto en [Supabase](https://supabase.com).
-2. Dirígete a la sección **SQL Editor**.
-3. Pega todo el contenido de `MIGRACION_SUPABASE_COMPLETA.sql`.
-4. Ejecuta el script (**RUN**).
-5. Crea tu usuario administrador en **Authentication > Users** y asígnale `rol = 'admin'` en la tabla `profiles`.
+### 5. Compilar para Producción
+Para verificar la ausencia total de errores de compilación y validar las 50 rutas:
+```bash
+npm run build
+```
 
 ---
 
-## 🌐 Despliegue en Vercel
+## 🔐 Variables de Entorno
 
-1. Importa el repositorio en tu cuenta de [Vercel](https://vercel.com).
-2. En **Project Settings > Environment Variables**, añade:
-   * `NEXT_PUBLIC_SUPABASE_URL`
-   * `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   * `NEXT_PUBLIC_IMGBB_API_KEY`
-3. Haz clic en **Deploy**.
+Configura los siguientes valores en tu archivo `.env.local` o en la consola de Vercel:
+
+```env
+# 1. Supabase (Base de Datos & Auth)
+NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-clave-anonima-publica
+SUPABASE_SERVICE_ROLE_KEY=tu-clave-service-role-privada
+
+# 2. ImgBB (Alojamiento de Comprobantes, Selfies y QR)
+NEXT_PUBLIC_IMGBB_API_KEY=tu-api-key-de-imgbb
+
+# 3. Telegram Bot API (Almacenamiento Ilimitado 3D CAD/CAM)
+TELEGRAM_BOT_TOKEN=tu-bot-token-de-botfather
+TELEGRAM_CHAT_ID=-100tu_chat_id_del_canal
+
+# 4. Servidor SMTP de Correo (Notificaciones y Bienvenidas)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_USER=tu-correo@gmail.com
+SMTP_PASS=tu-contraseña-de-aplicacion
+SMTP_FROM="Guisela Laboratorio Dental" <tu-correo@gmail.com>
+
+# 5. Dominio Base de la Aplicación
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
 ---
 
-## 👥 Roles y Permisos del Sistema
+## 🗄️ Base de Datos y Migraciones (Supabase)
 
-| Módulo / Acción | Administrador | Secretaria | Técnico Dental | Odontólogo (Doctor) |
+El proyecto incluye dos scripts SQL principales listos para ejecutarse en el **SQL Editor** de Supabase:
+
+1. **`MIGRACION_SUPABASE_COMPLETA.sql`**: Crea la arquitectura completa de tablas (`profiles`, `pedidos`, `estaciones`, `historial_estaciones`, `asistencia`, `configuracion_taller`, `auditoria_pedidos`, `caja_sesiones`, `caja_movimientos`), políticas RLS y triggers de auditoría.
+2. **`MIGRACION_QR_PAGO_Y_TARIFAS.sql`**: Añade las columnas `tipo_tarifa` y `descuento_porcentaje` en `doctores`, y la columna `qr_pago_url` en `configuracion_taller`.
+
+---
+
+## 👥 Roles y Matriz de Permisos
+
+| Capacidad / Función | Administrador | Secretaria | Técnico Dental | Odontólogo (Doctor) |
 | :--- | :---: | :---: | :---: | :---: |
-| **Crear Nueva Orden** | ✅ | ✅ | ❌ | ✅ |
-| **Aprobar Pedido Inicial** | ✅ | ✅ | ❌ | ❌ |
-| **Modificar Precios Post-Aprobación** | ✅ *(Con motivo)* | ❌ *(Bloqueado)* | ❌ | ❌ |
-| **Registrar Entrega Física** | ✅ | ✅ | ❌ | ❌ |
-| **Taller & Estaciones CAD/CAM** | ✅ | ❌ | ✅ | ❌ |
-| **Marcar Asistencia (Selfie + GPS)** | ✅ | ✅ | ✅ | ❌ |
-| **Configurar Horarios & Geocerca** | ✅ | ❌ | ❌ | ❌ |
-| **Centro de Auditoría Forense** | ✅ | ❌ | ❌ | ❌ |
+| **Crear Orden Clínica** | ✅ *(Directo)* | ✅ *(Directo)* | ❌ | ✅ *(A revisión)* |
+| **Aprobar / Validar Pedidos** | ✅ | ✅ | ❌ | ❌ |
+| **Modificar Precios Post-Aprobación** | ✅ *(Con motivo)* | ❌ *(Bloqueado 🔒)* | ❌ | ❌ |
+| **Mesa Técnica CAD/CAM** | ✅ | ❌ | ✅ | ❌ |
+| **Descargar Archivo 3D (STL/OBJ)** | ✅ | ✅ | ✅ | ❌ |
+| **Gestión de Caja Diaria & Arqueo** | ✅ | ✅ | ❌ | ❌ |
+| **Actualizar QR Oficial de Pago** | ✅ | ❌ | ❌ | ❌ |
+| **Asignar Tarifas a Doctores** | ✅ | ✅ | ❌ | ❌ |
+| **Marcar Asistencia (GPS + Selfie)**| ✅ | ✅ | ✅ | ❌ |
+| **Configurar Geocerca & Horarios** | ✅ | ❌ | ❌ | ❌ |
+| **Auditoría Forense Anti-Fraude** | ✅ | ❌ | ❌ | ❌ |
 
 ---
 
-## ⚖️ Aviso Legal, Privacidad & Cumplimiento Normativo
+## 📖 Manual Operativo para Doctores
 
-* **Protección de Datos Biométricos & Geolocalización**:
-  * El módulo de marcación fotográfica (selfie) y cálculo de geocerca GPS se rige exclusivamente bajo el principio de finalidad laboral y control horario interno dentro del perímetro del taller.
-  * **Sin Rastreo en Segundo Plano**: La geolocalización y la cámara se activan única y exclusivamente a solicitud explícita del empleado al momento de presionar el botón de marcaje y se apagan inmediatamente al completarse el registro. No existe rastreo continuo ni invasión de privacidad.
-  * **Seguridad de Credenciales**: Ninguna clave privada, token de servicio o credencial administrativa debe ser commiteada al repositorio público. Todas las configuraciones sensibles se manejan mediante variables de entorno encriptadas (`.env.local` / Vercel Environment Variables).
-* **Descargo de Responsabilidad**: El uso de esta plataforma para auditoría de órdenes y control de personal es responsabilidad del administrador del establecimiento de conformidad con la legislación laboral local aplicable.
+Para una guía detallada con diagramas del flujo de datos y manual paso a paso de uso para odontólogos, consulta el documento:
+👉 **[MANUAL_DOCTORES_Y_FLUJO_DATOS.md](MANUAL_DOCTORES_Y_FLUJO_DATOS.md)**
 
 ---
 
 ## 📄 Licencia
 
-Este proyecto está distribuido bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para obtener más información.
+Este proyecto está bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
 
 <div align="center">
-  <sub>Desarrollado con excelencia para <strong>Guisela Laboratorio Dental</strong>. © 2026 Todos los derechos reservados.</sub>
+  <sub>Desarrollado con orgullo para <strong>Guisela Laboratorio Dental</strong> · Cochabamba & La Paz, Bolivia. © 2026 Todos los derechos reservados.</sub>
 </div>
