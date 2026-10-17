@@ -31,6 +31,9 @@ import {
   MapPin,
 } from "lucide-react";
 import { toBoliviaYMD, getBoliviaCurrentTimeString } from "@/lib/dateUtils";
+import { TrabajoSelector } from "@/components/orders/TrabajoSelector";
+import { DualPrice } from "@/components/common/DualPrice";
+import { ControlComponentes, ComponenteItem } from "@/components/orders/ControlComponentes";
 
 type SuggestionType = "doctor" | "paciente" | "color" | "colimetro";
 
@@ -138,6 +141,7 @@ export default function AdminNewOrderPage() {
 
   const [mostrarAnticipo, setMostrarAnticipo] = useState(false);
   const [saldoRestante, setSaldoRestante] = useState(0);
+  const [componentesCaja, setComponentesCaja] = useState<ComponenteItem[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [numError, setNumError] = useState("");
@@ -337,6 +341,7 @@ export default function AdminNewOrderPage() {
       hora_ingreso: getBoliviaCurrentTimeString(false),
     });
     setMostrarAnticipo(false);
+    setComponentesCaja([]);
     setNumError("");
     setTimeout(() => reqRef.current?.focus(), 60);
   }
@@ -470,6 +475,15 @@ export default function AdminNewOrderPage() {
       finalObservaciones = finalObservaciones
         ? `${finalObservaciones}\n${deliveryTag}`
         : deliveryTag;
+    }
+
+    // Formatear componentes de caja seleccionados
+    const compChecked = componentesCaja.filter((c) => c.checked);
+    if (compChecked.length > 0) {
+      const compTag = `[COMPONENTES: ${compChecked.map((c) => `${c.cantidad}x ${c.nombre}`).join(", ")}]`;
+      finalObservaciones = finalObservaciones
+        ? `${finalObservaciones}\n${compTag}`
+        : compTag;
     }
 
     const { error } = await supabase.from("pedidos").insert([
@@ -751,12 +765,27 @@ export default function AdminNewOrderPage() {
             </div>
 
             {/* ✅ Trabajo */}
-            <div className="lg:col-span-3 p-4 rounded-2xl border bg-white space-y-3">
-              <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                <ClipboardCheck className="w-4 h-4 text-muted-foreground" /> Trabajo
-              </p>
+            <div className="lg:col-span-3 p-4 rounded-2xl border bg-white space-y-4">
+              <div className="flex items-center justify-between border-b pb-2">
+                <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                  <ClipboardCheck className="w-4 h-4 text-purple-700" /> Selección de Trabajo & Catálogos Oficiales
+                </p>
+              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Selector interactivo de catálogo oficial con auto-precio */}
+              <TrabajoSelector
+                selectedTrabajo={form.trabajo_realizar}
+                piezas={form.pieza_numero}
+                onSelect={(trabajo: any, precioBs: number) => {
+                  setForm((prev) => ({
+                    ...prev,
+                    trabajo_realizar: trabajo.nombre,
+                    total: precioBs.toFixed(2),
+                  }));
+                }}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
                 <div className="space-y-1 md:col-span-2">
                   <label className="text-sm font-medium">
                     Trabajo a realizar <span className="text-red-500">*</span>
@@ -849,9 +878,14 @@ export default function AdminNewOrderPage() {
 
             {/* ✅ Montos */}
             <div className="lg:col-span-3 p-4 rounded-2xl border bg-white space-y-3">
-              <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                <Banknote className="w-4 h-4 text-muted-foreground" /> Pagos
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                  <Banknote className="w-4 h-4 text-purple-700" /> Montos & Pagos (Bs Grande / $us Pequeño)
+                </p>
+                {parseFloat(form.total) > 0 && (
+                  <DualPrice amountBs={parseFloat(form.total)} className="text-xs" />
+                )}
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div className="md:col-span-1">
@@ -904,13 +938,26 @@ export default function AdminNewOrderPage() {
 
                       <div className="rounded-2xl border border-purple-200 bg-purple-50/70 dark:bg-purple-950/30 px-4 py-3">
                         <p className="text-xs font-semibold text-[#3C1C6C] dark:text-[#D0B9FF]">Saldo restante</p>
-                        <p className="text-xl font-black text-[#3C1C6C] dark:text-white">Bs {saldoRestante.toFixed(2)}</p>
+                        <DualPrice
+                          amountBs={saldoRestante}
+                          isDebt={saldoRestante > 0}
+                          bsClassName="text-xl"
+                          className="mt-0.5"
+                        />
                         {saldoRestante < 0 && <p className="text-xs text-rose-600 font-semibold">⚠️ Anticipo supera el total</p>}
                       </div>
                     </div>
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* 📦 Control de Componentes en Caja (15 Aditamentos Oficiales) */}
+            <div className="lg:col-span-3 p-4 sm:p-5 rounded-2xl border bg-white shadow-xs">
+              <ControlComponentes
+                value={componentesCaja}
+                onChange={setComponentesCaja}
+              />
             </div>
 
             {/* ✅ Observaciones */}

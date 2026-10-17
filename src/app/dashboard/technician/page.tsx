@@ -63,6 +63,8 @@ import {
   Check,
   ChevronRight,
   ExternalLink,
+  Download,
+  FileCode,
 } from "lucide-react";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 
@@ -742,6 +744,53 @@ export default function TechnicianDashboard() {
             </span>
           </div>
         </div>
+
+        {/* 🦷 Descarga directa de Escaneo 3D (STL / OBJ) en la mesa técnica */}
+        {(() => {
+          const obs = p?.observaciones || "";
+          const stlMatch = obs.match(/\[🔗 ENLACE 3D:\s*(https?:\/\/[^\s\]]+)\]/i);
+          const tgMatch = obs.match(/\[📦 TELEGRAM 3D:\s*file_id=([^|\s\]]+)(?:\s*\|\s*name=([^\]]+))?\]/i);
+          const has3D = !!stlMatch || !!tgMatch || obs.includes("3D");
+          if (!has3D) return null;
+
+          const downloadUrl = stlMatch
+            ? stlMatch[1]
+            : tgMatch
+            ? `/api/telegram/download?fileId=${encodeURIComponent(tgMatch[1])}&fileName=${encodeURIComponent(tgMatch[2] || "escaneo_3d.stl")}`
+            : null;
+
+          return (
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-purple-50/80 border border-purple-200 text-xs">
+              <span className="font-bold text-[#3C1C6C] flex items-center gap-1.5">
+                <FileCode className="w-4 h-4 text-purple-700" /> Escaneo 3D Digital
+              </span>
+              {downloadUrl && (
+                <a
+                  href={downloadUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  download
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#3C1C6C] hover:bg-[#2E1553] text-white font-bold text-[11px] shadow-xs transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" /> Descargar STL
+                </a>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* 📦 Componentes de Caja en la mesa */}
+        {(() => {
+          const obs = p?.observaciones || "";
+          const compMatch = obs.match(/\[COMPONENTES:\s*([^\]]+)\]/i);
+          if (!compMatch) return null;
+          return (
+            <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-700">
+              <span className="font-bold text-[#3C1C6C] block mb-0.5">📦 Componentes en caja:</span>
+              <span className="font-medium text-slate-600">{compMatch[1]}</span>
+            </div>
+          );
+        })()}
 
         {/* Observaciones clínicas */}
         {p?.observaciones && (
