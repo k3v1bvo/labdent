@@ -617,7 +617,6 @@ export default function SecretaryNewOrderPage() {
 
         anticipo: anticipoNum,
         total: totalNum,
-        componentes_caja: compChecked.length > 0 ? compChecked : null,
 
         estado: "pendiente",
         creado_por: user.id,

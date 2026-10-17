@@ -535,7 +535,6 @@ export default function DoctorNewOrderPage() {
         color_pieza: form.color_pieza.trim() || null,
         colimetro: form.colimetro.trim() || null,
         observaciones: finalObservaciones || null,
-        componentes_caja: compChecked.length > 0 ? compChecked : null,
 
         estado: "pendiente_revision",
 

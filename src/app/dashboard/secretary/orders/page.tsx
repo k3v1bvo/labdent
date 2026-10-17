@@ -33,6 +33,7 @@ import { logAudit } from "@/lib/auditLogger";
 import { OrderReportModal } from "@/components/reports/OrderReportModal";
 import { DoctorKardexReportModal } from "@/components/reports/DoctorKardexReportModal";
 import { DualPrice } from "@/components/common/DualPrice";
+import { parseComponentesFromObservaciones } from "@/components/orders/ControlComponentes";
 
 type PedidoRow = {
   id: string;
@@ -139,7 +140,6 @@ export default function SecretaryOrdersPage() {
           "pieza_numero",
           "color_pieza",
           "colimetro",
-          "componentes_caja",
         ].join(",")
       )
       .order("fecha_creacion", { ascending: false });
@@ -162,7 +162,7 @@ export default function SecretaryOrdersPage() {
       pieza_numero: r.pieza_numero ?? null,
       color_pieza: r.color_pieza ?? null,
       colimetro: r.colimetro ?? null,
-      componentes_caja: r.componentes_caja ?? null,
+      componentes_caja: parseComponentesFromObservaciones(r.observaciones),
       estado: String(r.estado ?? ""),
       fecha_creacion: String(r.fecha_creacion ?? ""),
       fecha_entrega: r.fecha_entrega ?? null,

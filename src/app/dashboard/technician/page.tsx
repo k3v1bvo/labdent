@@ -15,7 +15,12 @@ import StationPickerDialog, { Station } from "@/components/stations/StationPicke
 import TaskDetailsDialog, {
   type TaskRowLite,
 } from "@/components/technician/TaskDetailsDialog";
-import { ControlComponentes, ComponenteItem } from "@/components/orders/ControlComponentes";
+import {
+  ControlComponentes,
+  type ComponenteItem,
+  parseComponentesFromObservaciones,
+  formatComponentesForObservaciones,
+} from "@/components/orders/ControlComponentes";
 
 import {
   Dialog,
@@ -246,28 +251,9 @@ export default function TechnicianDashboard() {
     setCommentAction(action);
     setCommentText(task.comentarios ?? "");
 
-    // Cargar componentes de la caja (desde columna JSON o desde observaciones)
-    const pComps = (task.pedidos as any)?.componentes_caja;
-    if (Array.isArray(pComps) && pComps.length > 0) {
-      setAdvanceComponents(pComps);
-    } else if (task.pedidos?.observaciones && task.pedidos.observaciones.includes("[COMPONENTES:")) {
-      const match = task.pedidos.observaciones.match(/\[COMPONENTES:\s*([^\]]+)\]/);
-      if (match) {
-        const parts = match[1].split(",").map((s) => s.trim());
-        const parsed = parts.map((p) => {
-          const qtyMatch = p.match(/^(\d+)x\s*(.*)$/);
-          if (qtyMatch) {
-            return { cantidad: parseInt(qtyMatch[1], 10), nombre: qtyMatch[2], checked: true };
-          }
-          return { cantidad: 1, nombre: p, checked: true };
-        });
-        setAdvanceComponents(parsed);
-      } else {
-        setAdvanceComponents([]);
-      }
-    } else {
-      setAdvanceComponents([]);
-    }
+    // Cargar componentes de la caja desde observaciones
+    const parsedComps = parseComponentesFromObservaciones(task.pedidos?.observaciones);
+    setAdvanceComponents(parsedComps);
 
     setTargetStationId("");
     setCommentOpen(true);
@@ -306,11 +292,16 @@ export default function TechnicianDashboard() {
     if (!commentTaskId) return;
     const txt = commentText.trim() || null;
 
-    // 1. Guardar componentes en pedidos
+    // 1. Guardar componentes en observaciones del pedido
     if (commentPedidoId && advanceComponents.length > 0) {
+      const currentTask =
+        myTasks.find((t) => t.id === commentTaskId) ||
+        queueTasks.find((t) => t.id === commentTaskId);
+      const existingObs = currentTask?.pedidos?.observaciones || "";
+      const updatedObs = formatComponentesForObservaciones(advanceComponents, existingObs);
       await supabase
         .from("pedidos")
-        .update({ componentes_caja: advanceComponents })
+        .update({ observaciones: updatedObs || null })
         .eq("id", commentPedidoId);
     }
 
@@ -513,8 +504,7 @@ export default function TechnicianDashboard() {
           anticipo,
           observaciones,
           fecha_ingreso,
-          hora_ingreso,
-          componentes_caja
+          hora_ingreso
         )
       `
       )
@@ -559,8 +549,7 @@ export default function TechnicianDashboard() {
             anticipo,
             observaciones,
             fecha_ingreso,
-            hora_ingreso,
-            componentes_caja
+            hora_ingreso
           )
         `
         )

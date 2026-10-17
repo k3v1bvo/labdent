@@ -48,6 +48,7 @@ import {
 } from "lucide-react";
 import { OrderReportModal } from "@/components/reports/OrderReportModal";
 import { DoctorKardexReportModal } from "@/components/reports/DoctorKardexReportModal";
+import { parseComponentesFromObservaciones } from "@/components/orders/ControlComponentes";
 import { DualPrice } from "@/components/common/DualPrice";
 
 type Estacion = {
@@ -325,7 +326,7 @@ export default function DoctorOrdersPage() {
     let query = supabase
       .from("pedidos")
       .select(
-        "id, paciente_nombre, numero_requerimiento, numero_caja, trabajo_realizar, pieza_numero, color_pieza, colimetro, observaciones, total, anticipo, estado, fecha_creacion, fecha_entrega, componentes_caja, doctor_nombre, doctor_telefono"
+        "id, paciente_nombre, numero_requerimiento, numero_caja, trabajo_realizar, pieza_numero, color_pieza, colimetro, observaciones, total, anticipo, estado, fecha_creacion, fecha_entrega, doctor_nombre, doctor_telefono"
       )
       .order("fecha_creacion", { ascending: false });
 
@@ -393,7 +394,7 @@ export default function DoctorOrdersPage() {
         estado: s(p.estado),
         doctor_nombre: s(p.doctor_nombre),
         doctor_telefono: s(p.doctor_telefono),
-        componentes_caja: p.componentes_caja,
+        componentes_caja: parseComponentesFromObservaciones(p.observaciones),
         estacion_actual: trk ? s(trk.estacion_actual) : "Sin asignar",
         estado_estacion: trk ? s(trk.estado_estacion) : "pendiente",
         fecha_inicio: trk ? s(trk.fecha_inicio) : null,

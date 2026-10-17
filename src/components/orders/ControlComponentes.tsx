@@ -213,3 +213,37 @@ export function ControlComponentes({
     </div>
   );
 }
+
+export function parseComponentesFromObservaciones(observaciones?: string | null): ComponenteItem[] {
+  if (!observaciones) return [];
+  const match = observaciones.match(/\[COMPONENTES:\s*([^\]]+)\]/i);
+  if (!match || !match[1]) return [];
+
+  const parts = match[1].split(",").map((s) => s.trim()).filter(Boolean);
+  return parts.map((p) => {
+    const qtyMatch = p.match(/^(\d+)x\s+(.+)$/i);
+    if (qtyMatch) {
+      return {
+        cantidad: parseInt(qtyMatch[1], 10),
+        nombre: qtyMatch[2].trim(),
+        checked: true,
+      };
+    }
+    return { cantidad: 1, nombre: p, checked: true };
+  });
+}
+
+export function formatComponentesForObservaciones(
+  components: ComponenteItem[],
+  existingObs?: string | null
+): string {
+  const active = (components || []).filter((c) => c.checked && c.cantidad > 0);
+  const compStr = active.length > 0
+    ? `[COMPONENTES: ${active.map((c) => `${c.cantidad}x ${c.nombre}`).join(", ")}]`
+    : null;
+
+  const cleanObs = existingObs ? existingObs.replace(/\[COMPONENTES:[^\]]*\]/gi, "").trim() : "";
+  const trimmed = cleanObs.replace(/^[|\s]+|[|\s]+$/g, "").trim();
+
+  return [compStr, trimmed || null].filter(Boolean).join(" | ");
+}

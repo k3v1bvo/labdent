@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
   Printer,
@@ -84,6 +84,11 @@ export function DoctorKardexReportModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[96vh] overflow-y-auto p-0 bg-slate-100 dark:bg-slate-950 border-none shadow-2xl print:m-0 print:p-0 print:max-w-none print:max-h-none print:shadow-none print:bg-white print:overflow-visible">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Estado de Cuenta Clínico • KARDEX</DialogTitle>
+          <DialogDescription>Historial consolidado de pedidos y balance financiero de la clínica</DialogDescription>
+        </DialogHeader>
+
         {/* Barra superior de control (Oculta al imprimir) */}
         <div className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between print:hidden">
           <div className="flex items-center gap-3">
