@@ -310,3 +310,16 @@ ADD COLUMN IF NOT EXISTS comprobante_pago_url text;
 COMMENT ON COLUMN public.configuracion_taller.qr_pago_url IS 'URL de la imagen del QR oficial de cobro subida por el Administrador';
 COMMENT ON COLUMN public.doctores.tipo_tarifa IS 'Tarifa asignada al doctor: regular, descuento_normal, institucional_unitepc, institucional_univalle';
 COMMENT ON COLUMN public.doctores.descuento_porcentaje IS 'Porcentaje de descuento para tarifa descuento_normal';
+
+-- ====================================================================
+-- 5. RESOLVER ALERTAS DE SEGURIDAD DEL SUPABASE ADVISOR (Security Invoker Views)
+-- ====================================================================
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_views WHERE viewname = 'vw_tracking_pedidos' AND schemaname = 'public') THEN
+    EXECUTE 'ALTER VIEW public.vw_tracking_pedidos SET (security_invoker = true);';
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_views WHERE viewname = 'vw_dashboard_resumen' AND schemaname = 'public') THEN
+    EXECUTE 'ALTER VIEW public.vw_dashboard_resumen SET (security_invoker = true);';
+  END IF;
+END $$;
