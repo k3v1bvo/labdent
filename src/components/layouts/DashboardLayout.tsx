@@ -23,6 +23,7 @@ import {
   ShieldAlert,
   UserCheck,
   Clock,
+  Coins,
 } from "lucide-react";
 import Image from "next/image";
 import AdminNotifications from "@/components/notifications/AdminNotifications";
@@ -91,6 +92,7 @@ export default function DashboardLayout({ children }: Props) {
       items: [
         { label: "Métricas & Finanzas", path: "/dashboard/admin/overview", icon: <LayoutDashboard className="w-5 h-5" /> },
         { label: "Gestión de Pedidos", path: "/dashboard/admin/orders", icon: <Package className="w-5 h-5" /> },
+        { label: "Caja Diaria & Arqueo", path: "/dashboard/admin/cash", icon: <Coins className="w-5 h-5 text-amber-400" /> },
         { label: "Doctores & Clínicas", path: "/dashboard/admin/doctors", icon: <Users className="w-5 h-5" /> },
       ],
     },

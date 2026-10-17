@@ -16,6 +16,7 @@ import {
   User,
   Sparkles,
   Clock,
+  Coins,
 } from "lucide-react";
 import Image from "next/image";
 import SecretaryNotifications from "@/components/notifications/SecretaryNotifications";
@@ -88,6 +89,7 @@ export default function SecretaryLayout({
   const navItems = [
     { label: "Dashboard Principal", path: "/dashboard/secretary", icon: <Home className="w-5 h-5" /> },
     { label: "Gestión de Pedidos", path: "/dashboard/secretary/orders", icon: <ClipboardList className="w-5 h-5" /> },
+    { label: "Caja Diaria & Arqueo", path: "/dashboard/secretary/cash", icon: <Coins className="w-5 h-5 text-amber-400" /> },
     { label: "Registrar Nuevo Pedido", path: "/dashboard/secretary/new-order", icon: <FilePlus className="w-5 h-5 text-purple-300" /> },
     { label: "Doctores & Clínicas", path: "/dashboard/secretary/doctors", icon: <Stethoscope className="w-5 h-5" /> },
     { label: "Marcar Mi Asistencia", path: "/dashboard/attendance", icon: <Clock className="w-5 h-5 text-emerald-400" /> },

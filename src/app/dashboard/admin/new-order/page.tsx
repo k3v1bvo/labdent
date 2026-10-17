@@ -34,6 +34,9 @@ import { toBoliviaYMD, getBoliviaCurrentTimeString } from "@/lib/dateUtils";
 import { TrabajoSelector } from "@/components/orders/TrabajoSelector";
 import { DualPrice } from "@/components/common/DualPrice";
 import { ControlComponentes, ComponenteItem } from "@/components/orders/ControlComponentes";
+import { PaymentMethodSelector } from "@/components/orders/PaymentMethodSelector";
+import { addCajaMovimiento, getActiveCajaSession } from "@/lib/cashService";
+import { getCachedExchangeRate } from "@/lib/currency";
 
 type SuggestionType = "doctor" | "paciente" | "color" | "colimetro";
 
@@ -142,6 +145,9 @@ export default function AdminNewOrderPage() {
   const [mostrarAnticipo, setMostrarAnticipo] = useState(false);
   const [saldoRestante, setSaldoRestante] = useState(0);
   const [componentesCaja, setComponentesCaja] = useState<ComponenteItem[]>([]);
+  const [pagoMoneda, setPagoMoneda] = useState<"BOB" | "USD">("BOB");
+  const [pagoMetodo, setPagoMetodo] = useState<"efectivo" | "qr_transferencia">("efectivo");
+  const [pagoComprobanteUrl, setPagoComprobanteUrl] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [numError, setNumError] = useState("");
@@ -182,12 +188,14 @@ export default function AdminNewOrderPage() {
     setTimeout(() => reqRef.current?.focus(), 80);
   }, []);
 
-  // 💵 Calcular saldo restante
+  // 💵 Calcular saldo restante (considerando moneda del pago)
   useEffect(() => {
     const total = Number(form.total) || 0;
     const anticipo = mostrarAnticipo ? Number(form.anticipo) || 0 : 0;
-    setSaldoRestante(total - anticipo);
-  }, [form.total, form.anticipo, mostrarAnticipo]);
+    const rate = getCachedExchangeRate();
+    const anticipoBs = pagoMoneda === "USD" ? anticipo * rate : anticipo;
+    setSaldoRestante(total - anticipoBs);
+  }, [form.total, form.anticipo, mostrarAnticipo, pagoMoneda]);
 
   // 🔄 Manejar cambios
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
@@ -341,6 +349,9 @@ export default function AdminNewOrderPage() {
       hora_ingreso: getBoliviaCurrentTimeString(false),
     });
     setMostrarAnticipo(false);
+    setPagoMoneda("BOB");
+    setPagoMetodo("efectivo");
+    setPagoComprobanteUrl(null);
     setComponentesCaja([]);
     setNumError("");
     setTimeout(() => reqRef.current?.focus(), 60);
@@ -484,6 +495,40 @@ export default function AdminNewOrderPage() {
       finalObservaciones = finalObservaciones
         ? `${finalObservaciones}\n${compTag}`
         : compTag;
+    }
+
+    // Formatear detalle de pago inicial / anticipo
+    if (anticipoNum > 0) {
+      const pagoTag = `[💳 PAGO INICIAL: ${anticipoNum.toFixed(2)} ${pagoMoneda} | Método: ${
+        pagoMetodo === "qr_transferencia" ? "QR Bancario" : "Efectivo"
+      }${pagoComprobanteUrl ? ` | Comprobante: ${pagoComprobanteUrl}` : ""}]`;
+      finalObservaciones = finalObservaciones
+        ? `${finalObservaciones}\n${pagoTag}`
+        : pagoTag;
+    }
+
+    // Registrar en caja activa si existe sesión abierta
+    if (anticipoNum > 0) {
+      try {
+        const { session: activeSession } = await getActiveCajaSession();
+        if (activeSession) {
+          await addCajaMovimiento({
+            sesionId: activeSession.id,
+            tipo: "ingreso",
+            origen: "pedido_anticipo",
+            metodoPago: pagoMetodo,
+            moneda: pagoMoneda,
+            monto: anticipoNum,
+            concepto: `Anticipo Pedido #${form.numero_requerimiento.trim()} - Paciente: ${pacienteNombreClean}`,
+            comprobanteUrl: pagoComprobanteUrl || undefined,
+            numeroRequerimiento: form.numero_requerimiento.trim(),
+            userId: user.id,
+            userName: "Administrador",
+          });
+        }
+      } catch (cajaErr) {
+        console.warn("Aviso registrando en caja diaria:", cajaErr);
+      }
     }
 
     const { error } = await supabase.from("pedidos").insert([
@@ -922,29 +967,34 @@ export default function AdminNewOrderPage() {
                   </div>
 
                   {mostrarAnticipo && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-sm font-medium">Anticipo (Bs)</label>
-                        <Input
-                          type="number"
-                          name="anticipo"
-                          value={form.anticipo}
-                          onChange={handleChange}
-                          placeholder="Ej: 50.00"
-                          step="0.01"
-                          min="0"
-                        />
-                      </div>
+                    <div className="space-y-3 pt-2">
+                      <PaymentMethodSelector
+                        monto={form.anticipo}
+                        totalOrderBs={parseFloat(form.total) || 0}
+                        moneda={pagoMoneda}
+                        metodoPago={pagoMetodo}
+                        comprobanteUrl={pagoComprobanteUrl}
+                        onMontoChange={(val) => setForm((p) => ({ ...p, anticipo: val }))}
+                        onMonedaChange={setPagoMoneda}
+                        onMetodoPagoChange={setPagoMetodo}
+                        onComprobanteUrlChange={setPagoComprobanteUrl}
+                      />
 
                       <div className="rounded-2xl border border-purple-200 bg-purple-50/70 dark:bg-purple-950/30 px-4 py-3">
-                        <p className="text-xs font-semibold text-[#3C1C6C] dark:text-[#D0B9FF]">Saldo restante</p>
+                        <p className="text-xs font-semibold text-[#3C1C6C] dark:text-[#D0B9FF]">
+                          Saldo restante por cobrar:
+                        </p>
                         <DualPrice
                           amountBs={saldoRestante}
                           isDebt={saldoRestante > 0}
                           bsClassName="text-xl"
                           className="mt-0.5"
                         />
-                        {saldoRestante < 0 && <p className="text-xs text-rose-600 font-semibold">⚠️ Anticipo supera el total</p>}
+                        {saldoRestante < 0 && (
+                          <p className="text-xs text-rose-600 font-semibold mt-1">
+                            ⚠️ El anticipo supera el total de la orden
+                          </p>
+                        )}
                       </div>
                     </div>
                   )}
