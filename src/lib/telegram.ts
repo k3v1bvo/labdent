@@ -123,7 +123,13 @@ export async function sendTelegramDocument(
   fileBuffer: Buffer | Blob,
   fileName: string,
   caption?: string
-): Promise<{ success: boolean; message?: string; notConfigured?: boolean }> {
+): Promise<{
+  success: boolean;
+  message?: string;
+  notConfigured?: boolean;
+  fileId?: string;
+  fileUniqueId?: string;
+}> {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
     console.warn("⚠️ Telegram Bot no configurado para adjuntos");
     return {
@@ -158,9 +164,44 @@ export async function sendTelegramDocument(
       return { success: false, message: data.description || "Error de Telegram" };
     }
 
-    return { success: true };
+    const doc = data.result?.document;
+    return {
+      success: true,
+      fileId: doc?.file_id || undefined,
+      fileUniqueId: doc?.file_unique_id || undefined,
+    };
   } catch (err: any) {
     console.error("Error enviando documento a Telegram:", err);
     return { success: false, message: err?.message || "Fallo al enviar archivo a Telegram" };
+  }
+}
+
+/**
+ * Obtiene el enlace de descarga directa de un archivo alojado en Telegram Cloud
+ * mediante el endpoint getFile de la API de Telegram.
+ */
+export async function getTelegramFileDownloadUrl(
+  fileId: string
+): Promise<{ url: string | null; error?: string }> {
+  if (!TELEGRAM_BOT_TOKEN) {
+    return { url: null, error: "TELEGRAM_BOT_TOKEN ausente" };
+  }
+
+  try {
+    const infoUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getFile?file_id=${fileId}`;
+    const res = await fetch(infoUrl);
+    const data = await res.json();
+
+    if (!res.ok || !data.ok || !data.result?.file_path) {
+      return {
+        url: null,
+        error: data.description || "No se pudo resolver la ruta del archivo en Telegram",
+      };
+    }
+
+    const downloadUrl = `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${data.result.file_path}`;
+    return { url: downloadUrl };
+  } catch (err: any) {
+    return { url: null, error: err?.message || "Error al conectar con Telegram getFile" };
   }
 }

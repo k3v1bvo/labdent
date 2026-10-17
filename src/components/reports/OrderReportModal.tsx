@@ -393,16 +393,40 @@ export function OrderReportModal({ open, onOpenChange, order }: Props) {
             </div>
 
             {/* 5. OBSERVACIONES & INSTRUCCIONES TÉCNICAS */}
-            {order.observaciones && (
-              <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/60 space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-                  OBSERVACIONES & INSTRUCCIONES CLÍNICAS:
-                </p>
-                <p className="text-slate-700 italic text-xs leading-relaxed">
-                  {order.observaciones}
-                </p>
-              </div>
-            )}
+            {order.observaciones && (() => {
+              const rawObs = order.observaciones;
+              const cleanObs = rawObs
+                .replace(/\[📦 TELEGRAM 3D:[^\]]+\]/gi, "")
+                .replace(/\[🔗 ENLACE 3D:[^\]]+\]/gi, "")
+                .replace(/\[📦 ESCANEO 3D CAD\/CAM:[^\]]+\]/gi, "")
+                .trim();
+
+              const tgMatch = rawObs.match(/\[📦 TELEGRAM 3D:[^\]]*name=([^\]|]+)/i) ||
+                rawObs.match(/\[📦 ESCANEO 3D CAD\/CAM:\s*([^(\]]+)/i);
+              const fileName3D = tgMatch ? tgMatch[1].trim() : null;
+
+              if (!cleanObs && !fileName3D) return null;
+
+              return (
+                <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/60 space-y-2">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                    OBSERVACIONES & INSTRUCCIONES CLÍNICAS:
+                  </p>
+                  {cleanObs && (
+                    <p className="text-slate-700 italic text-xs leading-relaxed whitespace-pre-wrap">
+                      {cleanObs}
+                    </p>
+                  )}
+                  {fileName3D && (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-100/70 text-purple-900 text-[11px] font-bold border border-purple-200">
+                      <span>📦 Escaneo 3D Digital Adjunto:</span>
+                      <code className="font-mono text-purple-950 font-black">{fileName3D}</code>
+                      <span className="text-[10px] font-normal text-purple-700">(Telegram Cloud)</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* 6. RESUMEN ECONÓMICO EN DOBLE MONEDA (Bs Y USD CON SALDO EN ROJO) */}
             <div className="p-3.5 rounded-xl border-2 border-slate-900 bg-slate-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 print:flex-row print:items-center">

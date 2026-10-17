@@ -105,6 +105,31 @@ export async function POST(req: NextRequest) {
       try {
         const caption = `📦 Escaneo 3D CAD/CAM (#${orderInfo.numeroRequerimiento} - Paciente: ${orderInfo.pacienteNombre})`;
         docResult = await sendTelegramDocument(fileBuffer, fileName, caption);
+
+        // Si Telegram guardó el archivo y devolvió fileId, guardarlo en observaciones
+        if (docResult?.fileId && orderInfo.numeroRequerimiento) {
+          try {
+            const { data: currentPed } = await supabaseAdmin
+              .from("pedidos")
+              .select("id, observaciones")
+              .eq("numero_requerimiento", orderInfo.numeroRequerimiento)
+              .maybeSingle();
+
+            if (currentPed) {
+              const tgTag = `[📦 TELEGRAM 3D: file_id=${docResult.fileId} | name=${fileName}]`;
+              const updatedObs = currentPed.observaciones
+                ? `${currentPed.observaciones}\n${tgTag}`
+                : tgTag;
+
+              await supabaseAdmin
+                .from("pedidos")
+                .update({ observaciones: updatedObs })
+                .eq("id", currentPed.id);
+            }
+          } catch (updTgErr) {
+            console.warn("No se pudo actualizar tag Telegram en pedido:", updTgErr);
+          }
+        }
       } catch (tgDocErr) {
         console.warn("Aviso Telegram archivo:", tgDocErr);
       }

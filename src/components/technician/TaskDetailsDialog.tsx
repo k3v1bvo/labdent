@@ -287,13 +287,29 @@ export default function TaskDetailsDialog({
             {/* 🦷 SECCIÓN DE DESCARGA DE ESCANEO 3D (STL / OBJ) PARA EL TÉCNICO */}
             {(() => {
               const obs = p?.observaciones || "";
-              const stlMatch = obs.match(/\[🔗 ENLACE 3D:\s*(https?:\/\/[^\s\]]+)\]/i) || obs.match(/(https?:\/\/[^\s]+\.(?:stl|obj|ply|zip|rar))/i);
-              const stlUrl = stlMatch ? stlMatch[1] || stlMatch[0] : null;
+              
+              // 1. Detectar tag directo de Telegram Cloud Drive
+              const tgMatch = obs.match(/\[📦 TELEGRAM 3D:\s*file_id=([^|\s\]]+)(?:\s*\|\s*name=([^\]]+))?\]/i);
+              const tgFileId = tgMatch ? tgMatch[1] : null;
+              const tgFileName = tgMatch && tgMatch[2] ? tgMatch[2].trim() : null;
 
-              const stlNameMatch = obs.match(/\[📦 ESCANEO 3D CAD\/CAM:\s*([^(\]]+)/i);
-              const stlFileName = stlNameMatch ? stlNameMatch[1].trim() : "escaneo_3d_clinico.stl";
+              // 2. Detectar tag de Supabase Storage o enlace directo
+              const stlMatch =
+                obs.match(/\[🔗 ENLACE 3D:\s*(https?:\/\/[^\s\]]+)\]/i) ||
+                obs.match(/(https?:\/\/[^\s]+\.(?:stl|obj|ply|zip|rar))/i);
+              const directStlUrl = stlMatch ? stlMatch[1] || stlMatch[0] : null;
 
-              if (!stlUrl && !stlNameMatch) return null;
+              const fallbackNameMatch = obs.match(/\[📦 ESCANEO 3D CAD\/CAM:\s*([^(\]]+)/i);
+              const detectedFileName =
+                tgFileName ||
+                (fallbackNameMatch ? fallbackNameMatch[1].trim() : "escaneo_3d_clinico.stl");
+
+              // Si tenemos Telegram fileId, la URL es el proxy de descarga directa
+              const downloadHref = tgFileId
+                ? `/api/telegram/download?fileId=${encodeURIComponent(tgFileId)}&fileName=${encodeURIComponent(detectedFileName)}`
+                : directStlUrl;
+
+              if (!downloadHref && !fallbackNameMatch && !tgMatch) return null;
 
               return (
                 <div className="border border-purple-200 rounded-2xl p-4 bg-purple-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
@@ -303,27 +319,29 @@ export default function TaskDetailsDialog({
                     </div>
                     <div>
                       <p className="text-xs font-bold text-slate-900 flex items-center gap-2">
-                        Escaneo Digital 3D: <code className="text-purple-800 font-mono font-bold">{stlFileName}</code>
+                        Escaneo Digital 3D: <code className="text-purple-800 font-mono font-bold">{detectedFileName}</code>
                       </p>
                       <p className="text-[11px] text-slate-500">
-                        Archivo clínico para diseño en Exocad, 3Shape o Ceramill.
+                        {tgFileId
+                          ? "Alojado en Telegram Cloud (servidor de alta capacidad sin límite)."
+                          : "Archivo clínico listo para diseño en Exocad, 3Shape o Blender."}
                       </p>
                     </div>
                   </div>
 
-                  {stlUrl ? (
+                  {downloadHref ? (
                     <a
-                      href={stlUrl}
+                      href={downloadHref}
                       target="_blank"
                       rel="noreferrer"
-                      download={stlFileName}
+                      download={detectedFileName}
                       className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl text-xs font-bold shadow-xs transition-colors shrink-0"
                     >
                       <Download className="w-3.5 h-3.5" /> Descargar Archivo 3D
                     </a>
                   ) : (
                     <span className="text-[11px] font-bold text-amber-700 bg-amber-100 px-2.5 py-1 rounded-lg shrink-0">
-                      Sincronizado a Telegram
+                      Sincronizado en Telegram
                     </span>
                   )}
                 </div>
