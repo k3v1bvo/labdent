@@ -170,7 +170,35 @@ export function TrabajoSelector({
     setIsCustom(false);
     setQuery(item.nombre);
     setIsOpen(false);
+
+    const priceObj = calculateTrabajoPrice({
+      item,
+      customNombre: item.nombre,
+      customPrecioUsd: 0,
+      cantidadPiezas: piezasCount,
+      tipoTarifa: tarifaSource,
+      descuentoPorcentaje,
+      tipoCambio: exchangeRate,
+    });
+
+    onSelect?.(item, priceObj.totalBs, piezasCount);
   }
+
+  // Notificar al componente padre cuando cambie la tarifa o el descuento si ya hay un trabajo seleccionado
+  useEffect(() => {
+    if (selectedItem) {
+      const priceObj = calculateTrabajoPrice({
+        item: selectedItem,
+        customNombre: selectedItem.nombre,
+        customPrecioUsd: 0,
+        cantidadPiezas: piezasCount,
+        tipoTarifa: tarifaSource,
+        descuentoPorcentaje,
+        tipoCambio: exchangeRate,
+      });
+      onSelect?.(selectedItem, priceObj.totalBs, piezasCount);
+    }
+  }, [tarifaSource, descuentoPorcentaje]);
 
   function handleEnableCustom() {
     setIsCustom(true);
@@ -446,7 +474,20 @@ export function TrabajoSelector({
               value={piezasCount}
               onChange={(e) => {
                 const val = parseInt(e.target.value, 10);
-                setPiezasCount(isNaN(val) || val <= 0 ? 1 : val);
+                const count = isNaN(val) || val <= 0 ? 1 : val;
+                setPiezasCount(count);
+                if (selectedItem) {
+                  const priceObj = calculateTrabajoPrice({
+                    item: selectedItem,
+                    customNombre: selectedItem.nombre,
+                    customPrecioUsd: 0,
+                    cantidadPiezas: count,
+                    tipoTarifa: tarifaSource,
+                    descuentoPorcentaje,
+                    tipoCambio: exchangeRate,
+                  });
+                  onSelect?.(selectedItem, priceObj.totalBs, count);
+                }
               }}
               className="text-center font-bold text-base"
             />
