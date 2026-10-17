@@ -43,7 +43,12 @@ import {
   Check,
   X,
   CreditCard,
+  Printer,
+  FileSpreadsheet,
 } from "lucide-react";
+import { OrderReportModal } from "@/components/reports/OrderReportModal";
+import { DoctorKardexReportModal } from "@/components/reports/DoctorKardexReportModal";
+import { DualPrice } from "@/components/common/DualPrice";
 
 type Estacion = {
   id: string;
@@ -64,6 +69,10 @@ type DoctorOrderRow = {
   total: number | null;
   anticipo: number | null;
   estado_pedido: string | null;
+  estado?: string | null;
+  doctor_nombre?: string | null;
+  doctor_telefono?: string | null;
+  componentes_caja?: any[] | null;
   estacion_actual: string | null;
   estado_estacion: string | null;
   fecha_inicio: string | null;
@@ -268,6 +277,12 @@ export default function DoctorOrdersPage() {
   const [historialItems, setHistorialItems] = useState<HistorialItem[]>([]);
   const [loadingHistorial, setLoadingHistorial] = useState(false);
 
+  // Modales de Reporte Oficial y Kardex
+  const [selectedReportOrder, setSelectedReportOrder] = useState<any | null>(null);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [kardexModalOpen, setKardexModalOpen] = useState(false);
+  const [doctorNombreState, setDoctorNombreState] = useState<string>("Mi Cuenta Médica");
+
   // Evita hydration
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -304,12 +319,13 @@ export default function DoctorOrdersPage() {
 
     await fetchEstaciones();
     const { primary, fallback, doctorNombre } = await getDoctorKey(user.id);
+    if (doctorNombre) setDoctorNombreState(doctorNombre);
 
     // Consulta completa con todas las columnas técnicas y financieras
     let query = supabase
       .from("pedidos")
       .select(
-        "id, paciente_nombre, numero_requerimiento, numero_caja, trabajo_realizar, pieza_numero, color_pieza, colimetro, observaciones, total, anticipo, estado, fecha_creacion, fecha_entrega"
+        "id, paciente_nombre, numero_requerimiento, numero_caja, trabajo_realizar, pieza_numero, color_pieza, colimetro, observaciones, total, anticipo, estado, fecha_creacion, fecha_entrega, componentes_caja, doctor_nombre, doctor_telefono"
       )
       .order("fecha_creacion", { ascending: false });
 
@@ -374,6 +390,10 @@ export default function DoctorOrdersPage() {
         total: p.total != null ? Number(p.total) : null,
         anticipo: p.anticipo != null ? Number(p.anticipo) : null,
         estado_pedido: s(p.estado),
+        estado: s(p.estado),
+        doctor_nombre: s(p.doctor_nombre),
+        doctor_telefono: s(p.doctor_telefono),
+        componentes_caja: p.componentes_caja,
         estacion_actual: trk ? s(trk.estacion_actual) : "Sin asignar",
         estado_estacion: trk ? s(trk.estado_estacion) : "pendiente",
         fecha_inicio: trk ? s(trk.fecha_inicio) : null,
@@ -580,6 +600,13 @@ export default function DoctorOrdersPage() {
               }`}
             >
               <Table2 className="w-3.5 h-3.5" /> Tabla Kardex
+            </button>
+            <button
+              type="button"
+              onClick={() => setKardexModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 transition-all cursor-pointer ml-1"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-purple-700" /> 📄 Imprimir Mi Kardex
             </button>
           </div>
         </div>
@@ -892,13 +919,21 @@ export default function DoctorOrdersPage() {
 
                       {/* Pagos / Saldo */}
                       {r.total != null && (
-                        <div className="flex items-center gap-3 pt-1 border-t border-slate-100 text-[11px]">
-                          <span className="text-slate-500">Total: <strong>Bs {r.total.toFixed(2)}</strong></span>
+                        <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-slate-100 text-[11px]">
+                          <span className="text-slate-500 flex items-center gap-1">
+                            Total: <DualPrice amountBs={r.total} size="sm" />
+                          </span>
                           {r.anticipo != null && r.anticipo > 0 && (
-                            <span className="text-slate-500">Anticipo: <strong>Bs {r.anticipo.toFixed(2)}</strong></span>
+                            <span className="text-slate-500 flex items-center gap-1">
+                              Anticipo: <DualPrice amountBs={r.anticipo} size="sm" />
+                            </span>
                           )}
-                          <span className={`font-bold ${saldo <= 0 ? "text-emerald-700" : "text-purple-800"}`}>
-                            Saldo: Bs {saldo.toFixed(2)}
+                          <span className="font-bold flex items-center gap-1">
+                            Saldo: {saldo <= 0 ? (
+                              <span className="text-emerald-700">✓ Pagado</span>
+                            ) : (
+                              <DualPrice amountBs={saldo} isDebt={true} size="sm" />
+                            )}
                           </span>
                         </div>
                       )}
@@ -910,15 +945,47 @@ export default function DoctorOrdersPage() {
                       )}
                     </div>
 
-                    <div className="pt-1 flex items-center justify-between border-t border-slate-100">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openHistorialModal(r)}
-                        className="text-xs text-purple-700 hover:text-purple-900 hover:bg-purple-50 rounded-xl gap-1.5 h-9"
-                      >
-                        <Eye className="w-3.5 h-3.5" /> Ver Bitácora & Tiempos de Taller
-                      </Button>
+                    <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openHistorialModal(r)}
+                          className="text-xs text-purple-700 hover:text-purple-900 hover:bg-purple-50 rounded-xl gap-1.5 h-8 font-semibold"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> Bitácora
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedReportOrder({
+                              id: r.pedido_id,
+                              numero_requerimiento: r.numero_requerimiento,
+                              numero_caja: r.numero_caja,
+                              fecha_ingreso: r.fecha_creacion,
+                              fecha_entrega: r.fecha_entrega,
+                              doctor_nombre: r.doctor_nombre,
+                              doctor_telefono: r.doctor_telefono,
+                              paciente_nombre: r.paciente_nombre,
+                              trabajo_realizar: r.trabajo_realizar,
+                              pieza_numero: r.pieza_numero,
+                              color_pieza: r.color_pieza,
+                              colimetro: r.colimetro,
+                              total: r.total,
+                              anticipo: r.anticipo,
+                              observaciones: r.observaciones,
+                              estado: r.estado,
+                              componentes_caja: r.componentes_caja,
+                            });
+                            setReportModalOpen(true);
+                          }}
+                          className="text-xs text-[#3C1C6C] hover:bg-purple-50 rounded-xl gap-1.5 h-8 font-bold border-purple-200"
+                        >
+                          <Printer className="w-3.5 h-3.5" /> 📄 Nota de Entrega
+                        </Button>
+                      </div>
 
                       {r.fecha_entrega && (
                         <span className="text-xs text-slate-500" suppressHydrationWarning>
@@ -1028,15 +1095,49 @@ export default function DoctorOrdersPage() {
                         </TableCell>
 
                         <TableCell className="align-middle py-3 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openHistorialModal(r)}
-                            className="h-8 px-2 text-xs text-purple-700 hover:bg-purple-50 rounded-lg"
-                            title="Ver Bitácora de Taller"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </Button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openHistorialModal(r)}
+                              className="h-8 px-2 text-xs text-purple-700 hover:bg-purple-50 rounded-lg"
+                              title="Ver Bitácora de Taller"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedReportOrder({
+                                  id: r.pedido_id,
+                                  numero_requerimiento: r.numero_requerimiento,
+                                  numero_caja: r.numero_caja,
+                                  fecha_ingreso: r.fecha_creacion,
+                                  fecha_entrega: r.fecha_entrega,
+                                  doctor_nombre: r.doctor_nombre,
+                                  doctor_telefono: r.doctor_telefono,
+                                  paciente_nombre: r.paciente_nombre,
+                                  trabajo_realizar: r.trabajo_realizar,
+                                  pieza_numero: r.pieza_numero,
+                                  color_pieza: r.color_pieza,
+                                  colimetro: r.colimetro,
+                                  total: r.total,
+                                  anticipo: r.anticipo,
+                                  observaciones: r.observaciones,
+                                  estado: r.estado,
+                                  componentes_caja: r.componentes_caja,
+                                });
+                                setReportModalOpen(true);
+                              }}
+                              className="h-8 px-2.5 text-xs text-[#3C1C6C] hover:bg-purple-50 rounded-lg border-purple-200 font-bold gap-1"
+                              title="Imprimir Nota de Entrega / Remisión"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Reporte</span>
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -1146,6 +1247,31 @@ export default function DoctorOrdersPage() {
           </div>
         </div>
       )}
+
+      {/* Modales Oficiales de Reporte y Kardex */}
+      <OrderReportModal
+        open={reportModalOpen}
+        onOpenChange={setReportModalOpen}
+        order={selectedReportOrder}
+      />
+
+      <DoctorKardexReportModal
+        open={kardexModalOpen}
+        onOpenChange={setKardexModalOpen}
+        doctorNombre={doctorNombreState}
+        orders={rows.map((r) => ({
+          id: r.pedido_id,
+          numero_requerimiento: r.numero_requerimiento,
+          numero_caja: r.numero_caja,
+          fecha_ingreso: r.fecha_creacion,
+          paciente_nombre: r.paciente_nombre,
+          trabajo_realizar: r.trabajo_realizar,
+          pieza_numero: r.pieza_numero,
+          total: r.total,
+          anticipo: r.anticipo,
+          estado: r.estado,
+        }))}
+      />
     </div>
   );
 }

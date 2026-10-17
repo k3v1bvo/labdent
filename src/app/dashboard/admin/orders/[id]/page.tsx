@@ -30,6 +30,8 @@ import {
   Lock,
   Truck,
 } from "lucide-react";
+import { OrderReportModal } from "@/components/reports/OrderReportModal";
+import { DualPrice } from "@/components/common/DualPrice";
 
 export default function OrderDetailPage() {
   const { id } = useParams();
@@ -37,6 +39,7 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<any>(null);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -158,10 +161,10 @@ export default function OrderDetailPage() {
         </Button>
 
         <Button
-          onClick={() => window.print()}
-          className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl gap-2 font-medium shadow-md shadow-purple-950/10"
+          onClick={() => setShowReportModal(true)}
+          className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl gap-2 font-bold text-xs h-10 px-4 shadow-md shadow-purple-950/10 cursor-pointer"
         >
-          <Printer className="w-4 h-4" /> Imprimir Hoja de Ruta / Remisión
+          <Printer className="w-4 h-4" /> 📄 Vista Oficial de Impresión & Remisión
         </Button>
       </div>
 
@@ -248,18 +251,20 @@ export default function OrderDetailPage() {
               <span className="flex items-center gap-1.5"><Box className="w-4 h-4" /> Caja #{order.numero_caja || "00"}</span>
               <span>Finanzas</span>
             </div>
-            <div className="space-y-1 text-xs">
-              <div className="flex justify-between text-slate-600">
+            <div className="space-y-1.5 text-xs">
+              <div className="flex justify-between items-center text-slate-600">
                 <span>Total:</span>
-                <span className="font-bold text-slate-800">Bs {total.toFixed(2)}</span>
+                <DualPrice amountBs={total} size="sm" />
               </div>
-              <div className="flex justify-between text-slate-600">
+              <div className="flex justify-between items-center text-slate-600">
                 <span>Anticipo:</span>
-                <span className="font-bold text-green-700">Bs {anticipo.toFixed(2)}</span>
+                <DualPrice amountBs={anticipo} size="sm" />
               </div>
-              <div className="flex justify-between pt-1 border-t border-purple-200/60 font-bold text-[#3C1C6C]">
-                <span>Saldo Pendiente:</span>
-                <span>Bs {saldoPendiente.toFixed(2)}</span>
+              <div className="flex justify-between items-center pt-1.5 border-t border-purple-200/60 font-bold">
+                <span className={saldoPendiente > 0 ? "text-rose-600 font-bold" : "text-[#3C1C6C]"}>
+                  Saldo Pendiente:
+                </span>
+                <DualPrice amountBs={saldoPendiente} isDebt={saldoPendiente > 0} size="md" />
               </div>
             </div>
           </div>
@@ -480,6 +485,13 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal Oficial de Impresión y Remisión */}
+      <OrderReportModal
+        open={showReportModal}
+        onOpenChange={setShowReportModal}
+        order={order}
+      />
     </div>
   );
 }

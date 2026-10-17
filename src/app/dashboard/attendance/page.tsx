@@ -33,6 +33,7 @@ import {
   Settings,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { uploadToImgbb } from "@/lib/imgbb";
 
 export default function AttendanceClockInPage() {
   const router = useRouter();
@@ -307,11 +308,26 @@ export default function AttendanceClockInPage() {
     }
 
     setSubmitting(true);
+    let finalPhotoUrl = capturedPhoto;
+    try {
+      toast.info("☁️ Optimizando y subiendo selfie a ImgBB...");
+      const imgRes = await uploadToImgbb(
+        capturedPhoto,
+        `asistencia_${user?.id || "usr"}_${activeAction}_${Date.now()}`
+      );
+      if (imgRes.success && imgRes.url) {
+        finalPhotoUrl = imgRes.url;
+        toast.success("Foto alojada con éxito en tu cuenta de ImgBB");
+      }
+    } catch (err) {
+      console.warn("ImgBB upload error:", err);
+    }
+
     const res = await registerAttendanceMark({
       tipo: activeAction,
       latitud: coords.lat,
       longitud: coords.lon,
-      fotoBase64: capturedPhoto,
+      fotoBase64: finalPhotoUrl,
     });
     setSubmitting(false);
 

@@ -124,3 +124,52 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 6mm;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Ocultar elementos de navegación y decorativos de la aplicación */
+  aside,
+  nav,
+  header,
+  .print\:hidden,
+  [data-radix-portal] > [data-state="open"]:not([role="dialog"]) {
+    display: none !important;
+  }
+
+  /* Asegurar que el diálogo de reporte ocupe toda la hoja */
+  [role="dialog"] {
+    position: static !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+  }
+
+  #guisela-report-container,
+  #guisela-kardex-container {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+    page-break-after: avoid;
+    break-inside: avoid;
+  }
+}
+

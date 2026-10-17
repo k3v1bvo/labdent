@@ -15,6 +15,7 @@ import StationPickerDialog, { Station } from "@/components/stations/StationPicke
 import TaskDetailsDialog, {
   type TaskRowLite,
 } from "@/components/technician/TaskDetailsDialog";
+import { ControlComponentes, ComponenteItem } from "@/components/orders/ControlComponentes";
 
 import {
   Dialog,
@@ -224,6 +225,9 @@ export default function TechnicianDashboard() {
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [commentTaskId, setCommentTaskId] = useState<string | null>(null);
+  const [commentPedidoId, setCommentPedidoId] = useState<string | null>(null);
+  const [advanceComponents, setAdvanceComponents] = useState<ComponenteItem[]>([]);
+  const [targetStationId, setTargetStationId] = useState<string>("");
   const [commentAction, setCommentAction] = useState<"save" | "advance">("save");
   const commentRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -238,8 +242,34 @@ export default function TechnicianDashboard() {
 
   function openCommentDialog(task: TaskRow, action: "save" | "advance") {
     setCommentTaskId(task.id);
+    setCommentPedidoId((task.pedidos as any)?.id ?? null);
     setCommentAction(action);
     setCommentText(task.comentarios ?? "");
+
+    // Cargar componentes de la caja (desde columna JSON o desde observaciones)
+    const pComps = (task.pedidos as any)?.componentes_caja;
+    if (Array.isArray(pComps) && pComps.length > 0) {
+      setAdvanceComponents(pComps);
+    } else if (task.pedidos?.observaciones && task.pedidos.observaciones.includes("[COMPONENTES:")) {
+      const match = task.pedidos.observaciones.match(/\[COMPONENTES:\s*([^\]]+)\]/);
+      if (match) {
+        const parts = match[1].split(",").map((s) => s.trim());
+        const parsed = parts.map((p) => {
+          const qtyMatch = p.match(/^(\d+)x\s*(.*)$/);
+          if (qtyMatch) {
+            return { cantidad: parseInt(qtyMatch[1], 10), nombre: qtyMatch[2], checked: true };
+          }
+          return { cantidad: 1, nombre: p, checked: true };
+        });
+        setAdvanceComponents(parsed);
+      } else {
+        setAdvanceComponents([]);
+      }
+    } else {
+      setAdvanceComponents([]);
+    }
+
+    setTargetStationId("");
     setCommentOpen(true);
 
     setTimeout(() => {
@@ -276,9 +306,28 @@ export default function TechnicianDashboard() {
     if (!commentTaskId) return;
     const txt = commentText.trim() || null;
 
+    // 1. Guardar componentes en pedidos
+    if (commentPedidoId && advanceComponents.length > 0) {
+      await supabase
+        .from("pedidos")
+        .update({ componentes_caja: advanceComponents })
+        .eq("id", commentPedidoId);
+    }
+
+    // 2. Construir bitácora con componentes y estación destino
+    const compChecked = advanceComponents.filter((c) => c.checked);
+    const compText =
+      compChecked.length > 0
+        ? `[COMPONENTES: ${compChecked.map((c) => `${c.cantidad}x ${c.nombre}`).join(", ")}]`
+        : "";
+    const targetStation = stations.find((s) => s.id === targetStationId);
+    const targetText = targetStation ? `[ENVIAR A: ${targetStation.nombre}]` : "";
+
+    const combinedComentario = [txt, compText, targetText].filter(Boolean).join(" | ") || null;
+
     const { error } = await supabase.rpc("rpc_completar_y_avanzar", {
       p_historial_id: commentTaskId,
-      p_comentario: txt,
+      p_comentario: combinedComentario,
     });
 
     if (error) {
@@ -464,7 +513,8 @@ export default function TechnicianDashboard() {
           anticipo,
           observaciones,
           fecha_ingreso,
-          hora_ingreso
+          hora_ingreso,
+          componentes_caja
         )
       `
       )
@@ -509,7 +559,8 @@ export default function TechnicianDashboard() {
             anticipo,
             observaciones,
             fecha_ingreso,
-            hora_ingreso
+            hora_ingreso,
+            componentes_caja
           )
         `
         )
@@ -1217,31 +1268,78 @@ export default function TechnicianDashboard() {
         )}
       </div>
 
-      {/* Modal: Comentario Técnico */}
+      {/* Modal: Comentario Técnico & Control de Avance */}
       <Dialog open={commentOpen} onOpenChange={setCommentOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-lg p-5 sm:p-6 rounded-3xl">
+        <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[92vh] overflow-y-auto p-5 sm:p-6 rounded-3xl">
           <DialogHeader>
             <DialogTitle className="text-[#3C1C6C] font-black text-lg flex items-center gap-2">
               <Wrench className="w-5 h-5 text-[#3C1C6C]" />
               {commentAction === "advance"
-                ? "Completar y Avanzar a Siguiente Estación"
+                ? "Control de Avance & Envío de Trabajo"
                 : "Añadir Anotación Técnica a la Bitácora"}
             </DialogTitle>
           </DialogHeader>
 
-          <p className="text-xs text-slate-500 mt-1">
-            {commentAction === "advance"
-              ? "Registra detalles sobre el ajuste oclusal, márgenes o características antes de pasar a la siguiente estación."
-              : "Guarda una nota interna sobre el estado de la pieza dental."}
-          </p>
+          {commentAction === "advance" ? (
+            <div className="space-y-4 pt-2">
+              {/* CONTROL DE COMPONENTES EN CAJA (15 COMPONENTES) */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                <ControlComponentes
+                  value={advanceComponents}
+                  onChange={setAdvanceComponents}
+                />
+              </div>
 
-          <Textarea
-            ref={commentRef}
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Ej. Ajuste oclusal verificado, pulido fino completado, listo para glaseado..."
-            className="min-h-[130px] rounded-2xl border-slate-200 mt-3 text-xs leading-relaxed"
-          />
+              {/* ENVIAR TRABAJO A: (ÁREAS TÉCNICAS) */}
+              <div className="space-y-1.5 p-3.5 rounded-2xl bg-purple-50/60 border border-purple-200">
+                <label className="text-xs font-black uppercase tracking-wider text-[#3C1C6C] block">
+                  ENVIAR TRABAJO A:
+                </label>
+                <select
+                  value={targetStationId}
+                  onChange={(e) => setTargetStationId(e.target.value)}
+                  className="w-full text-xs font-bold p-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                >
+                  <option value="">Siguiente Estación en Secuencia de Taller</option>
+                  {stations.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nombre} {s.descripcion ? `— ${s.descripcion}` : ""}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-slate-500">
+                  Selecciona la estación técnica de destino en el laboratorio o déjalo en secuencia automática.
+                </p>
+              </div>
+
+              {/* NOTA ADICIONAL (AVANCE): */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-black uppercase tracking-wider text-slate-700 block">
+                  NOTA ADICIONAL (AVANCE):
+                </label>
+                <Textarea
+                  ref={commentRef}
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Ej. Ajuste de márgenes oclusales verificado, pulido fino completado, listo para glaseado..."
+                  className="min-h-[90px] rounded-2xl border-slate-200 text-xs leading-relaxed"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3 pt-2">
+              <p className="text-xs text-slate-500">
+                Guarda una anotación interna sobre el estado de la pieza dental en tu bitácora de trabajo.
+              </p>
+              <Textarea
+                ref={commentRef}
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Anotaciones de laboratorio..."
+                className="min-h-[120px] rounded-2xl border-slate-200 text-xs leading-relaxed"
+              />
+            </div>
+          )}
 
           <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-100">
             <Button
@@ -1260,7 +1358,7 @@ export default function TechnicianDashboard() {
                   : "bg-[#3C1C6C] hover:bg-[#2E1553]"
               }`}
             >
-              {commentAction === "advance" ? "✓ Completar y Enviar a Siguiente Estación" : "Guardar Nota"}
+              {commentAction === "advance" ? "✓ Completar y Enviar a Taller" : "Guardar Nota"}
             </Button>
           </DialogFooter>
         </DialogContent>

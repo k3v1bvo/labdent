@@ -20,6 +20,8 @@ import {
   XCircle,
   Search,
   Truck,
+  Printer,
+  FileSpreadsheet,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -28,12 +30,22 @@ import {
   type ReviewOrder,
 } from "@/components/orders/ReviewOrderDialog";
 import { logAudit } from "@/lib/auditLogger";
+import { OrderReportModal } from "@/components/reports/OrderReportModal";
+import { DoctorKardexReportModal } from "@/components/reports/DoctorKardexReportModal";
+import { DualPrice } from "@/components/common/DualPrice";
 
 type PedidoRow = {
   id: string;
   paciente_nombre: string;
+  paciente_telefono?: string | null;
   doctor_nombre?: string | null;
+  doctor_telefono?: string | null;
   numero_requerimiento?: string | null;
+  trabajo_realizar?: string | null;
+  pieza_numero?: string | null;
+  color_pieza?: string | null;
+  colimetro?: string | null;
+  componentes_caja?: any[] | null;
 
   estado: string;
   fecha_creacion: string;
@@ -58,6 +70,12 @@ function cnTab(active: boolean) {
 export default function SecretaryOrdersPage() {
   const [orders, setOrders] = useState<PedidoRow[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<PedidoRow | null>(null);
+
+  // Modales de Reporte Oficial y Kardex
+  const [selectedReportOrder, setSelectedReportOrder] = useState<any | null>(null);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [kardexModalOpen, setKardexModalOpen] = useState(false);
+  const [kardexDoctor, setKardexDoctor] = useState<string>("");
 
   // filtros
   const [q, setQ] = useState("");
@@ -104,7 +122,9 @@ export default function SecretaryOrdersPage() {
         [
           "id",
           "paciente_nombre",
+          "paciente_telefono",
           "doctor_nombre",
+          "doctor_telefono",
           "numero_requerimiento",
           "estado",
           "fecha_creacion",
@@ -115,6 +135,11 @@ export default function SecretaryOrdersPage() {
           "numero_caja",
           "observaciones",
           "motivo_rechazo",
+          "trabajo_realizar",
+          "pieza_numero",
+          "color_pieza",
+          "colimetro",
+          "componentes_caja",
         ].join(",")
       )
       .order("fecha_creacion", { ascending: false });
@@ -129,16 +154,22 @@ export default function SecretaryOrdersPage() {
     const typed: PedidoRow[] = (res.data ?? []).map((r: any) => ({
       id: String(r.id),
       paciente_nombre: String(r.paciente_nombre ?? ""),
+      paciente_telefono: r.paciente_telefono ?? null,
       doctor_nombre: r.doctor_nombre ?? null,
+      doctor_telefono: r.doctor_telefono ?? null,
       numero_requerimiento: r.numero_requerimiento ?? null,
+      trabajo_realizar: r.trabajo_realizar ?? null,
+      pieza_numero: r.pieza_numero ?? null,
+      color_pieza: r.color_pieza ?? null,
+      colimetro: r.colimetro ?? null,
+      componentes_caja: r.componentes_caja ?? null,
       estado: String(r.estado ?? ""),
       fecha_creacion: String(r.fecha_creacion ?? ""),
       fecha_entrega: r.fecha_entrega ?? null,
       numero_nota_entrega: r.numero_nota_entrega ?? null,
-      total: r.total ?? null,
-      anticipo: r.anticipo ?? null,
+      total: r.total != null ? Number(r.total) : null,
+      anticipo: r.anticipo != null ? Number(r.anticipo) : null,
       numero_caja: r.numero_caja ?? null,
-      observaciones: r.observaciones ?? null,
       motivo_rechazo: r.motivo_rechazo ?? null,
     }));
 
@@ -365,6 +396,17 @@ export default function SecretaryOrdersPage() {
             />
           </div>
 
+          <Button
+            variant="outline"
+            onClick={() => {
+              setKardexDoctor("");
+              setKardexModalOpen(true);
+            }}
+            className="rounded-xl border-purple-200 text-purple-900 bg-purple-50 hover:bg-purple-100 font-bold text-xs h-10 gap-1.5 shrink-0"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-purple-700" /> Kardex / Estado de Cuenta
+          </Button>
+
           <Button variant="outline" onClick={fetchOrders} className="rounded-xl border-slate-200 shrink-0">
             Refrescar
           </Button>
@@ -450,11 +492,15 @@ export default function SecretaryOrdersPage() {
 
                 <td className="px-5 py-3 text-xs">
                   {o.total != null ? (
-                    <div>
-                      <p className="font-bold text-slate-900">Bs {Number(o.total).toFixed(2)}</p>
-                      <p className={`text-[11px] font-semibold ${saldo <= 0 ? "text-emerald-700" : "text-purple-700"}`}>
-                        {saldo <= 0 ? "✓ Pagado" : `Saldo: Bs ${saldo.toFixed(2)}`}
-                      </p>
+                    <div className="space-y-0.5">
+                      <DualPrice amountBs={o.total} size="sm" />
+                      <div>
+                        {saldo <= 0 ? (
+                          <span className="text-[11px] font-bold text-emerald-700">✓ Pagado</span>
+                        ) : (
+                          <DualPrice amountBs={saldo} isDebt={true} size="sm" />
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <span className="text-slate-400">—</span>
@@ -476,39 +522,54 @@ export default function SecretaryOrdersPage() {
                 <td className="px-5 py-3 text-xs font-mono text-slate-600">{o.numero_nota_entrega || "—"}</td>
 
                 <td className="px-6 py-4 text-right">
-                  {o.estado === "pendiente_revision" && (
+                  <div className="flex items-center justify-end gap-1.5 flex-wrap">
                     <Button
                       size="sm"
-                      className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold shadow-sm"
-                      onClick={() => openReviewModal(o)}
+                      variant="outline"
+                      className="border-purple-200 text-xs font-bold rounded-xl text-purple-900 bg-purple-50/60 hover:bg-purple-100 h-8 gap-1"
+                      onClick={() => {
+                        setSelectedReportOrder(o);
+                        setReportModalOpen(true);
+                      }}
+                      title="Imprimir Nota Oficial de Entrega con Marca de Agua"
                     >
-                      Revisar / Completar
+                      <Printer className="w-3.5 h-3.5" /> Reporte
                     </Button>
-                  )}
 
-                  {o.estado === "finalizado" && (
-                    <Button
-                      size="sm"
-                      className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold shadow-sm"
-                      onClick={() => openEntregaModal(o)}
-                    >
-                      Registrar Entrega
-                    </Button>
-                  )}
+                    {o.estado === "pendiente_revision" && (
+                      <Button
+                        size="sm"
+                        className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold shadow-sm h-8"
+                        onClick={() => openReviewModal(o)}
+                      >
+                        Revisar
+                      </Button>
+                    )}
 
-                  {(o.estado === "entregado" ||
-                    o.estado === "en_proceso" ||
-                    o.estado === "pendiente" ||
-                    o.estado === "rechazado") && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-slate-500 hover:text-[#3C1C6C] hover:bg-purple-50 rounded-xl text-xs font-semibold"
-                      onClick={() => openReviewModal(o)}
-                    >
-                      Ver Ficha
-                    </Button>
-                  )}
+                    {o.estado === "finalizado" && (
+                      <Button
+                        size="sm"
+                        className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl font-bold shadow-sm h-8"
+                        onClick={() => openEntregaModal(o)}
+                      >
+                        Entregar
+                      </Button>
+                    )}
+
+                    {(o.estado === "entregado" ||
+                      o.estado === "en_proceso" ||
+                      o.estado === "pendiente" ||
+                      o.estado === "rechazado") && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-slate-500 hover:text-[#3C1C6C] hover:bg-purple-50 rounded-xl text-xs font-semibold h-8"
+                        onClick={() => openReviewModal(o)}
+                      >
+                        Ficha
+                      </Button>
+                    )}
+                  </div>
                 </td>
               </tr>
             );
@@ -596,6 +657,21 @@ export default function SecretaryOrdersPage() {
           </AnimatePresence>
         </DialogContent>
       </Dialog>
+
+      {/* Modal Oficial de Impresión y Remisión con Marca de Agua */}
+      <OrderReportModal
+        open={reportModalOpen}
+        onOpenChange={setReportModalOpen}
+        order={selectedReportOrder}
+      />
+
+      {/* Modal Oficial de Estado de Cuenta / Kardex */}
+      <DoctorKardexReportModal
+        open={kardexModalOpen}
+        onOpenChange={setKardexModalOpen}
+        doctorNombre={kardexDoctor || "Todos los Doctores"}
+        orders={orders.filter((o) => !kardexDoctor || o.doctor_nombre === kardexDoctor)}
+      />
     </div>
   );
 }

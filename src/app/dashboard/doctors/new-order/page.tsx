@@ -32,6 +32,8 @@ import {
   Check,
 } from "lucide-react";
 import { ClinicLocationPickerModal } from "@/components/location/ClinicLocationPickerModal";
+import { TrabajoSelector } from "@/components/orders/TrabajoSelector";
+import { ControlComponentes, ComponenteItem } from "@/components/orders/ControlComponentes";
 
 type SuggestionType = "paciente" | "color" | "colimetro";
 
@@ -136,6 +138,7 @@ export default function DoctorNewOrderPage() {
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const [latitudEntrega, setLatitudEntrega] = useState<number | null>(null);
   const [longitudEntrega, setLongitudEntrega] = useState<number | null>(null);
+  const [componentesCaja, setComponentesCaja] = useState<ComponenteItem[]>([]);
 
   const [suggestions, setSuggestions] = useState<Record<SuggestionType, string[]>>({
     paciente: [],
@@ -401,6 +404,7 @@ export default function DoctorNewOrderPage() {
       observaciones: "",
       requiere_delivery: false,
     }));
+    setComponentesCaja([]);
     // mover focus al requerimiento
     setTimeout(() => reqRef.current?.focus(), 60);
   }
@@ -506,6 +510,15 @@ export default function DoctorNewOrderPage() {
         : deliveryTag;
     }
 
+    // Formatear componentes en caja
+    const compChecked = componentesCaja.filter((c) => c.checked);
+    if (compChecked.length > 0) {
+      const compTag = `[COMPONENTES: ${compChecked.map((c) => `${c.cantidad}x ${c.nombre}`).join(", ")}]`;
+      finalObservaciones = finalObservaciones
+        ? `${finalObservaciones}\n${compTag}`
+        : compTag;
+    }
+
     // 3) Insertar pedido EN REVISIÓN
     const { error: insertErr } = await supabase.from("pedidos").insert([
       {
@@ -522,6 +535,7 @@ export default function DoctorNewOrderPage() {
         color_pieza: form.color_pieza.trim() || null,
         colimetro: form.colimetro.trim() || null,
         observaciones: finalObservaciones || null,
+        componentes_caja: compChecked.length > 0 ? compChecked : null,
 
         estado: "pendiente_revision",
 
@@ -834,12 +848,24 @@ export default function DoctorNewOrderPage() {
             </div>
 
             {/* ✅ Sección 4: Trabajo */}
-            <div className="lg:col-span-3 p-4 rounded-2xl border bg-white space-y-3">
-              <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                <ClipboardCheck className="w-4 h-4 text-muted-foreground" /> Trabajo
+            <div className="lg:col-span-3 p-4 rounded-2xl border bg-white space-y-4">
+              <p className="text-sm font-semibold text-gray-800 flex items-center gap-2 border-b pb-2">
+                <ClipboardCheck className="w-4 h-4 text-purple-700" /> Catálogo de Trabajos Oficiales Guisela Lab (81 Opciones)
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Selector interactivo de catálogo oficial con auto-precio */}
+              <TrabajoSelector
+                selectedTrabajo={form.trabajo_realizar}
+                piezas={form.pieza_numero}
+                onSelect={(trabajo: any) => {
+                  setForm((prev) => ({
+                    ...prev,
+                    trabajo_realizar: trabajo.nombre,
+                  }));
+                }}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
                 <div className="space-y-1 md:col-span-2">
                   <label className="text-sm font-medium">
                     Trabajo a realizar <span className="text-red-500">*</span>
@@ -941,6 +967,14 @@ export default function DoctorNewOrderPage() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* 📦 Control de Componentes en Caja (15 Aditamentos Oficiales) */}
+            <div className="lg:col-span-3 p-4 sm:p-5 rounded-2xl border bg-white shadow-xs">
+              <ControlComponentes
+                value={componentesCaja}
+                onChange={setComponentesCaja}
+              />
             </div>
 
             {/* 🚚 Logística de Despacho & Consultorio Dental (Opcional) */}
