@@ -40,6 +40,18 @@ import { getCachedExchangeRate } from "@/lib/currency";
 
 type SuggestionType = "doctor" | "paciente" | "color" | "colimetro";
 
+export interface DoctorSuggestion {
+  nombre: string;
+  telefono?: string;
+  clinica?: string;
+  direccion?: string;
+  latitud?: number;
+  longitud?: number;
+  especialidad?: string;
+  tipo_tarifa?: string;
+  descuento_porcentaje?: number;
+}
+
 interface PedidoForm {
   numero_requerimiento: string;
   fecha_ingreso: string;
@@ -167,6 +179,10 @@ export default function AdminNewOrderPage() {
     colimetro: false,
   });
 
+  const [doctorObjSuggestions, setDoctorObjSuggestions] = useState<DoctorSuggestion[]>([]);
+  const [selectedDoctorObj, setSelectedDoctorObj] = useState<DoctorSuggestion | null>(null);
+  const [pagoFecha, setPagoFecha] = useState<string>("");
+
   // refs para focus “pro”
   const reqRef = useRef<HTMLInputElement | null>(null);
   const doctorRef = useRef<HTMLInputElement | null>(null);
@@ -235,10 +251,86 @@ export default function AdminNewOrderPage() {
     suggTimers.current[type] = setTimeout(() => fetchSuggestions(type, query), 180);
   }
 
-  // 🔍 Buscar sugerencias (de pedidos previos)
+  // 🔍 Buscar sugerencias (doctores registrados con tarifa y pedidos previos)
   async function fetchSuggestions(type: SuggestionType, query: string) {
-    if (query.trim().length < 2) {
+    const qClean = query.trim();
+    if (qClean.length < 2) {
       setVisibleSuggest((prev) => ({ ...prev, [type]: false }));
+      if (type === "doctor") setDoctorObjSuggestions([]);
+      return;
+    }
+
+    if (type === "doctor") {
+      const merged: DoctorSuggestion[] = [];
+      const seenNames = new Set<string>();
+
+      try {
+        const { data: regDocs } = await supabase
+          .from("doctores")
+          .select(
+            `
+            id,
+            nombre,
+            telefono,
+            clinica,
+            especialidad,
+            tipo_tarifa,
+            descuento_porcentaje,
+            profile_id,
+            profiles:profile_id (
+              nombre,
+              telefono
+            )
+          `
+          )
+          .or(`nombre.ilike.%${qClean}%,clinica.ilike.%${qClean}%`)
+          .limit(8);
+
+        if (regDocs) {
+          regDocs.forEach((d: any) => {
+            const docName = d.nombre || d.profiles?.nombre || d.clinica || "";
+            const clean = normalizePersonName(docName);
+            if (!clean) return;
+            seenNames.add(clean.toLowerCase());
+            merged.push({
+              nombre: clean,
+              telefono: d.telefono || d.profiles?.telefono || undefined,
+              clinica: d.clinica || undefined,
+              especialidad: d.especialidad || undefined,
+              tipo_tarifa: d.tipo_tarifa || "regular",
+              descuento_porcentaje: Number(d.descuento_porcentaje) || 0,
+            });
+          });
+        }
+
+        const { data: pastOrders } = await supabase
+          .from("pedidos")
+          .select("doctor_nombre, doctor_telefono, observaciones")
+          .ilike("doctor_nombre", `%${qClean}%`)
+          .order("fecha_ingreso", { ascending: false })
+          .limit(8);
+
+        if (pastOrders) {
+          pastOrders.forEach((p) => {
+            const clean = normalizePersonName(p.doctor_nombre || "");
+            if (clean && !seenNames.has(clean.toLowerCase())) {
+              seenNames.add(clean.toLowerCase());
+              merged.push({
+                nombre: clean,
+                telefono: p.doctor_telefono || undefined,
+                tipo_tarifa: "regular",
+                descuento_porcentaje: 0,
+              });
+            }
+          });
+        }
+      } catch (err) {
+        console.warn("Error buscando doctores:", err);
+      }
+
+      setDoctorObjSuggestions(merged);
+      setSuggestions((prev) => ({ ...prev, doctor: merged.map((m) => m.nombre) }));
+      setVisibleSuggest((prev) => ({ ...prev, doctor: merged.length > 0 }));
       return;
     }
 
@@ -263,6 +355,53 @@ export default function AdminNewOrderPage() {
 
     setSuggestions((prev) => ({ ...prev, [type]: unique }));
     setVisibleSuggest((prev) => ({ ...prev, [type]: unique.length > 0 }));
+  }
+
+  // ✅ Seleccionar sugerencia completa de Doctor
+  async function handleSelectDoctorObj(doc: DoctorSuggestion) {
+    setVisibleSuggest((prev) => ({ ...prev, doctor: false }));
+    setSelectedDoctorObj(doc);
+
+    const selectedName = normalizePersonName(doc.nombre);
+    let foundTel = doc.telefono;
+    let foundClinica = doc.clinica;
+    let foundDir = doc.direccion;
+
+    try {
+      const { data: lastOrder } = await supabase
+        .from("pedidos")
+        .select("doctor_telefono, observaciones")
+        .ilike("doctor_nombre", selectedName)
+        .order("fecha_ingreso", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (lastOrder) {
+        if (!foundTel && lastOrder.doctor_telefono) foundTel = lastOrder.doctor_telefono;
+        if (!foundDir && lastOrder.observaciones && lastOrder.observaciones.includes("DELIVERY:")) {
+          const match = lastOrder.observaciones.match(/Dir:\s*([^|()]+)/);
+          if (match) foundDir = match[1].trim();
+          const matchCli = lastOrder.observaciones.match(/DELIVERY:\s*([^|()]+)/);
+          if (matchCli && !matchCli[1].toLowerCase().includes("consultorio")) {
+            foundClinica = foundClinica || matchCli[1].trim();
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Lookup past delivery error:", e);
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      doctor_nombre: selectedName,
+      doctor_telefono: foundTel ? onlyDigits(foundTel) : prev.doctor_telefono,
+      ...(foundClinica && { clinica_nombre: foundClinica }),
+      ...(foundDir && { direccion_entrega: foundDir, requiere_delivery: true }),
+    }));
+
+    setTimeout(() => {
+      pacienteRef.current?.focus();
+    }, 60);
   }
 
   // ✅ Seleccionar sugerencia (autocompleta y rellena teléfono si aplica)
@@ -352,6 +491,7 @@ export default function AdminNewOrderPage() {
     setPagoMoneda("BOB");
     setPagoMetodo("efectivo");
     setPagoComprobanteUrl(null);
+    setPagoFecha("");
     setComponentesCaja([]);
     setNumError("");
     setTimeout(() => reqRef.current?.focus(), 60);
@@ -499,9 +639,10 @@ export default function AdminNewOrderPage() {
 
     // Formatear detalle de pago inicial / anticipo
     if (anticipoNum > 0) {
+      const fechaTag = pagoFecha ? ` | Fecha/Hora: ${pagoFecha}` : "";
       const pagoTag = `[💳 PAGO INICIAL: ${anticipoNum.toFixed(2)} ${pagoMoneda} | Método: ${
         pagoMetodo === "qr_transferencia" ? "QR Bancario" : "Efectivo"
-      }${pagoComprobanteUrl ? ` | Comprobante: ${pagoComprobanteUrl}` : ""}]`;
+      }${fechaTag}${pagoComprobanteUrl ? ` | Comprobante: ${pagoComprobanteUrl}` : ""}]`;
       finalObservaciones = finalObservaciones
         ? `${finalObservaciones}\n${pagoTag}`
         : pagoTag;
@@ -722,16 +863,56 @@ export default function AdminNewOrderPage() {
                   onBlur={() => setTimeout(() => setVisibleSuggest((p) => ({ ...p, doctor: false })), 150)}
                 />
 
-                {visibleSuggest.doctor && suggestions.doctor.length > 0 && (
-                  <div className="absolute top-full left-0 w-full mt-1 z-50 bg-white border rounded-xl shadow-lg max-h-52 overflow-auto overflow-x-hidden">
-                    {suggestions.doctor.map((d, i) => (
+                {visibleSuggest.doctor && doctorObjSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 w-full mt-1 z-50 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden max-h-64 overflow-y-auto divide-y divide-slate-100 animate-in fade-in duration-150">
+                    {doctorObjSuggestions.map((doc, i) => (
                       <button
                         key={i}
                         type="button"
-                        onClick={() => handleSelectSuggestion("doctor", d)}
-                        className="w-full text-left px-3 py-2 hover:bg-green-50 cursor-pointer text-sm flex items-center gap-2"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleSelectDoctorObj(doc);
+                        }}
+                        className="w-full text-left px-3.5 py-2.5 hover:bg-purple-50/70 cursor-pointer transition-colors flex items-center justify-between gap-2"
                       >
-                        <Stethoscope className="w-4 h-4 text-muted-foreground" /> {d}
+                        <div className="min-w-0">
+                          <p className="font-bold text-sm text-slate-800 flex items-center gap-1.5 truncate">
+                            <Stethoscope className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                            <span>{doc.nombre}</span>
+                          </p>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[11px] text-slate-500">
+                            {doc.clinica && (
+                              <span className="font-medium text-slate-700 bg-slate-100 px-1.5 py-0.2 rounded">
+                                🏥 {doc.clinica}
+                              </span>
+                            )}
+                            {doc.telefono && (
+                              <span className="text-slate-500">
+                                📞 {doc.telefono}
+                              </span>
+                            )}
+                            {doc.tipo_tarifa === "institucional_unitepc" ? (
+                              <span className="font-extrabold text-purple-900 bg-purple-100 px-1.5 py-0.5 rounded text-[10px]">
+                                🎓 UNITEPC (Bs)
+                              </span>
+                            ) : doc.tipo_tarifa === "institucional_univalle" ? (
+                              <span className="font-extrabold text-blue-900 bg-blue-100 px-1.5 py-0.5 rounded text-[10px]">
+                                🎓 UNIVALLE (Bs)
+                              </span>
+                            ) : doc.tipo_tarifa === "descuento_normal" ? (
+                              <span className="font-extrabold text-amber-900 bg-amber-100 px-1.5 py-0.5 rounded text-[10px]">
+                                🏷️ {doc.descuento_porcentaje}% Desc.
+                              </span>
+                            ) : (
+                              <span className="text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded text-[10px]">
+                                🏥 Regular
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold text-purple-700 bg-purple-100/70 px-2 py-0.5 rounded-full shrink-0">
+                          Elegir
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -811,16 +992,35 @@ export default function AdminNewOrderPage() {
 
             {/* ✅ Trabajo */}
             <div className="lg:col-span-3 p-4 rounded-2xl border bg-white space-y-4">
-              <div className="flex items-center justify-between border-b pb-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-2">
                 <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
                   <ClipboardCheck className="w-4 h-4 text-purple-700" /> Selección de Trabajo & Catálogos Oficiales
                 </p>
+                {selectedDoctorObj?.tipo_tarifa === "institucional_unitepc" ? (
+                  <span className="text-xs font-black px-3 py-1 rounded-full bg-purple-100 text-purple-900 border border-purple-300 shadow-2xs">
+                    🎓 Tarifa Asignada: Convenio UNITEPC (Fijo Bs)
+                  </span>
+                ) : selectedDoctorObj?.tipo_tarifa === "institucional_univalle" ? (
+                  <span className="text-xs font-black px-3 py-1 rounded-full bg-blue-100 text-blue-900 border border-blue-300 shadow-2xs">
+                    🎓 Tarifa Asignada: Convenio UNIVALLE (Fijo Bs)
+                  </span>
+                ) : selectedDoctorObj?.tipo_tarifa === "descuento_normal" ? (
+                  <span className="text-xs font-black px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                    🏷️ Descuento del Doctor: {selectedDoctorObj.descuento_porcentaje}%
+                  </span>
+                ) : selectedDoctorObj ? (
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                    🏥 Tarifa Asignada: Precios Regulares
+                  </span>
+                ) : null}
               </div>
 
               {/* Selector interactivo de catálogo oficial con auto-precio */}
               <TrabajoSelector
                 selectedTrabajo={form.trabajo_realizar}
                 piezas={form.pieza_numero}
+                tipoTarifa={selectedDoctorObj?.tipo_tarifa || "regular"}
+                descuentoPorcentaje={selectedDoctorObj?.descuento_porcentaje || 0}
                 onSelect={(trabajo: any, precioBs: number) => {
                   setForm((prev) => ({
                     ...prev,
@@ -974,10 +1174,13 @@ export default function AdminNewOrderPage() {
                         moneda={pagoMoneda}
                         metodoPago={pagoMetodo}
                         comprobanteUrl={pagoComprobanteUrl}
+                        fechaPago={pagoFecha}
+                        isAdmin={true}
                         onMontoChange={(val) => setForm((p) => ({ ...p, anticipo: val }))}
                         onMonedaChange={setPagoMoneda}
                         onMetodoPagoChange={setPagoMetodo}
                         onComprobanteUrlChange={setPagoComprobanteUrl}
+                        onFechaPagoChange={setPagoFecha}
                       />
 
                       <div className="rounded-2xl border border-purple-200 bg-purple-50/70 dark:bg-purple-950/30 px-4 py-3">

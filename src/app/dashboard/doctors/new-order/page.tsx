@@ -42,6 +42,7 @@ import {
 import { ClinicLocationPickerModal } from "@/components/location/ClinicLocationPickerModal";
 import { TrabajoSelector } from "@/components/orders/TrabajoSelector";
 import { ControlComponentes, ComponenteItem } from "@/components/orders/ControlComponentes";
+import { LabPaymentQrModal } from "@/components/orders/LabPaymentQrModal";
 import { uploadToImgbb } from "@/lib/imgbb";
 import { toBoliviaYMD, formatBoliviaTime } from "@/lib/dateUtils";
 
@@ -156,6 +157,12 @@ export default function DoctorNewOrderPage() {
   // 💳 Comprobante de Pago QR / Anticipo con ImgBB
   const [qrImageUrl, setQrImageUrl] = useState<string>("");
   const [uploadingQr, setUploadingQr] = useState<boolean>(false);
+  const [showPaymentQrModal, setShowPaymentQrModal] = useState<boolean>(false);
+  const [pagoFecha, setPagoFecha] = useState<string>("");
+
+  // 🏷️ Tarifa asignada al doctor (regular, unitepc, univalle, descuento_normal)
+  const [docTarifa, setDocTarifa] = useState<string>("regular");
+  const [docDescuento, setDocDescuento] = useState<number>(0);
 
   const [suggestions, setSuggestions] = useState<Record<SuggestionType, string[]>>({
     paciente: [],
@@ -241,14 +248,17 @@ export default function DoctorNewOrderPage() {
         }));
       }
 
-      // Buscar doctor en tabla doctores para auto-cargar su clínica y dirección
+      // Buscar doctor en tabla doctores para auto-cargar su clínica, dirección y su tarifa asignada
       const { data: docRow } = await supabase
         .from("doctores")
-        .select("clinica, direccion, telefono, latitud, longitud")
+        .select("clinica, direccion, telefono, latitud, longitud, tipo_tarifa, descuento_porcentaje")
         .eq("profile_id", user.id)
         .maybeSingle();
 
       if (docRow) {
+        if (docRow.tipo_tarifa) setDocTarifa(docRow.tipo_tarifa);
+        if (docRow.descuento_porcentaje) setDocDescuento(Number(docRow.descuento_porcentaje) || 0);
+
         setForm((prev) => ({
           ...prev,
           clinica_nombre: docRow.clinica || prev.clinica_nombre,
@@ -939,14 +949,36 @@ export default function DoctorNewOrderPage() {
 
             {/* ✅ Sección 4: Trabajo */}
             <div className="lg:col-span-3 p-4 rounded-2xl border bg-white space-y-4">
-              <p className="text-sm font-semibold text-gray-800 flex items-center gap-2 border-b pb-2">
-                <ClipboardCheck className="w-4 h-4 text-purple-700" /> Catálogo de Trabajos Oficiales Guisela Lab (81 Opciones)
-              </p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-2">
+                <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                  <ClipboardCheck className="w-4 h-4 text-purple-700" /> Catálogo de Trabajos Oficiales Guisela Lab (81 Opciones)
+                </p>
+
+                {docTarifa === "institucional_unitepc" ? (
+                  <span className="text-xs font-black px-3 py-1 rounded-full bg-purple-100 text-purple-900 border border-purple-300 shadow-2xs">
+                    🎓 Tu Tarifa: Convenio UNITEPC (Fijo Bs)
+                  </span>
+                ) : docTarifa === "institucional_univalle" ? (
+                  <span className="text-xs font-black px-3 py-1 rounded-full bg-blue-100 text-blue-900 border border-blue-300 shadow-2xs">
+                    🎓 Tu Tarifa: Convenio UNIVALLE (Fijo Bs)
+                  </span>
+                ) : docTarifa === "descuento_normal" ? (
+                  <span className="text-xs font-black px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                    🏷️ Tu Descuento Especial Asignado: {docDescuento}%
+                  </span>
+                ) : (
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                    🏥 Precios Regulares
+                  </span>
+                )}
+              </div>
 
               {/* Selector interactivo de catálogo oficial con auto-precio */}
               <TrabajoSelector
                 selectedTrabajo={form.trabajo_realizar}
                 piezas={form.pieza_numero}
+                tipoTarifa={docTarifa}
+                descuentoPorcentaje={docDescuento}
                 onSelect={(trabajo: any) => {
                   setForm((prev) => ({
                     ...prev,
@@ -1141,7 +1173,7 @@ export default function DoctorNewOrderPage() {
             </div>
 
             {/* 💳 Anticipo & Comprobante de Pago QR (Alojamiento en ImgBB) */}
-            <div className="lg:col-span-3 border border-slate-200 rounded-2xl p-4 sm:p-5 bg-white space-y-3 shadow-xs">
+            <div className="lg:col-span-3 border border-slate-200 rounded-2xl p-4 sm:p-5 bg-white space-y-3.5 shadow-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
                 <div className="flex items-center gap-2.5">
                   <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
@@ -1149,16 +1181,55 @@ export default function DoctorNewOrderPage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
-                      Comprobante de Pago QR / Anticipo
+                      Pago QR / Anticipo con Comprobante
                       <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
                         Opcional · ImgBB
                       </span>
                     </h3>
                     <p className="text-xs text-slate-500">
-                      Adjunta la captura del pago QR o transferencia. Se alojará en ImgBB guardando solo el enlace en el sistema.
+                      Escanea el QR oficial del laboratorio y adjunta tu comprobante de transferencia bancaria.
                     </p>
                   </div>
                 </div>
+              </div>
+
+              {/* Banner para ver y descargar el QR del laboratorio */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-gradient-to-r from-purple-100/80 via-purple-50 to-indigo-50 border border-purple-200 rounded-2xl shadow-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#3C1C6C] text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <QrCode className="w-5 h-5 text-purple-200" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-purple-950">
+                      Código QR Oficial de Cobro Guisela Dental Lab
+                    </p>
+                    <p className="text-[11px] text-purple-800">
+                      Simple QR / Banco Unión / BCP · Escanea o descarga el QR para pagar desde tu banca móvil
+                    </p>
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() => setShowPaymentQrModal(true)}
+                  className="bg-[#3C1C6C] hover:bg-[#2d1553] text-white font-bold text-xs rounded-xl shadow-xs shrink-0 h-9 px-3.5 flex items-center gap-1.5"
+                >
+                  <QrCode className="w-4 h-4" /> Ver y Descargar QR
+                </Button>
+              </div>
+
+              {/* Fecha y Hora del Pago */}
+              <div className="p-3 rounded-2xl bg-slate-50/70 border border-slate-200 space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <CalendarDays className="w-3.5 h-3.5 text-purple-700" />
+                  Fecha y Hora de la Transferencia / Pago (si ya pagaste):
+                </label>
+                <Input
+                  type="datetime-local"
+                  value={pagoFecha}
+                  onChange={(e) => setPagoFecha(e.target.value)}
+                  className="bg-white text-xs h-9 rounded-xl font-medium"
+                />
               </div>
 
               {!qrImageUrl ? (
@@ -1384,6 +1455,12 @@ export default function DoctorNewOrderPage() {
         initialLng={longitudEntrega || -68.1336}
         initialAddress={form.direccion_entrega}
         clinicaNombre={form.clinica_nombre || form.doctor_nombre || "Consultorio Dental"}
+      />
+
+      {/* Modal para ver y descargar el QR oficial de Guisela Dental Lab */}
+      <LabPaymentQrModal
+        open={showPaymentQrModal}
+        onOpenChange={setShowPaymentQrModal}
       />
     </div>
   );

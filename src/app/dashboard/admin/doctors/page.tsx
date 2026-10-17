@@ -92,6 +92,8 @@ type DoctorRow = {
   profile_id: string | null;
   clinica: string | null;
   especialidad: string | null;
+  tipo_tarifa: string;
+  descuento_porcentaje: number;
   created_at: string;
 
   profiles: {
@@ -128,6 +130,8 @@ export default function AdminDoctorsPage() {
   const [createForm, setCreateForm] = useState({
     nombre_o_clinica: "",
     especialidad: "",
+    tipo_tarifa: "regular",
+    descuento_porcentaje: 0,
   });
 
   const [editForm, setEditForm] = useState({
@@ -135,6 +139,8 @@ export default function AdminDoctorsPage() {
     telefono: "",
     clinica: "",
     especialidad: "",
+    tipo_tarifa: "regular",
+    descuento_porcentaje: 0,
   });
 
   useEffect(() => {
@@ -169,6 +175,8 @@ export default function AdminDoctorsPage() {
         profile_id,
         clinica,
         especialidad,
+        tipo_tarifa,
+        descuento_porcentaje,
         created_at,
         profiles:profile_id (
           id,
@@ -197,6 +205,8 @@ export default function AdminDoctorsPage() {
       profile_id: r.profile_id ?? null,
       clinica: r.clinica ?? null,
       especialidad: r.especialidad ?? null,
+      tipo_tarifa: r.tipo_tarifa || "regular",
+      descuento_porcentaje: Number(r.descuento_porcentaje) || 0,
       created_at: String(r.created_at ?? ""),
       profiles: r.profiles
         ? {
@@ -218,7 +228,7 @@ export default function AdminDoctorsPage() {
     return doctores.filter((d) => {
       const name = d.profiles?.nombre ?? d.clinica ?? "";
       const phone = d.profiles?.telefono ?? "";
-      const blob = [name, phone, d.clinica, d.especialidad, d.created_at]
+      const blob = [name, phone, d.clinica, d.especialidad, d.tipo_tarifa, d.created_at]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
@@ -227,7 +237,12 @@ export default function AdminDoctorsPage() {
   }, [doctores, q]);
 
   function openCreate() {
-    setCreateForm({ nombre_o_clinica: "", especialidad: "" });
+    setCreateForm({
+      nombre_o_clinica: "",
+      especialidad: "",
+      tipo_tarifa: "regular",
+      descuento_porcentaje: 0,
+    });
     setCreateOpen(true);
   }
 
@@ -242,6 +257,8 @@ export default function AdminDoctorsPage() {
       telefono: displayPhone,
       clinica: doc.clinica ?? "",
       especialidad: doc.especialidad ?? "",
+      tipo_tarifa: doc.tipo_tarifa || "regular",
+      descuento_porcentaje: doc.descuento_porcentaje || 0,
     });
 
     setEditOpen(true);
@@ -260,6 +277,11 @@ export default function AdminDoctorsPage() {
         profile_id: null,
         clinica: name,
         especialidad: createForm.especialidad.trim() || null,
+        tipo_tarifa: createForm.tipo_tarifa,
+        descuento_porcentaje:
+          createForm.tipo_tarifa === "descuento_normal"
+            ? Number(createForm.descuento_porcentaje) || 0
+            : 0,
       },
     ]);
 
@@ -269,7 +291,7 @@ export default function AdminDoctorsPage() {
       return;
     }
 
-    toast.success("✅ Doctor creado");
+    toast.success("✅ Doctor creado con tarifa asignada");
     setCreateOpen(false);
     fetchDoctores();
   }
@@ -287,12 +309,17 @@ export default function AdminDoctorsPage() {
       return;
     }
 
-    // 1) Actualizar doctores (clinica/especialidad)
+    // 1) Actualizar doctores (clinica/especialidad/tipo_tarifa/descuento)
     const { error: docErr } = await supabase
       .from("doctores")
       .update({
         clinica: nextClinica || null,
         especialidad: nextEspecialidad || null,
+        tipo_tarifa: editForm.tipo_tarifa,
+        descuento_porcentaje:
+          editForm.tipo_tarifa === "descuento_normal"
+            ? Number(editForm.descuento_porcentaje) || 0
+            : 0,
       })
       .eq("id", editing.id);
 
@@ -315,17 +342,14 @@ export default function AdminDoctorsPage() {
       if (профErr) {
         console.error("update profiles error:", профErr);
         toast.error("⚠️ Se guardó doctor, pero falló actualizar el perfil");
-        // igual cerramos, porque doctores ya se actualizó
       }
     } else {
-      // doctor sin cuenta: guardamos el nombre en clinica si clinica estaba vacío
-      // (para que no se pierda lo que editó)
       if (!nextClinica) {
         await supabase.from("doctores").update({ clinica: nextNombre }).eq("id", editing.id);
       }
     }
 
-    toast.success("✅ Cambios guardados");
+    toast.success("✅ Cambios y tarifa guardados");
     setEditOpen(false);
     setEditing(null);
     fetchDoctores();
@@ -562,14 +586,35 @@ export default function AdminDoctorsPage() {
                         </div>
                       </div>
 
-                      <span
-                        className={`text-xs px-2.5 py-1 rounded-full border font-semibold ${
-                          isAccount ? "bg-purple-50 text-[#3C1C6C] border-purple-200" : "bg-slate-100 text-slate-600 border-slate-200"
-                        }`}
-                        title={isAccount ? "Doctor con cuenta (perfil)" : "Doctor directorio (sin cuenta)"}
-                      >
-                        {isAccount ? "Con cuenta" : "Directorio"}
-                      </span>
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        <span
+                          className={`text-xs px-2.5 py-1 rounded-full border font-semibold ${
+                            isAccount ? "bg-purple-50 text-[#3C1C6C] border-purple-200" : "bg-slate-100 text-slate-600 border-slate-200"
+                          }`}
+                          title={isAccount ? "Doctor con cuenta (perfil)" : "Doctor directorio (sin cuenta)"}
+                        >
+                          {isAccount ? "Con cuenta" : "Directorio"}
+                        </span>
+
+                        {/* Tarifa Asignada */}
+                        {doc.tipo_tarifa === "institucional_unitepc" ? (
+                          <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-900 border border-purple-300 font-extrabold flex items-center gap-1 shadow-2xs">
+                            🎓 UNITEPC (Fijo Bs)
+                          </span>
+                        ) : doc.tipo_tarifa === "institucional_univalle" ? (
+                          <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-300 font-extrabold flex items-center gap-1 shadow-2xs">
+                            🎓 UNIVALLE (Fijo Bs)
+                          </span>
+                        ) : doc.tipo_tarifa === "descuento_normal" ? (
+                          <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-extrabold flex items-center gap-1 shadow-2xs">
+                            🏷️ {doc.descuento_porcentaje}% Descuento
+                          </span>
+                        ) : (
+                          <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-300 font-bold flex items-center gap-1">
+                            🏥 Precios Regulares
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Footer card */}
@@ -605,7 +650,7 @@ export default function AdminDoctorsPage() {
 
       {/* ============ Dialog: Crear ============ */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
+        <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-3xl">
           <DialogHeader>
             <DialogTitle className="text-[#3C1C6C] font-bold text-lg">Nuevo Doctor</DialogTitle>
           </DialogHeader>
@@ -631,9 +676,115 @@ export default function AdminDoctorsPage() {
               />
             </div>
 
-            <p className="text-xs text-slate-400">
-              Nota: Si quieres teléfono aquí, lo ideal es agregarlo a tu BD (tabla doctores directorio). Con el schema actual, el teléfono vive en <b>profiles</b> (solo doctores con cuenta).
-            </p>
+            {/* Asignación de Tarifa / Descuento */}
+            <div className="space-y-2 p-3 bg-purple-50/60 border border-purple-200 rounded-2xl">
+              <label className="text-xs font-black uppercase tracking-wider text-[#3C1C6C] block">
+                Arancel / Tarifa Asignada al Doctor:
+              </label>
+              <p className="text-[11px] text-slate-500 mb-2">
+                Al crear órdenes para este doctor, el catálogo aplicará automáticamente esta tarifa o descuento.
+              </p>
+
+              <div className="space-y-1.5">
+                <label className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${
+                  createForm.tipo_tarifa === "regular" ? "bg-white border-[#3C1C6C] shadow-2xs ring-1 ring-purple-600/20" : "bg-white/60 border-slate-200 hover:bg-white"
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="create_tipo_tarifa"
+                      value="regular"
+                      checked={createForm.tipo_tarifa === "regular"}
+                      onChange={() => setCreateForm(p => ({ ...p, tipo_tarifa: "regular" }))}
+                      className="text-[#3C1C6C] focus:ring-[#3C1C6C]"
+                    />
+                    <div>
+                      <p className="text-xs font-extrabold text-slate-800">Precios Regulares ($ USD / Bs)</p>
+                      <p className="text-[10px] text-slate-500">Tarifa oficial estándar para clínicas privadas</p>
+                    </div>
+                  </div>
+                  <span className="text-xs">🏥</span>
+                </label>
+
+                <div className={`p-2.5 rounded-xl border transition-all ${
+                  createForm.tipo_tarifa === "descuento_normal" ? "bg-white border-amber-500 shadow-2xs ring-1 ring-amber-500/20" : "bg-white/60 border-slate-200 hover:bg-white"
+                }`}>
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="create_tipo_tarifa"
+                        value="descuento_normal"
+                        checked={createForm.tipo_tarifa === "descuento_normal"}
+                        onChange={() => setCreateForm(p => ({ ...p, tipo_tarifa: "descuento_normal" }))}
+                        className="text-amber-600 focus:ring-amber-500"
+                      />
+                      <div>
+                        <p className="text-xs font-extrabold text-slate-800">Descuento Especial Porcentual (%)</p>
+                        <p className="text-[10px] text-slate-500">Descuento exclusivo sobre el total de cada orden</p>
+                      </div>
+                    </div>
+                    <span className="text-xs">🏷️</span>
+                  </label>
+
+                  {createForm.tipo_tarifa === "descuento_normal" && (
+                    <div className="mt-2 pt-2 border-t border-amber-100 flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-700">Porcentaje:</span>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={createForm.descuento_porcentaje || ""}
+                        onChange={(e) => setCreateForm(p => ({ ...p, descuento_porcentaje: Number(e.target.value) || 0 }))}
+                        placeholder="Ej: 10, 15, 20"
+                        className="h-8 text-xs font-black w-24 bg-white"
+                      />
+                      <span className="text-xs font-black text-amber-700">% de descuento</span>
+                    </div>
+                  )}
+                </div>
+
+                <label className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${
+                  createForm.tipo_tarifa === "institucional_unitepc" ? "bg-white border-purple-600 shadow-2xs ring-1 ring-purple-600/20" : "bg-white/60 border-slate-200 hover:bg-white"
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="create_tipo_tarifa"
+                      value="institucional_unitepc"
+                      checked={createForm.tipo_tarifa === "institucional_unitepc"}
+                      onChange={() => setCreateForm(p => ({ ...p, tipo_tarifa: "institucional_unitepc" }))}
+                      className="text-purple-700 focus:ring-purple-600"
+                    />
+                    <div>
+                      <p className="text-xs font-extrabold text-slate-800">Convenio UNITEPC</p>
+                      <p className="text-[10px] text-slate-500">Arancel institucional con precios fijos en Bolivianos (Bs)</p>
+                    </div>
+                  </div>
+                  <span className="text-xs">🎓</span>
+                </label>
+
+                <label className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${
+                  createForm.tipo_tarifa === "institucional_univalle" ? "bg-white border-blue-600 shadow-2xs ring-1 ring-blue-600/20" : "bg-white/60 border-slate-200 hover:bg-white"
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="create_tipo_tarifa"
+                      value="institucional_univalle"
+                      checked={createForm.tipo_tarifa === "institucional_univalle"}
+                      onChange={() => setCreateForm(p => ({ ...p, tipo_tarifa: "institucional_univalle" }))}
+                      className="text-blue-700 focus:ring-blue-600"
+                    />
+                    <div>
+                      <p className="text-xs font-extrabold text-slate-800">Convenio UNIVALLE</p>
+                      <p className="text-[10px] text-slate-500">Arancel institucional con precios fijos en Bolivianos (Bs)</p>
+                    </div>
+                  </div>
+                  <span className="text-xs">🎓</span>
+                </label>
+              </div>
+            </div>
           </div>
 
           <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-100">
@@ -649,9 +800,9 @@ export default function AdminDoctorsPage() {
 
       {/* ============ Dialog: Editar ============ */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
+        <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-3xl">
           <DialogHeader>
-            <DialogTitle className="text-[#3C1C6C] font-bold text-lg">Editar Doctor</DialogTitle>
+            <DialogTitle className="text-[#3C1C6C] font-bold text-lg">Editar Doctor y Tarifa</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-3.5">
@@ -679,31 +830,138 @@ export default function AdminDoctorsPage() {
                 disabled={!editing?.profile_id}
                 className="rounded-xl border-slate-200 mt-1"
               />
-              {!editing?.profile_id && (
-                <p className="text-xs text-slate-400 mt-1">
-                  Para editar teléfono aquí, el doctor debe tener cuenta (profile_id). Si no, el teléfono se registra normalmente en pedidos.
-                </p>
-              )}
             </div>
 
-            <div>
-              <label className="text-xs font-semibold text-slate-600">Clínica</label>
-              <Input
-                value={editForm.clinica}
-                onChange={(e) => setEditForm((p) => ({ ...p, clinica: e.target.value }))}
-                placeholder="Ej: Clínica Sonrisa"
-                className="rounded-xl border-slate-200 mt-1"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-600">Clínica</label>
+                <Input
+                  value={editForm.clinica}
+                  onChange={(e) => setEditForm((p) => ({ ...p, clinica: e.target.value }))}
+                  placeholder="Ej: Clínica Sonrisa"
+                  className="rounded-xl border-slate-200 mt-1"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-600">Especialidad</label>
+                <Input
+                  value={editForm.especialidad}
+                  onChange={(e) => setEditForm((p) => ({ ...p, especialidad: e.target.value }))}
+                  placeholder="Ej: Prótesis"
+                  className="rounded-xl border-slate-200 mt-1"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="text-xs font-semibold text-slate-600">Especialidad</label>
-              <Input
-                value={editForm.especialidad}
-                onChange={(e) => setEditForm((p) => ({ ...p, especialidad: e.target.value }))}
-                placeholder="Ej: Prótesis"
-                className="rounded-xl border-slate-200 mt-1"
-              />
+            {/* Asignación de Tarifa / Descuento */}
+            <div className="space-y-2 p-3 bg-purple-50/60 border border-purple-200 rounded-2xl">
+              <label className="text-xs font-black uppercase tracking-wider text-[#3C1C6C] block">
+                Arancel / Tarifa Asignada al Doctor:
+              </label>
+              <p className="text-[11px] text-slate-500 mb-2">
+                Al crear órdenes para este doctor, el catálogo aplicará automáticamente esta tarifa o descuento.
+              </p>
+
+              <div className="space-y-1.5">
+                <label className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${
+                  editForm.tipo_tarifa === "regular" ? "bg-white border-[#3C1C6C] shadow-2xs ring-1 ring-purple-600/20" : "bg-white/60 border-slate-200 hover:bg-white"
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="edit_tipo_tarifa"
+                      value="regular"
+                      checked={editForm.tipo_tarifa === "regular"}
+                      onChange={() => setEditForm(p => ({ ...p, tipo_tarifa: "regular" }))}
+                      className="text-[#3C1C6C] focus:ring-[#3C1C6C]"
+                    />
+                    <div>
+                      <p className="text-xs font-extrabold text-slate-800">Precios Regulares ($ USD / Bs)</p>
+                      <p className="text-[10px] text-slate-500">Tarifa oficial estándar para clínicas privadas</p>
+                    </div>
+                  </div>
+                  <span className="text-xs">🏥</span>
+                </label>
+
+                <div className={`p-2.5 rounded-xl border transition-all ${
+                  editForm.tipo_tarifa === "descuento_normal" ? "bg-white border-amber-500 shadow-2xs ring-1 ring-amber-500/20" : "bg-white/60 border-slate-200 hover:bg-white"
+                }`}>
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="edit_tipo_tarifa"
+                        value="descuento_normal"
+                        checked={editForm.tipo_tarifa === "descuento_normal"}
+                        onChange={() => setEditForm(p => ({ ...p, tipo_tarifa: "descuento_normal" }))}
+                        className="text-amber-600 focus:ring-amber-500"
+                      />
+                      <div>
+                        <p className="text-xs font-extrabold text-slate-800">Descuento Especial Porcentual (%)</p>
+                        <p className="text-[10px] text-slate-500">Descuento exclusivo sobre el total de cada orden</p>
+                      </div>
+                    </div>
+                    <span className="text-xs">🏷️</span>
+                  </label>
+
+                  {editForm.tipo_tarifa === "descuento_normal" && (
+                    <div className="mt-2 pt-2 border-t border-amber-100 flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-700">Porcentaje:</span>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={editForm.descuento_porcentaje || ""}
+                        onChange={(e) => setEditForm(p => ({ ...p, descuento_porcentaje: Number(e.target.value) || 0 }))}
+                        placeholder="Ej: 10, 15, 20"
+                        className="h-8 text-xs font-black w-24 bg-white"
+                      />
+                      <span className="text-xs font-black text-amber-700">% de descuento</span>
+                    </div>
+                  )}
+                </div>
+
+                <label className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${
+                  editForm.tipo_tarifa === "institucional_unitepc" ? "bg-white border-purple-600 shadow-2xs ring-1 ring-purple-600/20" : "bg-white/60 border-slate-200 hover:bg-white"
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="edit_tipo_tarifa"
+                      value="institucional_unitepc"
+                      checked={editForm.tipo_tarifa === "institucional_unitepc"}
+                      onChange={() => setEditForm(p => ({ ...p, tipo_tarifa: "institucional_unitepc" }))}
+                      className="text-purple-700 focus:ring-purple-600"
+                    />
+                    <div>
+                      <p className="text-xs font-extrabold text-slate-800">Convenio UNITEPC</p>
+                      <p className="text-[10px] text-slate-500">Arancel institucional con precios fijos en Bolivianos (Bs)</p>
+                    </div>
+                  </div>
+                  <span className="text-xs">🎓</span>
+                </label>
+
+                <label className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${
+                  editForm.tipo_tarifa === "institucional_univalle" ? "bg-white border-blue-600 shadow-2xs ring-1 ring-blue-600/20" : "bg-white/60 border-slate-200 hover:bg-white"
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="edit_tipo_tarifa"
+                      value="institucional_univalle"
+                      checked={editForm.tipo_tarifa === "institucional_univalle"}
+                      onChange={() => setEditForm(p => ({ ...p, tipo_tarifa: "institucional_univalle" }))}
+                      className="text-blue-700 focus:ring-blue-600"
+                    />
+                    <div>
+                      <p className="text-xs font-extrabold text-slate-800">Convenio UNIVALLE</p>
+                      <p className="text-[10px] text-slate-500">Arancel institucional con precios fijos en Bolivianos (Bs)</p>
+                    </div>
+                  </div>
+                  <span className="text-xs">🎓</span>
+                </label>
+              </div>
             </div>
           </div>
 

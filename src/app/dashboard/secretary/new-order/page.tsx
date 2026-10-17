@@ -149,6 +149,7 @@ export default function SecretaryNewOrderPage() {
   const [pagoMoneda, setPagoMoneda] = useState<"BOB" | "USD">("BOB");
   const [pagoMetodo, setPagoMetodo] = useState<"efectivo" | "qr_transferencia">("efectivo");
   const [pagoComprobanteUrl, setPagoComprobanteUrl] = useState<string | null>(null);
+  const [pagoFecha, setPagoFecha] = useState<string>("");
 
   const [loading, setLoading] = useState(false);
   const [numError, setNumError] = useState("");
@@ -256,22 +257,41 @@ export default function SecretaryNewOrderPage() {
       const seenNames = new Set<string>();
 
       try {
-        // 1. Buscar en tabla doctores registrados
+        // 1. Buscar en tabla doctores registrados con su tarifa asignada
         const { data: regDocs } = await supabase
           .from("doctores")
-          .select("id, nombre, telefono, clinica, especialidad, profile_id")
-          .ilike("nombre", `%${qClean}%`)
-          .limit(6);
+          .select(
+            `
+            id,
+            nombre,
+            telefono,
+            clinica,
+            especialidad,
+            tipo_tarifa,
+            descuento_porcentaje,
+            profile_id,
+            profiles:profile_id (
+              nombre,
+              telefono
+            )
+          `
+          )
+          .or(`nombre.ilike.%${qClean}%,clinica.ilike.%${qClean}%`)
+          .limit(8);
 
         if (regDocs) {
-          regDocs.forEach((d) => {
-            const clean = normalizePersonName(d.nombre);
+          regDocs.forEach((d: any) => {
+            const docName = d.nombre || d.profiles?.nombre || d.clinica || "";
+            const clean = normalizePersonName(docName);
+            if (!clean) return;
             seenNames.add(clean.toLowerCase());
             merged.push({
               nombre: clean,
-              telefono: d.telefono || undefined,
+              telefono: d.telefono || d.profiles?.telefono || undefined,
               clinica: d.clinica || undefined,
               especialidad: d.especialidad || undefined,
+              tipo_tarifa: d.tipo_tarifa || "regular",
+              descuento_porcentaje: Number(d.descuento_porcentaje) || 0,
             });
           });
         }
@@ -857,9 +877,21 @@ export default function SecretaryNewOrderPage() {
                                 📞 {doc.telefono}
                               </span>
                             )}
-                            {doc.direccion && (
-                              <span className="text-purple-600 truncate max-w-[200px]">
-                                📍 {doc.direccion}
+                            {doc.tipo_tarifa === "institucional_unitepc" ? (
+                              <span className="font-extrabold text-purple-900 bg-purple-100 px-1.5 py-0.5 rounded text-[10px]">
+                                🎓 UNITEPC (Bs)
+                              </span>
+                            ) : doc.tipo_tarifa === "institucional_univalle" ? (
+                              <span className="font-extrabold text-blue-900 bg-blue-100 px-1.5 py-0.5 rounded text-[10px]">
+                                🎓 UNIVALLE (Bs)
+                              </span>
+                            ) : doc.tipo_tarifa === "descuento_normal" ? (
+                              <span className="font-extrabold text-amber-900 bg-amber-100 px-1.5 py-0.5 rounded text-[10px]">
+                                🏷️ {doc.descuento_porcentaje}% Desc.
+                              </span>
+                            ) : (
+                              <span className="text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded text-[10px]">
+                                🏥 Regular
                               </span>
                             )}
                           </div>
@@ -946,22 +978,34 @@ export default function SecretaryNewOrderPage() {
 
             {/* ✅ Trabajo */}
             <div className="lg:col-span-3 p-4 rounded-2xl border bg-white space-y-4">
-              <div className="flex items-center justify-between border-b pb-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-2">
                 <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
                   <ClipboardCheck className="w-4 h-4 text-purple-700" /> Selección de Trabajo & Catálogo (81 Trabajos Guisela Lab)
                 </p>
-                {selectedDoctorObj?.tipo_tarifa && (
-                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-[#3C1C6C]">
-                    Tarifa: {selectedDoctorObj.tipo_tarifa.toUpperCase()}
+                {selectedDoctorObj?.tipo_tarifa === "institucional_unitepc" ? (
+                  <span className="text-xs font-black px-3 py-1 rounded-full bg-purple-100 text-purple-900 border border-purple-300 shadow-2xs">
+                    🎓 Tarifa Asignada: Convenio UNITEPC (Fijo Bs)
                   </span>
-                )}
+                ) : selectedDoctorObj?.tipo_tarifa === "institucional_univalle" ? (
+                  <span className="text-xs font-black px-3 py-1 rounded-full bg-blue-100 text-blue-900 border border-blue-300 shadow-2xs">
+                    🎓 Tarifa Asignada: Convenio UNIVALLE (Fijo Bs)
+                  </span>
+                ) : selectedDoctorObj?.tipo_tarifa === "descuento_normal" ? (
+                  <span className="text-xs font-black px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                    🏷️ Descuento del Doctor: {selectedDoctorObj.descuento_porcentaje}%
+                  </span>
+                ) : selectedDoctorObj ? (
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                    🏥 Tarifa Asignada: Precios Regulares
+                  </span>
+                ) : null}
               </div>
 
               {/* Selector interactivo de catálogo oficial con auto-precio */}
               <TrabajoSelector
                 selectedTrabajo={form.trabajo_realizar}
                 piezas={form.pieza_numero}
-                tipoTarifa={selectedDoctorObj?.tipo_tarifa || "normal"}
+                tipoTarifa={selectedDoctorObj?.tipo_tarifa || "regular"}
                 descuentoPorcentaje={selectedDoctorObj?.descuento_porcentaje || 0}
                 onSelect={(trabajo: any, precioBs: number) => {
                   setForm((prev) => ({
@@ -1129,10 +1173,12 @@ export default function SecretaryNewOrderPage() {
                         moneda={pagoMoneda}
                         metodoPago={pagoMetodo}
                         comprobanteUrl={pagoComprobanteUrl}
+                        fechaPago={pagoFecha}
                         onMontoChange={(val) => setForm((p) => ({ ...p, anticipo: val }))}
                         onMonedaChange={setPagoMoneda}
                         onMetodoPagoChange={setPagoMetodo}
                         onComprobanteUrlChange={setPagoComprobanteUrl}
+                        onFechaPagoChange={setPagoFecha}
                       />
 
                       <div className="rounded-2xl border border-purple-200 bg-purple-50/70 dark:bg-purple-950/30 px-4 py-3">

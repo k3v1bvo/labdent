@@ -13,13 +13,19 @@ import {
   ExternalLink,
   Loader2,
   Image as ImageIcon,
+  Eye,
+  Calendar,
+  Clock,
 } from "lucide-react";
+import { LabPaymentQrModal } from "./LabPaymentQrModal";
+import { getCachedExchangeRate } from "@/lib/currency";
 
 export interface PaymentDetails {
   monto: number;
   moneda: "BOB" | "USD";
   metodoPago: "efectivo" | "qr_transferencia";
   comprobanteUrl?: string | null;
+  fechaPago?: string;
 }
 
 interface PaymentMethodSelectorProps {
@@ -28,11 +34,14 @@ interface PaymentMethodSelectorProps {
   moneda: "BOB" | "USD";
   metodoPago: "efectivo" | "qr_transferencia";
   comprobanteUrl?: string | null;
+  fechaPago?: string;
   onMontoChange: (val: string) => void;
   onMonedaChange: (moneda: "BOB" | "USD") => void;
   onMetodoPagoChange: (metodo: "efectivo" | "qr_transferencia") => void;
   onComprobanteUrlChange: (url: string | null) => void;
+  onFechaPagoChange?: (fecha: string) => void;
   readOnlyMonto?: boolean;
+  isAdmin?: boolean;
 }
 
 export function PaymentMethodSelector({
@@ -41,13 +50,17 @@ export function PaymentMethodSelector({
   moneda,
   metodoPago,
   comprobanteUrl,
+  fechaPago,
   onMontoChange,
   onMonedaChange,
   onMetodoPagoChange,
   onComprobanteUrlChange,
+  onFechaPagoChange,
   readOnlyMonto = false,
+  isAdmin = false,
 }: PaymentMethodSelectorProps) {
   const [uploading, setUploading] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -226,85 +239,146 @@ export function PaymentMethodSelector({
         </div>
       )}
 
-      {/* Si es QR: Zona de Carga de Comprobante (ImgBB) */}
+      {/* Si es QR: Modalidad QR y Comprobante */}
       {metodoPago === "qr_transferencia" && (
-        <div className="p-3.5 rounded-2xl bg-white border border-purple-200 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-              <ImageIcon className="w-3.5 h-3.5 text-purple-700" />
-              Comprobante de Pago QR / Transferencia:
-            </span>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">
-              Alojado en ImgBB
-            </span>
+        <div className="space-y-3">
+          {/* Banner con botón para ver el QR oficial del laboratorio */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-gradient-to-r from-purple-100/80 via-purple-50 to-indigo-50 border border-purple-200 rounded-2xl shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#3C1C6C] text-white flex items-center justify-center shrink-0 shadow-xs">
+                <QrCode className="w-5 h-5 text-purple-200" />
+              </div>
+              <div>
+                <p className="text-xs font-black text-purple-950">
+                  Código QR Oficial de Guisela Dental Lab
+                </p>
+                <p className="text-[11px] text-purple-800">
+                  Banco Unión / BCP / Simple QR · Escanea o descarga el QR para pagar
+                </p>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              onClick={() => setShowQrModal(true)}
+              className="bg-[#3C1C6C] hover:bg-[#2d1553] text-white font-bold text-xs rounded-xl shadow-xs shrink-0 h-9 px-3.5 flex items-center gap-1.5"
+            >
+              <Eye className="w-4 h-4" /> Ver y Descargar QR
+            </Button>
           </div>
 
-          {!comprobanteUrl ? (
-            <label className="border-2 border-dashed border-purple-200 hover:border-purple-400 bg-purple-50/30 hover:bg-purple-50 rounded-xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileUpload}
-                disabled={uploading}
-                className="hidden"
-              />
-              {uploading ? (
-                <>
-                  <Loader2 className="w-5 h-5 text-purple-600 animate-spin" />
-                  <span className="text-xs font-bold text-purple-700">
-                    Subiendo comprobante bancario...
-                  </span>
-                </>
-              ) : (
-                <>
-                  <UploadCloud className="w-6 h-6 text-purple-600" />
-                  <span className="text-xs font-bold text-slate-700">
-                    Haga clic aquí para seleccionar la captura del QR
-                  </span>
-                  <span className="text-[11px] text-slate-400">
-                    PNG, JPG, JPEG o captura de pantalla bancaria
-                  </span>
-                </>
-              )}
+          {/* Fecha y Hora del Pago */}
+          <div className="p-3.5 rounded-2xl bg-white border border-purple-200 space-y-2">
+            <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-purple-700" />
+              Fecha y Hora de la Transferencia / Pago:
             </label>
-          ) : (
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-purple-50/70 border border-purple-200">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-10 h-10 rounded-lg overflow-hidden border border-purple-200 bg-white shrink-0">
-                  <img
-                    src={comprobanteUrl}
-                    alt="Comprobante"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-800 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Comprobante guardado
-                  </p>
-                  <a
-                    href={comprobanteUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[11px] text-purple-700 hover:underline flex items-center gap-0.5 truncate"
-                  >
-                    Ver imagen original <ExternalLink className="w-2.5 h-2.5" />
-                  </a>
-                </div>
-              </div>
+            <Input
+              type="datetime-local"
+              value={fechaPago || ""}
+              onChange={(e) => onFechaPagoChange?.(e.target.value)}
+              className="bg-purple-50/30 text-xs h-9 rounded-xl font-medium"
+            />
+          </div>
 
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => onComprobanteUrlChange(null)}
-                className="text-rose-600 hover:bg-rose-50 h-8 px-2 text-xs"
-              >
-                <Trash2 className="w-3.5 h-3.5 mr-1" /> Quitar
-              </Button>
+          {/* Zona de Carga de Comprobante (ImgBB) */}
+          <div className="p-3.5 rounded-2xl bg-white border border-purple-200 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5 text-purple-700" />
+                Comprobante de Pago QR / Transferencia:
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">
+                Alojado en ImgBB
+              </span>
             </div>
-          )}
+
+            {!comprobanteUrl ? (
+              <label className="border-2 border-dashed border-purple-200 hover:border-purple-400 bg-purple-50/30 hover:bg-purple-50 rounded-xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 text-purple-600 animate-spin" />
+                    <span className="text-xs font-bold text-purple-700">
+                      Subiendo comprobante bancario...
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud className="w-6 h-6 text-purple-600" />
+                    <span className="text-xs font-bold text-slate-700">
+                      Haga clic aquí para seleccionar la captura del QR
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      PNG, JPG, JPEG o captura de pantalla bancaria
+                    </span>
+                  </>
+                )}
+              </label>
+            ) : (
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-purple-50/70 border border-purple-200">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-10 h-10 rounded-lg overflow-hidden border border-purple-200 bg-white shrink-0">
+                    <img
+                      src={comprobanteUrl}
+                      alt="Comprobante"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Comprobante guardado
+                    </p>
+                    <a
+                      href={comprobanteUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] text-purple-700 hover:underline flex items-center gap-0.5 truncate"
+                    >
+                      Ver imagen original <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onComprobanteUrlChange(null)}
+                  className="text-rose-600 hover:bg-rose-50 h-8 px-2 text-xs"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1" /> Quitar
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       )}
+
+      {/* Modal para ver y descargar el QR del laboratorio */}
+      <LabPaymentQrModal
+        open={showQrModal}
+        onOpenChange={setShowQrModal}
+        montoBs={
+          moneda === "BOB"
+            ? Number(monto) || 0
+            : (Number(monto) || 0) * getCachedExchangeRate()
+        }
+        montoUsd={
+          moneda === "USD"
+            ? Number(monto) || 0
+            : getCachedExchangeRate() > 0
+            ? (Number(monto) || 0) / getCachedExchangeRate()
+            : 0
+        }
+        isAdmin={isAdmin}
+      />
     </div>
   );
 }

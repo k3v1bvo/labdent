@@ -108,6 +108,17 @@ export function TrabajoSelector({
     return "clinica";
   });
 
+  // Reaccionar cuando cambie el doctor seleccionado y su tarifa asignada
+  useEffect(() => {
+    if (tipoTarifa === "unitepc" || tipoTarifa === "institucional_unitepc") {
+      setTarifaSource("unitepc");
+    } else if (tipoTarifa === "univalle" || tipoTarifa === "institucional_univalle") {
+      setTarifaSource("univalle");
+    } else {
+      setTarifaSource("clinica");
+    }
+  }, [tipoTarifa]);
+
   const exchangeRate = getCachedExchangeRate();
 
   // Catálogo activo según la tarifa seleccionada
