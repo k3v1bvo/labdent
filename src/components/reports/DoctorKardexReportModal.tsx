@@ -90,8 +90,8 @@ export function DoctorKardexReportModal({
         </DialogHeader>
 
         {/* Barra superior de control (Oculta al imprimir) */}
-        <div className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between print:hidden">
-          <div className="flex items-center gap-3">
+        <div className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3 sm:px-6 py-2.5 sm:py-3.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap gap-2 items-center justify-between print:hidden">
+          <div className="flex items-center gap-2 sm:gap-3">
             <span className="text-xs font-black uppercase tracking-wider text-[#3C1C6C] dark:text-purple-300 flex items-center gap-1.5">
               <FileSpreadsheet className="w-4 h-4 text-[#6A2CB0]" />
               Estado de Cuenta Clínico • KARDEX
@@ -104,15 +104,15 @@ export function DoctorKardexReportModal({
           <div className="flex items-center gap-2">
             <Button
               onClick={handlePrint}
-              className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl gap-2 font-bold text-xs h-9 shadow-md transition-all active:scale-95"
+              className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl gap-2 font-bold text-xs h-9 shadow-md transition-all active:scale-95 cursor-pointer"
             >
-              <Printer className="w-4 h-4" /> Imprimir Estado de Cuenta / PDF
+              <Printer className="w-4 h-4" /> <span className="hidden sm:inline">Imprimir </span>Estado de Cuenta / PDF
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => onOpenChange(false)}
-              className="rounded-xl border-slate-200 text-xs h-9"
+              className="rounded-xl border-slate-200 text-xs h-9 cursor-pointer"
             >
               <X className="w-4 h-4" /> Cerrar
             </Button>
@@ -124,7 +124,7 @@ export function DoctorKardexReportModal({
         {/* ============================================================== */}
         <div
           id="guisela-kardex-container"
-          className="p-8 sm:p-11 bg-white text-slate-900 relative overflow-hidden print:p-6 print:m-0 max-w-[210mm] mx-auto min-h-[297mm] shadow-xl print:shadow-none border border-slate-200 print:border-none"
+          className="p-4 sm:p-8 md:p-11 bg-white text-slate-900 relative overflow-hidden print:p-6 print:m-0 w-full max-w-[210mm] mx-auto min-h-[297mm] shadow-xl print:shadow-none border border-slate-200 print:border-none"
         >
           {/* MARCA DE AGUA CORPORATIVA ELEGANTE */}
           <div className="absolute inset-0 pointer-events-none select-none flex items-center justify-center opacity-[0.04] print:opacity-[0.05] rotate-[-28deg] z-0">
@@ -251,7 +251,7 @@ export function DoctorKardexReportModal({
             </div>
 
             {/* 3. RESUMEN FINANCIERO EN DOBLE MONEDA */}
-            <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 text-center print:grid-cols-3">
               <div className="p-3 rounded-xl border border-slate-200 bg-slate-50">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   Total Facturado
@@ -303,7 +303,7 @@ export function DoctorKardexReportModal({
 
             {/* 4. TABLA DETALLADA DE TRABAJOS & MOVIMIENTOS */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1">
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-600">
                   DETALLE DE TRABAJOS Y MOVIMIENTOS CONTABLES:
                 </p>
@@ -312,7 +312,8 @@ export function DoctorKardexReportModal({
                 </span>
               </div>
 
-              <table className="w-full border-collapse border border-slate-300 text-xs">
+              <div className="overflow-x-auto print:overflow-visible">
+                <table className="w-full min-w-[580px] sm:min-w-0 border-collapse border border-slate-300 text-xs">
                 <thead>
                   <tr className="bg-slate-100 text-slate-800 font-extrabold border-b border-slate-300 text-[11px]">
                     <th className="p-2 text-left border-r border-slate-300">Req #</th>
@@ -391,10 +392,11 @@ export function DoctorKardexReportModal({
                   </tr>
                 </tfoot>
               </table>
+              </div>
             </div>
 
             {/* 5. DATOS DE LIQUIDACIÓN Y PAGO BANCARIO */}
-            <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/80 flex items-center justify-between gap-4 text-xs">
+            <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 text-xs print:flex-row print:items-center">
               <div className="space-y-0.5">
                 <p className="font-bold text-slate-800 flex items-center gap-1.5 text-[11px] uppercase tracking-wider">
                   <CreditCard className="w-3.5 h-3.5 text-purple-700" />
@@ -411,7 +413,7 @@ export function DoctorKardexReportModal({
                 </p>
               </div>
 
-              <div className="border border-purple-200 bg-white p-2 rounded-lg text-center shrink-0">
+              <div className="border border-purple-200 bg-white p-2 rounded-lg text-center shrink-0 self-center sm:self-auto">
                 <QrCode className="w-10 h-10 text-[#3C1C6C] mx-auto" />
                 <span className="text-[9px] font-bold text-purple-900 block mt-0.5">
                   QR SIMPLE
@@ -420,7 +422,7 @@ export function DoctorKardexReportModal({
             </div>
 
             {/* 6. FIRMAS DE CONFORMIDAD Y AUDITORÍA CONTABLE */}
-            <div className="pt-8 grid grid-cols-2 gap-10 text-center text-xs">
+            <div className="pt-6 sm:pt-8 grid grid-cols-2 gap-4 sm:gap-10 text-center text-xs">
               <div className="space-y-1">
                 <div className="border-t-2 border-slate-800 w-4/5 mx-auto pt-1.5" />
                 <p className="font-black text-slate-900 uppercase tracking-tight">

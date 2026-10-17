@@ -112,8 +112,8 @@ export function OrderReportModal({ open, onOpenChange, order }: Props) {
         </DialogHeader>
 
         {/* Barra superior de control (Oculta al imprimir) */}
-        <div className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between print:hidden">
-          <div className="flex items-center gap-3">
+        <div className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3 sm:px-6 py-2.5 sm:py-3.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap gap-2 items-center justify-between print:hidden">
+          <div className="flex items-center gap-2 sm:gap-3">
             <span className="text-xs font-black uppercase tracking-wider text-[#3C1C6C] dark:text-purple-300 flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-[#6A2CB0]" />
               Resumen Oficial • Hoja de Remisión
@@ -126,15 +126,15 @@ export function OrderReportModal({ open, onOpenChange, order }: Props) {
           <div className="flex items-center gap-2">
             <Button
               onClick={handlePrint}
-              className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl gap-2 font-bold text-xs h-9 shadow-md transition-all active:scale-95"
+              className="bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl gap-2 font-bold text-xs h-9 shadow-md transition-all active:scale-95 cursor-pointer"
             >
-              <Printer className="w-4 h-4" /> Imprimir / Guardar PDF (A4)
+              <Printer className="w-4 h-4" /> <span className="hidden sm:inline">Imprimir / Guardar </span>PDF (A4)
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => onOpenChange(false)}
-              className="rounded-xl border-slate-200 text-xs h-9"
+              className="rounded-xl border-slate-200 text-xs h-9 cursor-pointer"
             >
               <X className="w-4 h-4" /> Cerrar
             </Button>
@@ -146,7 +146,7 @@ export function OrderReportModal({ open, onOpenChange, order }: Props) {
         {/* ============================================================== */}
         <div
           id="guisela-report-container"
-          className="p-8 sm:p-11 bg-white text-slate-900 relative overflow-hidden print:p-6 print:m-0 max-w-[210mm] mx-auto min-h-[297mm] shadow-xl print:shadow-none border border-slate-200 print:border-none"
+          className="p-4 sm:p-8 md:p-11 bg-white text-slate-900 relative overflow-hidden print:p-6 print:m-0 w-full max-w-[210mm] mx-auto min-h-[297mm] shadow-xl print:shadow-none border border-slate-200 print:border-none"
         >
           {/* MARCA DE AGUA DE SEGURIDAD (DIAGONAL REPETITIVA Y LOGO CENTRAL) */}
           <div className="absolute inset-0 pointer-events-none select-none flex items-center justify-center opacity-[0.045] print:opacity-[0.055] rotate-[-28deg] z-0">
@@ -177,9 +177,9 @@ export function OrderReportModal({ open, onOpenChange, order }: Props) {
           {/* CONTENIDO ESTRUCTURADO FORMAL (Z-10) */}
           <div className="relative z-10 space-y-5 text-xs sm:text-[13px] leading-relaxed">
             {/* 1. ENCABEZADO INSTITUCIONAL FORMAL */}
-            <div className="flex items-start justify-between pb-4 border-b-2 border-slate-900 gap-4">
+            <div className="flex flex-col sm:flex-row items-start justify-between pb-4 border-b-2 border-slate-900 gap-3 sm:gap-4 print:flex-row">
               <div className="flex items-center gap-3.5">
-                <div className="relative w-16 h-16 shrink-0 bg-white p-1 rounded-xl border border-slate-200 shadow-xs">
+                <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 bg-white p-1 rounded-xl border border-slate-200 shadow-xs">
                   <Image
                     src="/images/brand/guisela-symbol-primary.png"
                     alt="Logo Guisela Lab"
@@ -190,20 +190,20 @@ export function OrderReportModal({ open, onOpenChange, order }: Props) {
                   />
                 </div>
                 <div>
-                  <h1 className="text-xl sm:text-2xl font-black text-[#3C1C6C] tracking-tight uppercase leading-none">
+                  <h1 className="text-lg sm:text-2xl font-black text-[#3C1C6C] tracking-tight uppercase leading-none">
                     GUISELA LABORATORIO DENTAL
                   </h1>
-                  <p className="text-[11px] font-bold text-slate-700 tracking-wide mt-1">
+                  <p className="text-[10px] sm:text-[11px] font-bold text-slate-700 tracking-wide mt-1">
                     SISTEMA INTEGRAL DE PRÓTESIS DENTAL, CAD/CAM & ESTÉTICA
                   </p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">
+                  <p className="text-[9px] sm:text-[10px] text-slate-500 mt-0.5">
                     La Paz - Bolivia · WhatsApp: 7663... · Email: glb.7663@gmail.com
                   </p>
                 </div>
               </div>
 
               {/* RECUADRO REMISIÓN & CAJA */}
-              <div className="text-right shrink-0 space-y-1">
+              <div className="text-left sm:text-right shrink-0 space-y-1 w-full sm:w-auto flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start pt-1 sm:pt-0 print:text-right print:w-auto print:block">
                 <div className="inline-block px-3.5 py-1.5 bg-[#3C1C6C] text-white rounded-lg text-center shadow-xs">
                   <p className="text-[9px] uppercase tracking-widest font-extrabold text-purple-200">
                     HOJA DE REMISIÓN TÉCNICA
@@ -219,7 +219,7 @@ export function OrderReportModal({ open, onOpenChange, order }: Props) {
                 </div>
 
                 {/* Código de barras simulado para aspecto formal de trazabilidad */}
-                <div className="flex flex-col items-end pt-1">
+                <div className="hidden sm:flex flex-col items-end pt-1 print:flex">
                   <svg className="w-28 h-6 text-slate-800" viewBox="0 0 120 24" fill="currentColor">
                     <rect x="0" y="0" width="3" height="24" />
                     <rect x="5" y="0" width="2" height="24" />
@@ -249,9 +249,9 @@ export function OrderReportModal({ open, onOpenChange, order }: Props) {
               </div>
             </div>
 
-            {/* 2. DATOS CLÍNICOS DEL ODONTÓLOGO Y DEL PACIENTE (2 COLUMNAS FORMALES) */}
-            <div className="grid grid-cols-2 gap-3.5 p-3.5 rounded-xl border border-slate-300 bg-slate-50/70">
-              <div className="space-y-1 border-r border-slate-200 pr-3">
+            {/* 2. DATOS CLÍNICOS DEL ODONTÓLOGO Y DEL PACIENTE */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 p-3.5 rounded-xl border border-slate-300 bg-slate-50/70 print:grid-cols-2">
+              <div className="space-y-1 sm:border-r border-slate-200 sm:pr-3 print:border-r print:pr-3">
                 <p className="text-[10px] font-black uppercase tracking-wider text-[#3C1C6C] flex items-center gap-1">
                   <Stethoscope className="w-3.5 h-3.5 text-purple-700 shrink-0" />
                   <span>ODONTÓLOGO / CLÍNICA SOLICITANTE</span>
@@ -278,7 +278,7 @@ export function OrderReportModal({ open, onOpenChange, order }: Props) {
                 )}
               </div>
 
-              <div className="space-y-1 pl-1">
+              <div className="space-y-1 sm:pl-1 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200 print:border-t-0 print:pl-1 print:pt-0">
                 <p className="text-[10px] font-black uppercase tracking-wider text-[#3C1C6C] flex items-center gap-1">
                   <User className="w-3.5 h-3.5 text-purple-700 shrink-0" />
                   <span>PACIENTE & CRONOGRAMA DE PRODUCCIÓN</span>
@@ -405,7 +405,7 @@ export function OrderReportModal({ open, onOpenChange, order }: Props) {
             )}
 
             {/* 6. RESUMEN ECONÓMICO EN DOBLE MONEDA (Bs Y USD CON SALDO EN ROJO) */}
-            <div className="p-3.5 rounded-xl border-2 border-slate-900 bg-slate-50 flex items-center justify-between gap-4">
+            <div className="p-3.5 rounded-xl border-2 border-slate-900 bg-slate-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 print:flex-row print:items-center">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-[#3C1C6C]">
                   ESTADO DE CUENTA DE ESTE TRABAJO:
@@ -419,18 +419,18 @@ export function OrderReportModal({ open, onOpenChange, order }: Props) {
                 </p>
               </div>
 
-              <div className="text-right space-y-0.5 shrink-0">
-                <div className="flex items-baseline justify-end gap-3 text-xs">
+              <div className="text-left sm:text-right space-y-0.5 w-full sm:w-auto shrink-0 print:text-right print:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200">
+                <div className="flex items-baseline justify-between sm:justify-end gap-3 text-xs">
                   <span className="text-slate-600 font-semibold">Total Trabajo:</span>
                   <span className="font-bold text-slate-900 text-sm">{totalDual.combined}</span>
                 </div>
 
-                <div className="flex items-baseline justify-end gap-3 text-xs">
+                <div className="flex items-baseline justify-between sm:justify-end gap-3 text-xs">
                   <span className="text-slate-600 font-semibold">Anticipo Recibido:</span>
                   <span className="font-bold text-emerald-700">{anticipoDual.combined}</span>
                 </div>
 
-                <div className="flex items-baseline justify-end gap-3 pt-1 border-t border-slate-300">
+                <div className="flex items-baseline justify-between sm:justify-end gap-3 pt-1 border-t border-slate-300">
                   <span className="text-xs font-black text-rose-600 uppercase tracking-wide">
                     SALDO PENDIENTE:
                   </span>

@@ -332,7 +332,7 @@ export function TrabajoSelector({
         </div>
 
         {/* Tarjeta de Resumen de Cotización */}
-        <div className="md:col-span-2 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 flex items-center justify-between gap-3">
+        <div className="md:col-span-2 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
           <div className="space-y-0.5">
             <p className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
               <Calculator className="w-3.5 h-3.5" />
@@ -348,7 +348,7 @@ export function TrabajoSelector({
             )}
           </div>
 
-          <div className="text-right">
+          <div className="text-left sm:text-right w-full sm:w-auto pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-200 dark:border-slate-800">
             <p className="text-xs font-bold text-slate-500">Total a Pagar</p>
             <DualPrice amountBs={pricing.totalBs} size="lg" />
           </div>

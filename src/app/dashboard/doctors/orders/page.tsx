@@ -583,7 +583,7 @@ export default function DoctorOrdersPage() {
           </Button>
 
           {/* Toggle Tarjetas/Tabla */}
-          <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+          <div className="inline-flex flex-wrap items-center rounded-xl border border-slate-200 bg-white p-1 shadow-sm gap-1">
             <button
               type="button"
               onClick={() => setViewMode("cards")}
@@ -605,7 +605,7 @@ export default function DoctorOrdersPage() {
             <button
               type="button"
               onClick={() => setKardexModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 transition-all cursor-pointer ml-1"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 transition-all cursor-pointer sm:ml-1"
             >
               <FileSpreadsheet className="w-3.5 h-3.5 text-purple-700" /> 📄 Imprimir Mi Kardex
             </button>
@@ -1084,11 +1084,19 @@ export default function DoctorOrdersPage() {
 
                         <TableCell className="align-middle py-3 text-xs">
                           {r.total != null ? (
-                            <div>
-                              <p className="font-semibold text-slate-900">Bs {r.total.toFixed(2)}</p>
-                              <p className={`text-[10px] font-bold ${saldo <= 0 ? "text-emerald-700" : "text-purple-700"}`}>
-                                Saldo: Bs {saldo.toFixed(2)}
-                              </p>
+                            <div className="space-y-1">
+                              <div>
+                                <span className="text-[10px] text-slate-500 font-medium block">Total:</span>
+                                <DualPrice amountBs={r.total} size="sm" />
+                              </div>
+                              <div className="pt-0.5 border-t border-slate-100">
+                                <span className="text-[10px] text-slate-500 font-medium block">Saldo:</span>
+                                {saldo <= 0 ? (
+                                  <span className="text-emerald-700 font-bold text-xs">✓ Al día</span>
+                                ) : (
+                                  <DualPrice amountBs={saldo} isDebt={true} size="sm" />
+                                )}
+                              </div>
                             </div>
                           ) : (
                             "—"
