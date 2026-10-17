@@ -23,6 +23,8 @@ import {
   MessageSquareText,
   DollarSign,
   Copy,
+  Download,
+  FileCode,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -281,6 +283,52 @@ export default function TaskDetailsDialog({
                 </span>
               </div>
             </div>
+
+            {/* 🦷 SECCIÓN DE DESCARGA DE ESCANEO 3D (STL / OBJ) PARA EL TÉCNICO */}
+            {(() => {
+              const obs = p?.observaciones || "";
+              const stlMatch = obs.match(/\[🔗 ENLACE 3D:\s*(https?:\/\/[^\s\]]+)\]/i) || obs.match(/(https?:\/\/[^\s]+\.(?:stl|obj|ply|zip|rar))/i);
+              const stlUrl = stlMatch ? stlMatch[1] || stlMatch[0] : null;
+
+              const stlNameMatch = obs.match(/\[📦 ESCANEO 3D CAD\/CAM:\s*([^(\]]+)/i);
+              const stlFileName = stlNameMatch ? stlNameMatch[1].trim() : "escaneo_3d_clinico.stl";
+
+              if (!stlUrl && !stlNameMatch) return null;
+
+              return (
+                <div className="border border-purple-200 rounded-2xl p-4 bg-purple-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#3C1C6C] text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
+                      <FileCode className="w-5 h-5 text-purple-200" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                        Escaneo Digital 3D: <code className="text-purple-800 font-mono font-bold">{stlFileName}</code>
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        Archivo clínico para diseño en Exocad, 3Shape o Ceramill.
+                      </p>
+                    </div>
+                  </div>
+
+                  {stlUrl ? (
+                    <a
+                      href={stlUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      download={stlFileName}
+                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#3C1C6C] hover:bg-[#2E1553] text-white rounded-xl text-xs font-bold shadow-xs transition-colors shrink-0"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Descargar Archivo 3D
+                    </a>
+                  ) : (
+                    <span className="text-[11px] font-bold text-amber-700 bg-amber-100 px-2.5 py-1 rounded-lg shrink-0">
+                      Sincronizado a Telegram
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Observaciones + Comentario */}
             {(p?.observaciones || row.comentarios) && (
