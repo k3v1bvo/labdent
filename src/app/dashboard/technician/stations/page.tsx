@@ -27,6 +27,8 @@ import {
   FileText,
   AlertCircle,
   ExternalLink,
+  FileCode,
+  Download,
 } from "lucide-react";
 
 type Estacion = { id: string; nombre: string; orden: number };
@@ -92,7 +94,8 @@ export default function TechnicianStationsPage() {
         pedidos (
           id, paciente_nombre, estado, fecha_creacion,
           numero_requerimiento, numero_caja, trabajo_realizar,
-          pieza_numero, color_pieza, colimetro, observaciones
+          pieza_numero, color_pieza, colimetro, observaciones,
+          modelo_3d_link
         ),
         estaciones ( id, nombre, orden )
       `
@@ -113,7 +116,8 @@ export default function TechnicianStationsPage() {
         pedidos (
           id, paciente_nombre, estado, fecha_creacion,
           numero_requerimiento, numero_caja, trabajo_realizar,
-          pieza_numero, color_pieza, colimetro, observaciones
+          pieza_numero, color_pieza, colimetro, observaciones,
+          modelo_3d_link
         ),
         estaciones ( id, nombre, orden )
       `
@@ -152,6 +156,18 @@ export default function TechnicianStationsPage() {
     }
     toast.info("Tarea devuelta a la cola de espera de la estación");
     await fetchAll();
+  }
+
+  function parse3DFile(ped: any) {
+    if (!ped) return null;
+    const rawObs = ped.observaciones || "";
+    const tgMatch = rawObs.match(/\[📦 TELEGRAM 3D:\s*file_id=([^|\s\]]+)(?:\s*\|\s*name=([^\]]+))?\]/i);
+    const nameMatch = rawObs.match(/\[📦 ESCANEO 3D CAD\/CAM:\s*([^(\]]+)/i);
+    const tgFileId = tgMatch ? tgMatch[1] : null;
+    const fileName = (tgMatch && tgMatch[2]) ? tgMatch[2].trim() : (nameMatch ? nameMatch[1].trim() : "escaneo_3d_clinico.stl");
+    const downloadUrl = ped.modelo_3d_link || (tgFileId ? `/api/telegram/download?fileId=${encodeURIComponent(tgFileId)}&fileName=${encodeURIComponent(fileName)}` : null);
+    if (!downloadUrl && !tgMatch && !nameMatch) return null;
+    return { fileName, downloadUrl };
   }
 
   async function completar(historialId: string) {
@@ -378,6 +394,31 @@ export default function TechnicianStationsPage() {
                       </p>
                     )}
 
+                    {/* 📦 Descarga directa de archivo 3D CAD/CAM */}
+                    {(() => {
+                      const file3D = parse3DFile(ped);
+                      if (!file3D) return null;
+                      return (
+                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-purple-50/80 border border-purple-200">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <FileCode className="w-4 h-4 text-purple-700 shrink-0" />
+                            <span className="text-xs font-bold text-purple-950 truncate">{file3D.fileName}</span>
+                          </div>
+                          {file3D.downloadUrl && (
+                            <a
+                              href={file3D.downloadUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              download={file3D.fileName}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#3C1C6C] hover:bg-[#2E1553] text-white text-[11px] font-bold shadow-xs shrink-0 cursor-pointer"
+                            >
+                              <Download className="w-3 h-3" /> Descargar 3D
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })()}
+
                     <div className="pt-2 flex items-center justify-between gap-2 border-t border-slate-100">
                       <Button
                         variant="ghost"
@@ -492,6 +533,31 @@ export default function TechnicianStationsPage() {
                         &ldquo;{ped.observaciones}&rdquo;
                       </p>
                     )}
+
+                    {/* 📦 Descarga directa de archivo 3D CAD/CAM en cola */}
+                    {(() => {
+                      const file3D = parse3DFile(ped);
+                      if (!file3D) return null;
+                      return (
+                        <div className="flex items-center justify-between p-2 rounded-xl bg-purple-50/70 border border-purple-100">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <FileCode className="w-3.5 h-3.5 text-purple-700 shrink-0" />
+                            <span className="text-[11px] font-bold text-purple-950 truncate">{file3D.fileName}</span>
+                          </div>
+                          {file3D.downloadUrl && (
+                            <a
+                              href={file3D.downloadUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              download={file3D.fileName}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#3C1C6C] hover:bg-[#2E1553] text-white text-[10px] font-bold shrink-0 cursor-pointer"
+                            >
+                              <Download className="w-3 h-3" /> 3D
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     <div className="pt-2 flex justify-end border-t border-slate-100">
                       <Button

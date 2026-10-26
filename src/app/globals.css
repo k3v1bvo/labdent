@@ -161,7 +161,8 @@ body {
   }
 
   #guisela-report-container,
-  #guisela-kardex-container {
+  #guisela-kardex-container,
+  #guisela-cash-container {
     box-shadow: none !important;
     border: none !important;
     margin: 0 auto !important;

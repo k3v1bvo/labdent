@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { CheckCircle, Lock, ShieldAlert, AlertTriangle, ExternalLink, QrCode, UploadCloud, ImageIcon, Box, FileCode, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { uploadToImgbb } from "@/lib/imgbb";
+import { addCajaMovimiento, getActiveCajaSession } from "@/lib/cashService";
 
 export type ReviewOrder = {
   id: string;
@@ -171,6 +172,35 @@ export function ReviewOrderDialog({ open, onOpenChange, order, onUpdated }: Prop
       valorNuevo: JSON.stringify({ estado: "pendiente", total: totalNum, anticipo: anticipoNum, caja: (caja?.trim() || "00").slice(0, 2) }),
       motivo: isPendingReview ? "Aprobación inicial de requerimiento clínico" : "Modificación aprobada por administrador",
     });
+
+    // 💵 Registrar anticipo en caja activa si la orden provenía de revisión clínica
+    if (isPendingReview && anticipoNum > 0) {
+      try {
+        const { session: activeSession } = await getActiveCajaSession();
+        if (activeSession) {
+          const isQr = (obs || "").toLowerCase().includes("qr") || (obs || "").toLowerCase().includes("comprobante");
+          const qrMatch = obs.match(/\[📸 COMPROBANTE QR:\s*(https?:\/\/[^\s\]]+)\]/i) || obs.match(/(https?:\/\/(?:i\.)?ibb\.co\/[^\s]+)/i);
+          const qrUrl = qrMatch ? qrMatch[1] || qrMatch[0] : undefined;
+
+          await addCajaMovimiento({
+            sesionId: activeSession.id,
+            tipo: "ingreso",
+            origen: "pedido_anticipo",
+            metodoPago: isQr ? "qr_transferencia" : "efectivo",
+            moneda: "BOB",
+            monto: anticipoNum,
+            concepto: `Anticipo Pedido #${order.numero_requerimiento || order.id.slice(0, 8)} - Paciente: ${order.paciente_nombre}`,
+            comprobanteUrl: qrUrl,
+            numeroRequerimiento: order.numero_requerimiento || undefined,
+            pedidoId: order.id,
+            userId: reviewerId,
+            userName: userRole === "admin" ? "Administrador" : "Secretaría",
+          });
+        }
+      } catch (cajaErr) {
+        console.warn("Aviso registrando anticipo en caja diaria:", cajaErr);
+      }
+    }
 
     // 🔔 Notificaciones en vivo para el doctor y taller
     const targetCaja = (caja?.trim() || "00").slice(0, 2);

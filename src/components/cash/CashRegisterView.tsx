@@ -22,6 +22,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { CashRegisterReportModal } from "./CashRegisterReportModal";
 import { toast } from "sonner";
 import {
   Coins,
@@ -67,6 +68,7 @@ export function CashRegisterView({ role }: CashRegisterViewProps) {
   const [gastoRecibo, setGastoRecibo] = useState("");
 
   const [closeModalOpen, setCloseModalOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
   const [conteoBs, setConteoBs] = useState("");
   const [conteoUsd, setConteoUsd] = useState("");
   const [cierreObservaciones, setCierreObservaciones] = useState("");
@@ -244,7 +246,7 @@ export function CashRegisterView({ role }: CashRegisterViewProps) {
   }
 
   function handlePrintArqueo() {
-    window.print();
+    setReportModalOpen(true);
   }
 
   if (loading) {
@@ -786,6 +788,16 @@ export function CashRegisterView({ role }: CashRegisterViewProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* MODAL DE REPORTE OFICIAL TIPO ACTA DE ARQUEO A4 */}
+      <CashRegisterReportModal
+        open={reportModalOpen}
+        onOpenChange={setReportModalOpen}
+        session={session}
+        resumen={resumen}
+        movimientos={movimientos}
+        cajeroNombre={userProfile?.nombre || (role === "admin" ? "Administrador" : "Secretaría")}
+      />
     </div>
   );
 }
