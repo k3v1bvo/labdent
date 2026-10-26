@@ -27,6 +27,9 @@ import {
   HelpCircle,
   X,
   MessageSquare,
+  Printer,
+  FileText,
+  Download,
 } from "lucide-react";
 
 interface Message {
@@ -42,7 +45,190 @@ const QUICK_PROMPTS = [
   "⚙️ ¿Cuántos pedidos tenemos en producción y en qué estación?",
   "💬 Redáctame un mensaje formal de cobranza para WhatsApp",
   "📋 Hazme un resumen ejecutivo del estado del laboratorio para hoy",
+  "📄 Genera un informe financiero formal listo para imprimir en PDF",
 ];
+
+/**
+ * Genera una ventana de impresión estilizada con membrete oficial de Guisela Laboratorio Dental
+ * y dispara automáticamente el cuadro de diálogo para Guardar como PDF o Imprimir.
+ */
+function printExecutiveReport(reportText: string, title: string = "Informe Ejecutivo & Auditoría Operativa") {
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    toast.error("Por favor permite las ventanas emergentes en tu navegador para generar el PDF.");
+    return;
+  }
+
+  // Convertir formato Markdown básico a HTML ejecutivo
+  const formattedHtml = reportText
+    .replace(/^### (.*$)/gim, '<h3 style="font-size:13px; font-weight:800; color:#3C1C6C; margin-top:16px; margin-bottom:6px; border-bottom:1px solid #E2E8F0; padding-bottom:4px; text-transform:uppercase;">$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2 style="font-size:15px; font-weight:900; color:#1E0E3E; margin-top:20px; margin-bottom:8px; border-left:4px solid #7C3AED; padding-left:10px;">$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1 style="font-size:17px; font-weight:900; color:#1E0E3E; margin-top:20px; margin-bottom:10px;">$1</h1>')
+    .replace(/\*\*(.*?)\*\*/gim, '<strong style="color:#0F172A; font-weight:700;">$1</strong>')
+    .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+    .replace(/^[•\-] (.*$)/gim, '<li style="margin-bottom:5px; line-height:1.5;">$1</li>')
+    .replace(/\n\n/gim, '<br/><br/>')
+    .replace(/\n/gim, '<br/>');
+
+  const now = new Date().toLocaleString("es-BO", { timeZone: "America/La_Paz" });
+
+  const docContent = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>${title} — Guisela Laboratorio Dental</title>
+  <style>
+    @page {
+      size: letter;
+      margin: 16mm 15mm 16mm 15mm;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #1E293B;
+      background: #FFF;
+      margin: 0;
+      padding: 24px;
+      font-size: 11.5px;
+      line-height: 1.6;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2.5px solid #3C1C6C;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+    .brand-title {
+      font-size: 20px;
+      font-weight: 900;
+      color: #3C1C6C;
+      letter-spacing: -0.5px;
+      margin: 0;
+    }
+    .brand-sub {
+      font-size: 10px;
+      color: #64748B;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin: 3px 0 0 0;
+    }
+    .meta-box {
+      text-align: right;
+      font-size: 10.5px;
+      color: #475569;
+    }
+    .confidential-badge {
+      display: inline-block;
+      background: #FEF3C7;
+      color: #92400E;
+      font-size: 8.5px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 5px;
+      border: 1px solid #FDE68A;
+    }
+    .report-card {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-left: 4px solid #3C1C6C;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .report-card h2 {
+      margin: 0;
+      font-size: 14.5px;
+      font-weight: 800;
+      color: #0F172A;
+    }
+    .content {
+      margin-bottom: 30px;
+      text-align: justify;
+    }
+    ul, ol {
+      padding-left: 20px;
+      margin: 8px 0;
+    }
+    .footer {
+      border-top: 1px solid #E2E8F0;
+      padding-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 9.5px;
+      color: #94A3B8;
+      margin-top: 40px;
+    }
+    .btn-print-bar {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      background: #3C1C6C;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      border: none;
+    }
+    @media print {
+      body { padding: 0; }
+      .btn-print-bar { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <button class="btn-print-bar" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+
+  <div class="header">
+    <div>
+      <h1 class="brand-title">GUÍSELA LABORATORIO DENTAL</h1>
+      <p class="brand-sub">SISTEMA INTEGRAL DE GESTIÓN & AUDITORÍA EN TIEMPO REAL</p>
+    </div>
+    <div class="meta-box">
+      <div class="confidential-badge">Auditoría Ejecutiva Confidencial</div>
+      <div><strong>Emisión:</strong> ${now} (Hora Oficial Bolivia GMT-4)</div>
+      <div><strong>Motor Inteligente:</strong> Guisela AI · Gemini 3.5 Flash</div>
+    </div>
+  </div>
+
+  <div class="report-card">
+    <h2>${title}</h2>
+    <div style="font-size:10.5px; color:#64748B; margin-top:2px;">
+      Auditoría gerencial extraída en vivo desde la base de datos de producción y finanzas
+    </div>
+  </div>
+
+  <div class="content">
+    ${formattedHtml}
+  </div>
+
+  <div class="footer">
+    <div>© ${new Date().getFullYear()} Guisela Laboratorio Dental · Cochabamba / La Paz, Bolivia</div>
+    <div>Documento oficial generado para la Dirección General</div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+      }, 350);
+    };
+  </script>
+</body>
+</html>`;
+
+  printWindow.document.open();
+  printWindow.document.write(docContent);
+  printWindow.document.close();
+}
 
 export function AdminAIChatModal() {
   const [open, setOpen] = useState(false);
@@ -58,7 +244,7 @@ export function AdminAIChatModal() {
     {
       id: "welcome",
       role: "assistant",
-      text: "¡Hola! Soy **Guisela AI**, tu asistente ejecutivo inteligente conectado en tiempo real a la base de datos de tu laboratorio. Puedo darte balances financieros, reportes de doctores con deudas, estado de producción por estación y redactar comunicados oficiales. ¿En qué te puedo apoyar hoy?",
+      text: "¡Hola! Soy **Guisela AI**, tu Asistente y Consultor Ejecutivo conectado en tiempo real a la base de datos del laboratorio.\n\nPuedo entregarte balances financieros al instante, radiografía de cartera morosa con teléfonos de doctores, estatus del taller por estaciones y redactar comunicados oficiales para WhatsApp.\n\n📄 *Todos los informes y análisis que te brinde pueden imprimirse directamente en **PDF oficial** con solo un clic.* ¿En qué te puedo apoyar hoy?",
       time: "Ahora",
     },
   ]);
@@ -217,6 +403,24 @@ export function AdminAIChatModal() {
 
             <div className="flex items-center gap-1.5">
               <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const lastMsg = [...messages].reverse().find((m) => m.role === "assistant");
+                  if (lastMsg) {
+                    printExecutiveReport(lastMsg.text, "Auditoría Ejecutiva · Guisela Lab");
+                  } else {
+                    toast.info("Aún no hay informes para imprimir.");
+                  }
+                }}
+                className="h-8 px-2.5 rounded-xl border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 text-xs gap-1.5 font-bold shadow-2xs"
+                title="Imprimir el último informe ejecutivo oficial como archivo PDF"
+              >
+                <Printer className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span className="hidden sm:inline">Imprimir PDF</span>
+              </Button>
+
+              <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setApiKeyModalOpen(true)}
@@ -272,24 +476,35 @@ export function AdminAIChatModal() {
                 >
                   <div className="whitespace-pre-wrap">{m.text}</div>
 
-                  <div className="mt-2 pt-2 border-t border-black/5 dark:border-white/10 flex items-center justify-between text-[10px] opacity-70">
-                    <span>{m.time}</span>
+                  <div className="mt-2.5 pt-2 border-t border-black/5 dark:border-white/10 flex flex-wrap items-center justify-between gap-2 text-[10px] opacity-80">
+                    <span className="text-slate-400 font-medium">{m.time}</span>
                     {m.role === "assistant" && (
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard(m.id, m.text)}
-                        className="hover:opacity-100 flex items-center gap-1 text-[11px] font-semibold text-purple-700 dark:text-purple-300"
-                      >
-                        {copiedId === m.id ? (
-                          <>
-                            <Check className="w-3 h-3 text-emerald-600" /> Copiado
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3" /> Copiar respuesta
-                          </>
-                        )}
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => printExecutiveReport(m.text)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-2xs transition-all active:scale-95 cursor-pointer"
+                          title="Generar e Imprimir Documento Oficial en PDF con membrete"
+                        >
+                          <Printer className="w-3 h-3" />
+                          <span>Imprimir PDF</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(m.id, m.text)}
+                          className="hover:opacity-100 flex items-center gap-1 text-[11px] font-semibold text-purple-700 dark:text-purple-300 px-2 py-1 rounded-lg hover:bg-purple-100/60 dark:hover:bg-purple-950/40 transition-colors"
+                        >
+                          {copiedId === m.id ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-600" /> Copiado
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" /> Copiar
+                            </>
+                          )}
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
